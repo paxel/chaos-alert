@@ -1,4 +1,35 @@
 {
   "@@locale": "en",
-  "appTitle": "chaos-alert"
+  "appTitle": "chaos-alert",
+
+  "nagQuestion": "Are you in bed?",
+  "nagYes": "Yes",
+  "nagSnooze": "Snooze {minutes} min",
+  "@nagSnooze": {"placeholders": {"minutes": {"type": "int"}}},
+  "nagSnooze30": "30 min",
+  "nagSnooze60": "1 h",
+  "nagSnooze120": "2 h",
+
+  "wordIntro": "Remember this word:",
+  "wordHint": "It is shown only once. Tomorrow's alarm asks for it.",
+  "wordClose": "Good night",
+
+  "ringQuiz": "Which word did you see last night?",
+  "ringDismiss": "Turn off",
+  "ringSnooze": "Snooze",
+
+  "failureTitle": "Not this time",
+  "failureWord": "The word was",
+  "failureStreak": "{count, plural, =1{1 miss in a row} other{{count} misses in a row}}",
+  "@failureStreak": {"placeholders": {"count": {"type": "int"}}},
+  "failureTotals": "{successes} right, {failures} wrong in total",
+  "@failureTotals": {"placeholders": {"successes": {"type": "int"}, "failures": {"type": "int"}}},
+  "failureStrip": "Last 30 nights",
+  "failureHint": "You've missed the word 5 times in a row. Occasional forgetting is normal, and poor sleep alone can cause this. If it worries you, consider talking to a doctor.",
+  "failureClose": "Close",
+
+  "resultSuccess": "Right",
+  "resultFailure": "Wrong",
+  "resultNoWord": "No word",
+  "resultMissed": "Missed"
 }

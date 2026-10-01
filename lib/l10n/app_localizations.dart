@@ -99,6 +99,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'chaos-alert'**
   String get appTitle;
+
+  /// No description provided for @nagQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you in bed?'**
+  String get nagQuestion;
+
+  /// No description provided for @nagYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get nagYes;
+
+  /// No description provided for @nagSnooze.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze {minutes} min'**
+  String nagSnooze(int minutes);
+
+  /// No description provided for @nagSnooze30.
+  ///
+  /// In en, this message translates to:
+  /// **'30 min'**
+  String get nagSnooze30;
+
+  /// No description provided for @nagSnooze60.
+  ///
+  /// In en, this message translates to:
+  /// **'1 h'**
+  String get nagSnooze60;
+
+  /// No description provided for @nagSnooze120.
+  ///
+  /// In en, this message translates to:
+  /// **'2 h'**
+  String get nagSnooze120;
+
+  /// No description provided for @wordIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Remember this word:'**
+  String get wordIntro;
+
+  /// No description provided for @wordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'It is shown only once. Tomorrow\'s alarm asks for it.'**
+  String get wordHint;
+
+  /// No description provided for @wordClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Good night'**
+  String get wordClose;
+
+  /// No description provided for @ringQuiz.
+  ///
+  /// In en, this message translates to:
+  /// **'Which word did you see last night?'**
+  String get ringQuiz;
+
+  /// No description provided for @ringDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn off'**
+  String get ringDismiss;
+
+  /// No description provided for @ringSnooze.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze'**
+  String get ringSnooze;
+
+  /// No description provided for @failureTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not this time'**
+  String get failureTitle;
+
+  /// No description provided for @failureWord.
+  ///
+  /// In en, this message translates to:
+  /// **'The word was'**
+  String get failureWord;
+
+  /// No description provided for @failureStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 miss in a row} other{{count} misses in a row}}'**
+  String failureStreak(int count);
+
+  /// No description provided for @failureTotals.
+  ///
+  /// In en, this message translates to:
+  /// **'{successes} right, {failures} wrong in total'**
+  String failureTotals(int successes, int failures);
+
+  /// No description provided for @failureStrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 nights'**
+  String get failureStrip;
+
+  /// No description provided for @failureHint.
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ve missed the word 5 times in a row. Occasional forgetting is normal, and poor sleep alone can cause this. If it worries you, consider talking to a doctor.'**
+  String get failureHint;
+
+  /// No description provided for @failureClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get failureClose;
+
+  /// No description provided for @resultSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get resultSuccess;
+
+  /// No description provided for @resultFailure.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrong'**
+  String get resultFailure;
+
+  /// No description provided for @resultNoWord.
+  ///
+  /// In en, this message translates to:
+  /// **'No word'**
+  String get resultNoWord;
+
+  /// No description provided for @resultMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed'**
+  String get resultMissed;
 }
 
 class _AppLocalizationsDelegate
