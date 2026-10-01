@@ -116,6 +116,10 @@ jobs:
     if: github.ref_type == 'tag' || github.event.inputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:
+      # The listing (texts, images, F-Droid fields) and the changelog.
+      - uses: actions/checkout@v5
+        with:
+          path: app
       - uses: actions/download-artifact@v7
         with:
           name: android
@@ -139,6 +143,17 @@ jobs:
           # previous APKs go, the other app's stay.
           rm -f repo/chaos-alert-*.apk
           cp "$GITHUB_WORKSPACE"/apks/chaos-alert-"$v"-android-*.apk repo/
+          # The store listing travels with the app: only this app's files
+          # are replaced, the other app's stay untouched.
+          id=io.github.paxel.chaos_alert
+          mkdir -p metadata
+          cp "$GITHUB_WORKSPACE/app/fdroid/metadata.yml" "metadata/$id.yml"
+          rm -rf "metadata/$id" "repo/$id"
+          mkdir -p "metadata/$id/en-US/changelogs"
+          cp -r "$GITHUB_WORKSPACE/app/fastlane/metadata/android/en-US/." "metadata/$id/en-US/"
+          # What's new: this version's CHANGELOG entries, cut to F-Droid's limit.
+          python3 "$GITHUB_WORKSPACE/app/tool/whats_new.py" "$v" "$GITHUB_WORKSPACE/app/CHANGELOG.md" \
+            > "metadata/$id/en-US/changelogs/default.txt"
           # Must stay word for word the same as cat(a)log's release
           # workflow, or each release renames the repository.
           cat > config.yml <<EOF

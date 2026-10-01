@@ -9,6 +9,14 @@ import 'night_screens.dart';
 import 'platform.dart';
 import 'setup_screen.dart';
 
+/// The app's one theme: always dark.
+ThemeData chaosTheme() => ThemeData(
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: Colors.indigo,
+    brightness: Brightness.dark,
+  ),
+);
+
 /// The app: always dark, the setup at first start, and the nag or the
 /// alarm on top whenever Android opens the app for one.
 class ChaosAlertApp extends StatefulWidget {
@@ -86,12 +94,7 @@ class _ChaosAlertAppState extends State<ChaosAlertApp>
     onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
     localizationsDelegates: AppLocalizations.localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
-    theme: ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.indigo,
-        brightness: Brightness.dark,
-      ),
-    ),
+    theme: chaosTheme(),
     home: HomeScreen(controller: _c),
   );
 }

@@ -26,6 +26,8 @@ jobs:
           flutter pub get
           flutter analyze --fatal-infos
           flutter test
+      - name: Tools — test
+        run: python3 -m unittest discover -s tool
 
   apk:
     name: Debug APK

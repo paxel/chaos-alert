@@ -1,0 +1,17 @@
+Your alarm always sounds the same, so you sleep right through it. And "just ten more minutes" on the sofa turns into midnight again.
+
+chaos-alert nags you to bed when it's time, gives you one word to remember, and wakes you with a sound you never hear coming. To turn the alarm off, you pick last night's word from four — right or wrong, it stops, and the app keeps count of how well you remembered.
+
+<b>What it does</b>
+<ul>
+<li><b>Bedtime nag</b> — at bedtime a quiet full-screen popup asks: Are you in bed? Bedtime follows from tomorrow's first alarm and how much sleep you want. Not yet? Snooze 10 minutes, or 30 min, 1 h, 2 h when you're out. Fell asleep without answering? The popup's time counts as your bedtime and nothing wakes you.</li>
+<li><b>In bed early</b> — the main screen offers "I'm in bed" in the three hours before bedtime.</li>
+<li><b>A word for the night</b> — one less common English word, shown once.</li>
+<li><b>The chaos alarm</b> — every ring picks something random: an alarm sound, a notification sound or a song from your music. Quiet at first, louder after 10 seconds, a new surprise after every snooze.</li>
+<li><b>The quiz</b> — four words, one of them last night's. A wrong pick shows the word, your streak and your last 30 nights; five misses in a row bring a gentle hint.</li>
+<li><b>Alarms</b> — repeating on weekdays or once on a date; reminder alarms that shouldn't move your bedtime simply get their wake-up switch turned off.</li>
+<li><b>Vacations</b> — enter the dates once; repeating alarms and the nag stay quiet, one-time alarms still ring.</li>
+<li><b>Time in bed</b> — a week or a month of bars, coloured by how the quiz went, with your average time in bed and average bedtime.</li>
+</ul>
+
+Everything stays on your phone: no account, no internet permission, no tracking. Free and open source.

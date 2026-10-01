@@ -16,7 +16,8 @@ Your alarm always sounds the same, so you sleep right through it. And
 
 chaos-alert nags you to bed when it's time, gives you one word to remember,
 and wakes you with a sound you have never heard coming. To turn the alarm
-off, you have to remember last night's word.
+off, you pick last night's word from four — right or wrong, it stops, and
+the app keeps count of how well you remembered.
 
 ## What it does
 
