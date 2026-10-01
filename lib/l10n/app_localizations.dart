@@ -237,6 +237,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Missed'**
   String get resultMissed;
+
+  /// No description provided for @alarmsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarms'**
+  String get alarmsTitle;
+
+  /// No description provided for @alarmsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No alarms yet.'**
+  String get alarmsEmpty;
+
+  /// No description provided for @alarmAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add alarm'**
+  String get alarmAdd;
+
+  /// No description provided for @alarmEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm'**
+  String get alarmEditTitle;
+
+  /// No description provided for @alarmRepeating.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeating'**
+  String get alarmRepeating;
+
+  /// No description provided for @alarmOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'Once'**
+  String get alarmOnce;
+
+  /// No description provided for @alarmDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get alarmDate;
+
+  /// No description provided for @alarmWakeUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Wake-up alarm'**
+  String get alarmWakeUp;
+
+  /// No description provided for @alarmWakeUpHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sets the bedtime and asks for the word'**
+  String get alarmWakeUpHint;
+
+  /// No description provided for @alarmSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get alarmSave;
+
+  /// No description provided for @alarmDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get alarmDelete;
+
+  /// No description provided for @alarmNoDays.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick at least one day'**
+  String get alarmNoDays;
+
+  /// No description provided for @alarmNever.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get alarmNever;
+
+  /// No description provided for @alarmReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get alarmReminder;
 }
 
 class _AppLocalizationsDelegate

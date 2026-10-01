@@ -94,4 +94,46 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get resultMissed => 'Missed';
+
+  @override
+  String get alarmsTitle => 'Alarms';
+
+  @override
+  String get alarmsEmpty => 'No alarms yet.';
+
+  @override
+  String get alarmAdd => 'Add alarm';
+
+  @override
+  String get alarmEditTitle => 'Alarm';
+
+  @override
+  String get alarmRepeating => 'Repeating';
+
+  @override
+  String get alarmOnce => 'Once';
+
+  @override
+  String get alarmDate => 'Date';
+
+  @override
+  String get alarmWakeUp => 'Wake-up alarm';
+
+  @override
+  String get alarmWakeUpHint => 'Sets the bedtime and asks for the word';
+
+  @override
+  String get alarmSave => 'Save';
+
+  @override
+  String get alarmDelete => 'Delete';
+
+  @override
+  String get alarmNoDays => 'Pick at least one day';
+
+  @override
+  String get alarmNever => 'Never';
+
+  @override
+  String get alarmReminder => 'Reminder';
 }
