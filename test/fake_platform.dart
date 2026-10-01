@@ -5,8 +5,9 @@ import 'package:chaos_core/chaos_core.dart';
 
 /// A platform that records what was scheduled and answers as told.
 class FakePlatform implements AlarmPlatform {
-  DateTime? nag;
+  List<DateTime> nags = [];
   bool? chime;
+  final events = <PlatformEvent>[];
   List<ScheduledRing> rings = [];
   int stops = 0;
   final requested = <Permission>[];
@@ -27,10 +28,19 @@ class FakePlatform implements AlarmPlatform {
 
   void launch(Launch launch) => _launches.add(launch);
 
+  DateTime? get nag => nags.isEmpty ? null : nags.first;
+
   @override
-  Future<void> scheduleNag(DateTime? at, {required bool chime}) async {
-    nag = at;
+  Future<void> scheduleNags(List<DateTime> nags, {required bool chime}) async {
+    this.nags = nags;
     this.chime = chime;
+  }
+
+  @override
+  Future<List<PlatformEvent>> drainEvents() async {
+    final drained = List.of(events);
+    events.clear();
+    return drained;
   }
 
   @override

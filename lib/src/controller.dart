@@ -88,10 +88,23 @@ class Controller extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Reads what Android allows and which sounds exist, then reschedules.
+  /// Reads what Android allows, which sounds exist and what happened while
+  /// the app was not running, then reschedules.
   Future<void> refresh() async {
     _permissions = await platform.permissions();
     _sounds = await platform.sounds();
+    final events = await platform.drainEvents()
+      ..sort((a, b) => a.at.compareTo(b.at));
+    for (final e in events) {
+      switch (e) {
+        case NagFired(:final at):
+          engine.nagShown(at: at);
+        case RingStarted(:final alarmId, :final at):
+          engine.ring(alarmId, at: at);
+        case RingTimedOut(:final alarmId, :final at):
+          engine.timeout(alarmId, at: at);
+      }
+    }
     await reschedule();
   }
 
@@ -100,7 +113,7 @@ class Controller extends ChangeNotifier {
     final plan = _plan = engine.plan();
     final settings = store.loadSettings();
     final sounds = _sounds ??= await platform.sounds();
-    await platform.scheduleNag(plan.nag, chime: settings.chime);
+    await platform.scheduleNags(plan.nags, chime: settings.chime);
     await platform.scheduleRings([
       for (final r in plan.rings)
         ScheduledRing(
@@ -146,11 +159,6 @@ class Controller extends ChangeNotifier {
     await refresh();
   }
 
-  Future<void> nagShown() {
-    engine.nagShown();
-    return reschedule();
-  }
-
   /// Returns the word to remember.
   Future<String> inBed() async {
     final word = engine.inBed();
@@ -163,11 +171,8 @@ class Controller extends ChangeNotifier {
     return reschedule();
   }
 
-  Future<RingScreen> ring(int alarmId) async {
-    final screen = engine.ring(alarmId);
-    await reschedule();
-    return screen;
-  }
+  /// What the ringing alarm [alarmId] shows.
+  RingScreen screenFor(int alarmId) => engine.screenFor(alarmId);
 
   Future<void> snoozeAlarm(int alarmId) async {
     engine.snoozeAlarm(alarmId);

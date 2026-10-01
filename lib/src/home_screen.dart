@@ -64,7 +64,7 @@ class _HomeScreenState extends State<HomeScreen> {
       listenable: _c,
       builder: (context, _) {
         final plan = _c.plan;
-        final nag = plan.nag;
+        final nag = plan.nextNag;
         final rings = plan.rings;
         final missing =
             _c.hasPermissionInfo && _c.missingPermissions.isNotEmpty;

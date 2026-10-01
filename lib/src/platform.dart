@@ -43,14 +43,44 @@ class RingLaunch extends Launch {
   final int alarmId;
 }
 
+/// Something Android did on its own, kept in a queue until the app reads
+/// it, with the moment it happened.
+sealed class PlatformEvent {
+  const PlatformEvent(this.at);
+
+  final DateTime at;
+}
+
+/// The bedtime nag popped up.
+class NagFired extends PlatformEvent {
+  const NagFired(super.at);
+}
+
+/// An alarm started ringing.
+class RingStarted extends PlatformEvent {
+  const RingStarted(this.alarmId, DateTime at) : super(at);
+
+  final int alarmId;
+}
+
+/// A ring ran into its timeout unanswered.
+class RingTimedOut extends PlatformEvent {
+  const RingTimedOut(this.alarmId, DateTime at) : super(at);
+
+  final int alarmId;
+}
+
 /// The seam to the Kotlin side. Tests use a fake.
 abstract interface class AlarmPlatform {
-  /// Schedules the bedtime nag at [at], replacing any earlier one; null
-  /// cancels it.
-  Future<void> scheduleNag(DateTime? at, {required bool chime});
+  /// Schedules exactly [nags], replacing every nag scheduled before.
+  Future<void> scheduleNags(List<DateTime> nags, {required bool chime});
 
   /// Schedules exactly [rings], replacing every ring scheduled before.
   Future<void> scheduleRings(List<ScheduledRing> rings);
+
+  /// Everything Android did since the last call, oldest first; reading
+  /// empties the queue.
+  Future<List<PlatformEvent>> drainEvents();
 
   /// Stops the ring that is playing now.
   Future<void> stopRinging();
@@ -85,11 +115,30 @@ class ChannelAlarmPlatform implements AlarmPlatform {
   final _launches = StreamController<Launch>.broadcast();
 
   @override
-  Future<void> scheduleNag(DateTime? at, {required bool chime}) =>
-      _channel.invokeMethod('scheduleNag', {
-        'at': at?.millisecondsSinceEpoch,
+  Future<void> scheduleNags(List<DateTime> nags, {required bool chime}) =>
+      _channel.invokeMethod('scheduleNags', {
+        'at': [for (final n in nags) n.millisecondsSinceEpoch],
         'chime': chime,
       });
+
+  @override
+  Future<List<PlatformEvent>> drainEvents() async {
+    final raw = await _channel.invokeListMethod<Map>('drainEvents') ?? const [];
+    final events = <PlatformEvent>[];
+    for (final m in raw) {
+      final at = DateTime.fromMillisecondsSinceEpoch(m['at'] as int);
+      final alarmId = m['alarmId'] as int?;
+      switch (m['kind']) {
+        case 'nag':
+          events.add(NagFired(at));
+        case 'ring' when alarmId != null:
+          events.add(RingStarted(alarmId, at));
+        case 'timeout' when alarmId != null:
+          events.add(RingTimedOut(alarmId, at));
+      }
+    }
+    return events;
+  }
 
   @override
   Future<void> scheduleRings(List<ScheduledRing> rings) =>

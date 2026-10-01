@@ -36,12 +36,6 @@ class NagScreen extends StatefulWidget {
 }
 
 class _NagScreenState extends State<NagScreen> {
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.nagShown();
-  }
-
   Future<void> _yes() async {
     final word = await widget.controller.inBed();
     if (!mounted) return;
@@ -165,10 +159,9 @@ class _AlarmScreenState extends State<AlarmScreen> {
     _start();
   }
 
-  Future<void> _start() async {
-    final screen = await _c.ring(widget.alarmId);
-    if (!mounted) return;
-    setState(() => _screen = screen);
+  // Android reported the ring itself; the app only shows it.
+  void _start() {
+    _screen = _c.screenFor(widget.alarmId);
     _timeout = Timer(_c.settings.alarmTimeout, _timedOut);
   }
 

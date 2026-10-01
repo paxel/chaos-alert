@@ -140,7 +140,8 @@ void main() {
     addTearDown(store.close);
     now = DateTime(2026, 10, 6, 6, 30);
     final engine = Engine(store: store, words: words, clock: () => now);
-    expect(engine.ring(alarm.id).options, contains(word));
+    engine.ring(alarm.id);
+    expect(engine.screenFor(alarm.id).options, contains(word));
     expect(engine.answer(alarm.id, word)!.correct, isTrue);
     expect(store.loadRecords().single.result, NightResult.success);
   });

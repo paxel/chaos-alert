@@ -20,7 +20,8 @@ class ChaosAlertApp extends StatefulWidget {
   State<ChaosAlertApp> createState() => _ChaosAlertAppState();
 }
 
-class _ChaosAlertAppState extends State<ChaosAlertApp> {
+class _ChaosAlertAppState extends State<ChaosAlertApp>
+    with WidgetsBindingObserver {
   final _navigator = GlobalKey<NavigatorState>();
   StreamSubscription<Launch>? _launches;
 
@@ -29,8 +30,15 @@ class _ChaosAlertAppState extends State<ChaosAlertApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _launches = _c.platform.launches.listen(_open);
     _start();
+  }
+
+  // Coming back to the app is when Android's queue gets read.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_c.refresh());
   }
 
   Future<void> _start() async {
@@ -38,7 +46,7 @@ class _ChaosAlertAppState extends State<ChaosAlertApp> {
     final launch = await _c.platform.initialLaunch();
     if (!mounted) return;
     if (launch != null) {
-      _open(launch);
+      await _open(launch);
     } else if (!_c.setupDone) {
       unawaited(
         _navigator.currentState?.push(
@@ -48,7 +56,9 @@ class _ChaosAlertAppState extends State<ChaosAlertApp> {
     }
   }
 
-  void _open(Launch launch) {
+  Future<void> _open(Launch launch) async {
+    await _c.refresh();
+    if (!mounted) return;
     final screen = switch (launch) {
       NagLaunch() => NagScreen(controller: _c),
       RingLaunch(:final alarmId) => AlarmScreen(
@@ -65,6 +75,7 @@ class _ChaosAlertAppState extends State<ChaosAlertApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _launches?.cancel();
     super.dispose();
   }

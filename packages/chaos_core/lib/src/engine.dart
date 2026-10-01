@@ -13,15 +13,22 @@ const inBedWindow = Duration(hours: 3);
 /// How long a shown word waits for a wake-up alarm before it expires.
 const wordLifetime = Duration(hours: 24);
 
+/// How many nags and how many rings per alarm the plan looks ahead, so
+/// Android keeps nagging and ringing on days the app never runs.
+const planAhead = 3;
+
 /// What the platform has to schedule next.
 class Plan {
-  const Plan({this.nag, this.rings = const []});
+  const Plan({this.nags = const [], this.rings = const []});
 
-  /// When the bedtime nag pops up; a time in the past means now.
-  final DateTime? nag;
+  /// When the bedtime nag pops up, earliest first; a time in the past
+  /// means now.
+  final List<DateTime> nags;
 
-  /// The next ring of every alarm that rings again, snoozes included.
+  /// The coming rings of every alarm, snoozes included, earliest first.
   final List<PlannedRing> rings;
+
+  DateTime? get nextNag => nags.isEmpty ? null : nags.first;
 }
 
 class PlannedRing {
@@ -59,6 +66,9 @@ class QuizOutcome {
 /// Every rule of the night. Each event reads the store, applies the rule
 /// and writes the store back, so the engine holds no state of its own and
 /// can be rebuilt whenever the app starts.
+///
+/// Events Android saw while the app was not running arrive later with the
+/// moment they happened as `at`; everything else happens now.
 class Engine {
   Engine({
     required this.store,
@@ -76,22 +86,30 @@ class Engine {
 
   /// What to schedule now.
   Plan plan() {
-    final state = _load();
     final now = _now;
+    final state = _load(now);
     final alarms = store.loadAlarms();
     final vacations = store.loadVacations();
+    final settings = store.loadSettings();
 
-    DateTime? nag;
+    final nags = <DateTime>[];
     final night = state.night;
-    if (night == null) {
-      nag = nextMorning(now, alarms, vacations, store.loadSettings())?.bedtime;
-    } else if (!night.confirmed) {
-      final snoozed = night.nagSnoozedUntil;
-      final wake = nextMorning(now, alarms, vacations, store.loadSettings());
-      if (snoozed != null &&
-          (wake == null || snoozed.isBefore(wake.firstWakeUp))) {
-        nag = snoozed;
-      }
+    final snoozed = night?.nagSnoozedUntil;
+    final skipUntil = night?.expectedWake;
+    if (night != null &&
+        !night.confirmed &&
+        snoozed != null &&
+        (skipUntil == null || snoozed.isBefore(skipUntil))) {
+      nags.add(snoozed);
+    }
+    var cursor = now;
+    for (var i = 0; nags.length < planAhead && i < planAhead + 1; i++) {
+      final m = nextMorning(cursor, alarms, vacations, settings);
+      if (m == null) break;
+      cursor = m.firstWakeUp;
+      // The open night already had its nag.
+      if (skipUntil != null && !m.firstWakeUp.isAfter(skipUntil)) continue;
+      nags.add(m.bedtime);
     }
 
     final byId = {for (final a in alarms) a.id: a};
@@ -99,32 +117,38 @@ class Engine {
     final rings = <PlannedRing>[];
     for (final a in alarms) {
       final last = state.lastRing[a.id];
-      final after = last != null && last.isAfter(now) ? last : now;
-      var at = nextRingOf(a, after, vacations);
+      var after = last != null && last.isAfter(now) ? last : now;
+      for (var i = 0; i < planAhead; i++) {
+        final at = nextRingOf(a, after, vacations);
+        if (at == null) break;
+        rings.add(PlannedRing(a.id, at));
+        after = at;
+      }
       final snooze = state.alarmSnoozes[a.id];
-      if (snooze != null && (at == null || snooze.isBefore(at))) at = snooze;
-      if (at != null) rings.add(PlannedRing(a.id, at));
+      if (snooze != null) rings.add(PlannedRing(a.id, snooze));
     }
     rings.sort((a, b) => a.at.compareTo(b.at));
     _save(state);
-    return Plan(nag: nag, rings: rings);
+    return Plan(nags: nags, rings: rings);
   }
 
   /// Whether the main screen offers "I'm in bed" now.
   bool get canSayInBed {
-    final night = _load().night;
+    final now = _now;
+    final night = _current(_load(now), now);
     if (night != null) return !night.confirmed;
-    final morning = _nextMorning();
+    final morning = _nextMorning(now);
     if (morning == null) return false;
-    return !_now.isBefore(morning.bedtime.subtract(inBedWindow));
+    return !now.isBefore(morning.bedtime.subtract(inBedWindow));
   }
 
   /// The nag popped up.
-  void nagShown() {
-    final state = _load();
-    final night = state.night ??= _openNight();
+  void nagShown({DateTime? at}) {
+    final t = at ?? _now;
+    final state = _load(t);
+    final night = state.night = _current(state, t) ?? _openNight(t);
     night
-      ..lastNag = _now
+      ..lastNag = t
       ..nagSnoozedUntil = null;
     _save(state);
   }
@@ -132,12 +156,13 @@ class Engine {
   /// The user is in bed, by Yes on the nag or the button on the main
   /// screen. Returns the word to remember.
   String inBed() {
-    final state = _load();
-    final night = state.night ??= _openNight();
+    final t = _now;
+    final state = _load(t);
+    final night = state.night = _current(state, t) ?? _openNight(t);
     if (night.confirmed) throw StateError('already in bed tonight');
     final word = state.deck.next(words, _random);
     night
-      ..bedtime = _now
+      ..bedtime = t
       ..word = word
       ..nagSnoozedUntil = null;
     _save(state);
@@ -146,24 +171,31 @@ class Engine {
 
   /// The nag was snoozed for [length].
   void snoozeNag(Duration length) {
-    final state = _load();
-    final night = state.night ??= _openNight();
-    night.nagSnoozedUntil = _now.add(length);
+    final t = _now;
+    final state = _load(t);
+    final night = state.night = _current(state, t) ?? _openNight(t);
+    night.nagSnoozedUntil = t.add(length);
     _save(state);
   }
 
   /// Alarm [alarmId] started ringing.
-  RingScreen ring(int alarmId) {
-    final state = _load();
-    final now = _now;
-    state.lastRing[alarmId] = now;
+  void ring(int alarmId, {DateTime? at}) {
+    final t = at ?? _now;
+    final state = _load(t);
+    state.lastRing[alarmId] = t;
     state.alarmSnoozes.remove(alarmId);
     final alarm = _alarm(alarmId);
     if (alarm != null && alarm.oneTime && alarm.enabled) {
       store.saveAlarm(alarm.copyWith(enabled: false));
     }
     _save(state);
-    final word = state.night?.word;
+  }
+
+  /// What the ringing alarm [alarmId] shows: the quiz on a wake-up alarm
+  /// while the night's word waits, else a plain dismiss button.
+  RingScreen screenFor(int alarmId) {
+    final word = _load(_now).night?.word;
+    final alarm = _alarm(alarmId);
     if (alarm == null || !alarm.wakeUp || word == null) {
       return const RingScreen.dismiss();
     }
@@ -172,14 +204,16 @@ class Engine {
 
   /// Alarm [alarmId] was snoozed; it rings again after the alarm snooze.
   void snoozeAlarm(int alarmId) {
-    final state = _load();
-    state.alarmSnoozes[alarmId] = _now.add(store.loadSettings().alarmSnooze);
+    final t = _now;
+    final state = _load(t);
+    state.alarmSnoozes[alarmId] = t.add(store.loadSettings().alarmSnooze);
     _save(state);
   }
 
   /// [picked] was chosen on the quiz of alarm [alarmId]. Ends the night.
   QuizOutcome? answer(int alarmId, String picked) {
-    final state = _load();
+    final t = _now;
+    final state = _load(t);
     state.alarmSnoozes.remove(alarmId);
     final night = state.night;
     final word = night?.word;
@@ -188,7 +222,7 @@ class Engine {
       return null;
     }
     final correct = picked == word;
-    _end(state, night, correct ? NightResult.success : NightResult.failure);
+    _end(state, night, correct ? NightResult.success : NightResult.failure, t);
     return QuizOutcome(
       correct: correct,
       word: word,
@@ -199,11 +233,12 @@ class Engine {
   /// Alarm [alarmId] was turned off with the plain dismiss button. On a
   /// wake-up alarm after a night without a word, that ends the night.
   void dismiss(int alarmId) {
-    final state = _load();
+    final t = _now;
+    final state = _load(t);
     state.alarmSnoozes.remove(alarmId);
     final night = state.night;
     if (night != null && night.word == null && _isWakeUp(alarmId)) {
-      _end(state, night, NightResult.noWord);
+      _end(state, night, NightResult.noWord, t);
     } else {
       _save(state);
     }
@@ -211,46 +246,61 @@ class Engine {
 
   /// Alarm [alarmId] rang unanswered until its timeout. When no other
   /// wake-up alarm of the morning is left, the night is missed.
-  void timeout(int alarmId) {
-    final state = _load();
+  void timeout(int alarmId, {DateTime? at}) {
+    final t = at ?? _now;
+    final state = _load(t);
     state.alarmSnoozes.remove(alarmId);
     final night = state.night;
-    final now = _now;
     final otherSnoozed = state.alarmSnoozes.keys.any(_isWakeUp);
     final laterToday = wakeUpLaterToday(
-      now,
+      t,
       store.loadAlarms(),
       store.loadVacations(),
       exceptAlarmId: alarmId,
     );
     if (night != null && _isWakeUp(alarmId) && !otherSnoozed && !laterToday) {
-      _end(state, night, NightResult.missed);
+      _end(state, night, NightResult.missed, t);
     } else {
       _save(state);
     }
   }
 
-  EngineState _load() {
+  /// The state as of [t]: a word nobody was asked about within a day is
+  /// gone, and the night with it.
+  EngineState _load(DateTime t) {
     final state = store.loadState();
     final night = state.night;
-    // A word nobody was asked about within a day is gone; the night with it.
     if (night != null &&
         state.alarmSnoozes.isEmpty &&
-        _now.difference(night.effectiveBedtime) > wordLifetime) {
+        t.difference(night.effectiveBedtime) > wordLifetime) {
       state.night = null;
     }
     return state;
   }
 
+  /// The open night, unless its morning is over: a new evening's nag or
+  /// "I'm in bed" after that morning starts a new night.
+  OpenNight? _current(EngineState state, DateTime t) {
+    final night = state.night;
+    final wake = night?.expectedWake;
+    if (night == null || (wake != null && t.isAfter(wake))) return null;
+    return night;
+  }
+
   void _save(EngineState state) => store.saveState(state);
 
-  void _end(EngineState state, OpenNight night, NightResult result) {
+  void _end(
+    EngineState state,
+    OpenNight night,
+    NightResult result,
+    DateTime t,
+  ) {
     store.addRecord(
       NightRecord(
         plannedBedtime: night.plannedBedtime,
         bedtime: night.effectiveBedtime,
         bedtimeAssumed: !night.confirmed,
-        end: _now,
+        end: t,
         result: result,
         word: night.word,
       ),
@@ -259,15 +309,20 @@ class Engine {
     _save(state);
   }
 
-  Morning? _nextMorning() => nextMorning(
-    _now,
+  Morning? _nextMorning(DateTime t) => nextMorning(
+    t,
     store.loadAlarms(),
     store.loadVacations(),
     store.loadSettings(),
   );
 
-  OpenNight _openNight() =>
-      OpenNight(plannedBedtime: _nextMorning()?.bedtime ?? _now);
+  OpenNight _openNight(DateTime t) {
+    final m = _nextMorning(t);
+    return OpenNight(
+      plannedBedtime: m?.bedtime ?? t,
+      expectedWake: m?.firstWakeUp,
+    );
+  }
 
   Alarm? _alarm(int id) {
     for (final a in store.loadAlarms()) {

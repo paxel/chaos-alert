@@ -93,8 +93,8 @@ void main() {
           .onPressed,
       isNull,
     );
-    expect(platform.rings.single.lowVolume, 0.45);
-    expect(platform.rings.single.mediumVolume, 0.45);
+    expect(platform.rings.first.lowVolume, 0.45);
+    expect(platform.rings.first.mediumVolume, 0.45);
   });
 
   testWidgets('the chime can be switched off', (tester) async {

@@ -5,6 +5,7 @@ import 'words.dart';
 class OpenNight {
   OpenNight({
     required this.plannedBedtime,
+    this.expectedWake,
     this.lastNag,
     this.bedtime,
     this.word,
@@ -13,6 +14,7 @@ class OpenNight {
 
   factory OpenNight.fromJson(Map<String, Object?> json) => OpenNight(
     plannedBedtime: _time(json['plannedBedtime'])!,
+    expectedWake: _time(json['expectedWake']),
     lastNag: _time(json['lastNag']),
     bedtime: _time(json['bedtime']),
     word: json['word'] as String?,
@@ -20,6 +22,9 @@ class OpenNight {
   );
 
   final DateTime plannedBedtime;
+
+  /// The first wake-up ring of the morning this night was opened for.
+  final DateTime? expectedWake;
 
   /// When the nag was last shown.
   DateTime? lastNag;
@@ -40,6 +45,7 @@ class OpenNight {
 
   Map<String, Object?> toJson() => {
     'plannedBedtime': plannedBedtime.toIso8601String(),
+    'expectedWake': expectedWake?.toIso8601String(),
     'lastNag': lastNag?.toIso8601String(),
     'bedtime': bedtime?.toIso8601String(),
     'word': word,

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:chaos_alert/l10n/app_localizations.dart';
 import 'package:chaos_alert/src/controller.dart';
 import 'package:chaos_alert/src/night_screens.dart';
+import 'package:chaos_alert/src/platform.dart';
 import 'package:chaos_core/chaos_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,7 +55,14 @@ class Setup {
     ),
   );
 
+  /// Opens [screen] the way the app does: Android queued the nag or the
+  /// ring, the app reads the queue, then shows it.
   Future<void> open(WidgetTester tester, Widget screen) async {
+    if (screen is NagScreen) platform.events.add(NagFired(now));
+    if (screen is AlarmScreen) {
+      platform.events.add(RingStarted(screen.alarmId, now));
+    }
+    await controller.refresh();
     await tester.pumpWidget(app(screen));
     await tester.tap(find.text('home'));
     await tester.pumpAndSettle();
@@ -97,7 +105,7 @@ void main() {
       expect(s.platform.nag, DateTime(2026, 10, 6, 0, 30));
     });
 
-    testWidgets('showing it records the nag time', (tester) async {
+    testWidgets("Android's nag event records the nag time", (tester) async {
       final s = Setup();
       await s.open(tester, NagScreen(controller: s.controller));
       expect(s.store.loadState().night!.lastNag, s.now);

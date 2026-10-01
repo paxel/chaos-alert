@@ -46,7 +46,7 @@ void main() {
     expect(a.weekdays, {1, 2, 3, 4, 5});
     expect(a.wakeUp, isTrue);
     expect(find.text('Mon Tue Wed Thu Fri'), findsOneWidget);
-    expect(platform.rings, hasLength(1));
+    expect(platform.rings, hasLength(3));
   });
 
   testWidgets('days are picked with chips, and none blocks saving', (

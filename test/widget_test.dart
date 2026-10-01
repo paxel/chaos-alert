@@ -98,7 +98,7 @@ void main() {
     await tester.tap(find.text('Good night'));
     await tester.pumpAndSettle();
     expect(find.text("I'm in bed"), findsNothing);
-    expect(find.textContaining('Bedtime'), findsNothing);
+    expect(find.text('Bedtime Tue 10:30 PM'), findsOneWidget);
   });
 
   testWidgets('the button shows up as the window opens', (tester) async {
@@ -118,6 +118,7 @@ void main() {
     setupDone();
     platform.initial = const NagLaunch();
     now = DateTime(2026, 10, 5, 22, 30);
+    platform.events.add(NagFired(now));
     await tester.pumpWidget(ChaosAlertApp(controller: controller()));
     await tester.pumpAndSettle();
     expect(find.text('Are you in bed?'), findsOneWidget);
@@ -128,6 +129,7 @@ void main() {
     await tester.pumpWidget(ChaosAlertApp(controller: controller()));
     await tester.pumpAndSettle();
     now = DateTime(2026, 10, 6, 6, 30);
+    platform.events.add(RingStarted(1, now));
     platform.launch(const RingLaunch(1));
     await tester.pumpAndSettle();
     expect(find.text('Turn off'), findsOneWidget);
