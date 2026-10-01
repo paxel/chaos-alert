@@ -453,6 +453,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{value} %'**
   String percent(int value);
+
+  /// No description provided for @timelineTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time in bed'**
+  String get timelineTitle;
+
+  /// No description provided for @timelineWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get timelineWeek;
+
+  /// No description provided for @timelineMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get timelineMonth;
+
+  /// No description provided for @timelinePrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier'**
+  String get timelinePrevious;
+
+  /// No description provided for @timelineNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get timelineNext;
+
+  /// No description provided for @timelineAverageInBed.
+  ///
+  /// In en, this message translates to:
+  /// **'Average in bed: {value}'**
+  String timelineAverageInBed(String value);
+
+  /// No description provided for @timelineAverageBedtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Average bedtime: {value}'**
+  String timelineAverageBedtime(String value);
+
+  /// No description provided for @timelineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No nights in this period.'**
+  String get timelineEmpty;
 }
 
 class _AppLocalizationsDelegate

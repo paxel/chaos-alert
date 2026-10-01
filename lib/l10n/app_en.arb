@@ -107,5 +107,27 @@
         "type": "int"
       }
     }
-  }
+  },
+  "timelineTitle": "Time in bed",
+  "timelineWeek": "Week",
+  "timelineMonth": "Month",
+  "timelinePrevious": "Earlier",
+  "timelineNext": "Later",
+  "timelineAverageInBed": "Average in bed: {value}",
+  "@timelineAverageInBed": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "timelineAverageBedtime": "Average bedtime: {value}",
+  "@timelineAverageBedtime": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "timelineEmpty": "No nights in this period."
 }

@@ -210,4 +210,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String percent(int value) {
     return '$value %';
   }
+
+  @override
+  String get timelineTitle => 'Time in bed';
+
+  @override
+  String get timelineWeek => 'Week';
+
+  @override
+  String get timelineMonth => 'Month';
+
+  @override
+  String get timelinePrevious => 'Earlier';
+
+  @override
+  String get timelineNext => 'Later';
+
+  @override
+  String timelineAverageInBed(String value) {
+    return 'Average in bed: $value';
+  }
+
+  @override
+  String timelineAverageBedtime(String value) {
+    return 'Average bedtime: $value';
+  }
+
+  @override
+  String get timelineEmpty => 'No nights in this period.';
 }
