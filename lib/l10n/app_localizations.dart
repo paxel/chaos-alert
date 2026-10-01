@@ -501,6 +501,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No nights in this period.'**
   String get timelineEmpty;
+
+  /// No description provided for @homeInBed.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m in bed'**
+  String get homeInBed;
+
+  /// No description provided for @homeBedtime.
+  ///
+  /// In en, this message translates to:
+  /// **'Bedtime {time}'**
+  String homeBedtime(String time);
+
+  /// No description provided for @homeNextAlarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Next alarm {time}'**
+  String homeNextAlarm(String time);
+
+  /// No description provided for @homeNoAlarm.
+  ///
+  /// In en, this message translates to:
+  /// **'No alarm set'**
+  String get homeNoAlarm;
+
+  /// No description provided for @homeBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarms may not ring: a permission is missing.'**
+  String get homeBanner;
+
+  /// No description provided for @homeBannerFix.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix'**
+  String get homeBannerFix;
+
+  /// No description provided for @setupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Setup'**
+  String get setupTitle;
+
+  /// No description provided for @setupStep.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {step} of {count}'**
+  String setupStep(int step, int count);
+
+  /// No description provided for @setupAllow.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get setupAllow;
+
+  /// No description provided for @setupNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get setupNext;
+
+  /// No description provided for @setupDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get setupDone;
+
+  /// No description provided for @setupGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed'**
+  String get setupGranted;
+
+  /// No description provided for @permExactAlarms.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact alarms'**
+  String get permExactAlarms;
+
+  /// No description provided for @permExactAlarmsWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets the alarm and the bedtime popup come at the exact minute.'**
+  String get permExactAlarmsWhy;
+
+  /// No description provided for @permNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get permNotifications;
+
+  /// No description provided for @permNotificationsWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Android shows a ringing alarm and the bedtime popup as a notification.'**
+  String get permNotificationsWhy;
+
+  /// No description provided for @permFullScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Full-screen popups'**
+  String get permFullScreen;
+
+  /// No description provided for @permFullScreenWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets the alarm and the bedtime popup cover the lock screen.'**
+  String get permFullScreenWhy;
+
+  /// No description provided for @permBattery.
+  ///
+  /// In en, this message translates to:
+  /// **'No battery optimisation'**
+  String get permBattery;
+
+  /// No description provided for @permBatteryWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeps Android from delaying alarms to save battery.'**
+  String get permBatteryWhy;
+
+  /// No description provided for @permMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get permMusic;
+
+  /// No description provided for @permMusicWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets alarms play songs from your music library. Without it, only the phone\'s own sounds play.'**
+  String get permMusicWhy;
 }
 
 class _AppLocalizationsDelegate

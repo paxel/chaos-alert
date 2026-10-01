@@ -238,4 +238,81 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timelineEmpty => 'No nights in this period.';
+
+  @override
+  String get homeInBed => 'I\'m in bed';
+
+  @override
+  String homeBedtime(String time) {
+    return 'Bedtime $time';
+  }
+
+  @override
+  String homeNextAlarm(String time) {
+    return 'Next alarm $time';
+  }
+
+  @override
+  String get homeNoAlarm => 'No alarm set';
+
+  @override
+  String get homeBanner => 'Alarms may not ring: a permission is missing.';
+
+  @override
+  String get homeBannerFix => 'Fix';
+
+  @override
+  String get setupTitle => 'Setup';
+
+  @override
+  String setupStep(int step, int count) {
+    return 'Step $step of $count';
+  }
+
+  @override
+  String get setupAllow => 'Allow';
+
+  @override
+  String get setupNext => 'Next';
+
+  @override
+  String get setupDone => 'Done';
+
+  @override
+  String get setupGranted => 'Allowed';
+
+  @override
+  String get permExactAlarms => 'Exact alarms';
+
+  @override
+  String get permExactAlarmsWhy =>
+      'Lets the alarm and the bedtime popup come at the exact minute.';
+
+  @override
+  String get permNotifications => 'Notifications';
+
+  @override
+  String get permNotificationsWhy =>
+      'Android shows a ringing alarm and the bedtime popup as a notification.';
+
+  @override
+  String get permFullScreen => 'Full-screen popups';
+
+  @override
+  String get permFullScreenWhy =>
+      'Lets the alarm and the bedtime popup cover the lock screen.';
+
+  @override
+  String get permBattery => 'No battery optimisation';
+
+  @override
+  String get permBatteryWhy =>
+      'Keeps Android from delaying alarms to save battery.';
+
+  @override
+  String get permMusic => 'Music';
+
+  @override
+  String get permMusicWhy =>
+      'Lets alarms play songs from your music library. Without it, only the phone\'s own sounds play.';
 }

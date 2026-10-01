@@ -116,9 +116,10 @@ void main() {
   testWidgets('an alarm is switched off, edited and deleted from the list', (
     tester,
   ) async {
-    final a = store.saveAlarm(
+    await controller.saveAlarm(
       const Alarm(id: 0, time: ClockTime(6, 30), weekdays: {1}),
     );
+    final a = controller.alarms.single;
     await tester.pumpWidget(app());
     await tester.tap(find.byType(Switch));
     await tester.pumpAndSettle();

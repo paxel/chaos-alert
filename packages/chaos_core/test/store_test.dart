@@ -97,6 +97,7 @@ void contract(String name, Store Function() open) {
         alarmSnoozes: {3: DateTime(2026, 10, 6, 6, 39)},
         lastRing: {3: DateTime(2026, 10, 6, 6, 30)},
         deck: WordDeck(order: [2, 0, 1], cursor: 1),
+        setupDone: true,
       );
       store.saveState(state);
       final s = store.loadState();
@@ -106,6 +107,8 @@ void contract(String name, Store Function() open) {
       expect(s.lastRing, {3: DateTime(2026, 10, 6, 6, 30)});
       expect(s.deck.order, [2, 0, 1]);
       expect(s.deck.cursor, 1);
+      expect(s.setupDone, isTrue);
+      expect(EngineState().setupDone, isFalse);
     });
   });
 }

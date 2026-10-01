@@ -22,6 +22,7 @@ class Controller extends ChangeNotifier {
       clock: this.clock,
       random: _random,
     );
+    _reload();
   }
 
   final Store store;
@@ -41,12 +42,51 @@ class Controller extends ChangeNotifier {
 
   bool get hasPermissionInfo => _permissions.isNotEmpty;
 
-  Settings get settings => store.loadSettings();
-  List<Alarm> get alarms => store.loadAlarms();
-  List<Vacation> get vacations => store.loadVacations();
-  List<NightRecord> get nights => store.loadRecords();
-  bool get canSayInBed => engine.canSayInBed;
-  Plan get plan => engine.plan();
+  // What the screens show, read once per change so build() never touches
+  // the store.
+  late Settings _settings;
+  late List<Alarm> _alarms;
+  late List<Vacation> _vacations;
+  late List<NightRecord> _nights;
+  late bool _canSayInBed;
+  late bool _setupDone;
+  Plan _plan = const Plan();
+
+  Settings get settings => _settings;
+  List<Alarm> get alarms => List.of(_alarms);
+  List<Vacation> get vacations => List.of(_vacations);
+  List<NightRecord> get nights => _nights;
+  bool get canSayInBed => _canSayInBed;
+  bool get setupDone => _setupDone;
+
+  /// The plan last handed to Android.
+  Plan get plan => _plan;
+
+  void _reload() {
+    _settings = store.loadSettings();
+    _alarms = store.loadAlarms();
+    _vacations = store.loadVacations();
+    _nights = store.loadRecords();
+    _canSayInBed = engine.canSayInBed;
+    _setupDone = store.loadState().setupDone;
+  }
+
+  /// Re-reads what depends on the time of day, like the "I'm in bed"
+  /// window. Called once a minute while the main screen is shown.
+  void tick() {
+    final can = engine.canSayInBed;
+    if (can == _canSayInBed) return;
+    _canSayInBed = can;
+    notifyListeners();
+  }
+
+  /// The first-start setup was walked through.
+  void finishSetup() {
+    final state = store.loadState()..setupDone = true;
+    store.saveState(state);
+    _setupDone = true;
+    notifyListeners();
+  }
 
   /// Reads what Android allows and which sounds exist, then reschedules.
   Future<void> refresh() async {
@@ -57,7 +97,7 @@ class Controller extends ChangeNotifier {
 
   /// Hands the engine's plan to Android.
   Future<void> reschedule() async {
-    final plan = engine.plan();
+    final plan = _plan = engine.plan();
     final settings = store.loadSettings();
     final sounds = _sounds ??= await platform.sounds();
     await platform.scheduleNag(plan.nag, chime: settings.chime);
@@ -72,6 +112,7 @@ class Controller extends ChangeNotifier {
           timeout: settings.alarmTimeout,
         ),
     ]);
+    _reload();
     notifyListeners();
   }
 

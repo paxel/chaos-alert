@@ -54,6 +54,7 @@ class EngineState {
     Map<int, DateTime>? alarmSnoozes,
     Map<int, DateTime>? lastRing,
     WordDeck? deck,
+    this.setupDone = false,
   }) : alarmSnoozes = alarmSnoozes ?? {},
        lastRing = lastRing ?? {},
        deck = deck ?? WordDeck();
@@ -71,6 +72,7 @@ class EngineState {
               order: (deck['order'] as List).cast<int>().toList(),
               cursor: deck['cursor'] as int,
             ),
+      setupDone: json['setupDone'] as bool? ?? false,
     );
   }
 
@@ -83,6 +85,9 @@ class EngineState {
   final Map<int, DateTime> lastRing;
   final WordDeck deck;
 
+  /// Whether the first-start setup was walked through.
+  bool setupDone;
+
   Map<String, Object?> toJson() => {
     'night': night?.toJson(),
     'alarmSnoozes': {
@@ -93,6 +98,7 @@ class EngineState {
       for (final e in lastRing.entries) '${e.key}': e.value.toIso8601String(),
     },
     'deck': {'order': deck.order, 'cursor': deck.cursor},
+    'setupDone': setupDone,
   };
 }
 

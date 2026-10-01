@@ -79,7 +79,9 @@ void main() {
 
     testWidgets('the default snooze uses the setting', (tester) async {
       final s = Setup();
-      s.store.saveSettings(const Settings(nagSnooze: Duration(minutes: 15)));
+      await s.controller.saveSettings(
+        const Settings(nagSnooze: Duration(minutes: 15)),
+      );
       await s.open(tester, NagScreen(controller: s.controller));
       await tester.tap(find.text('Snooze 15 min'));
       await tester.pumpAndSettle();

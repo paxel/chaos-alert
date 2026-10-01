@@ -58,7 +58,7 @@ void main() {
   });
 
   testWidgets('a vacation is deleted', (tester) async {
-    store.saveVacation(
+    await controller.saveVacation(
       Vacation(id: 0, from: DateTime(2026, 12, 21), to: DateTime(2027, 1, 1)),
     );
     await tester.pumpWidget(app());

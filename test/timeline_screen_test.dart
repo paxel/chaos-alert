@@ -46,6 +46,12 @@ void main() {
     home: TimelineScreen(controller: controller),
   );
 
+  /// Shows the timeline over what the store holds now.
+  Future<void> pumpApp(WidgetTester tester) async {
+    await controller.reschedule();
+    await tester.pumpWidget(app());
+  }
+
   NightRecord? recordOf(WidgetTester tester, int month, int day) => tester
       .widget<NightBar>(find.byKey(ValueKey('night-2026-$month-$day')))
       .record;
@@ -65,7 +71,7 @@ void main() {
       ..addRecord(night(DateTime(2026, 10, 6)))
       ..addRecord(night(DateTime(2026, 10, 7), bedHour: 1 + 24, assumed: true))
       ..addRecord(night(DateTime(2026, 10, 1)));
-    await tester.pumpWidget(app());
+    await pumpApp(tester);
     expect(find.byType(NightBar), findsNWidgets(7));
     expect(recordOf(tester, 10, 5), isNull);
     expect(recordOf(tester, 10, 6), isNotNull);
@@ -78,7 +84,7 @@ void main() {
 
   testWidgets('earlier weeks are one tap away', (tester) async {
     store.addRecord(night(DateTime(2026, 10, 1)));
-    await tester.pumpWidget(app());
+    await pumpApp(tester);
     await tester.tap(find.byIcon(Icons.chevron_left));
     await tester.pumpAndSettle();
     expect(find.text('Sep 28 – Oct 4, 2026'), findsOneWidget);
@@ -89,7 +95,7 @@ void main() {
     store
       ..addRecord(night(DateTime(2026, 10, 1)))
       ..addRecord(night(DateTime(2026, 10, 6)));
-    await tester.pumpWidget(app());
+    await pumpApp(tester);
     await tester.tap(find.text('Month'));
     await tester.pumpAndSettle();
     expect(find.text('October 2026'), findsOneWidget);
@@ -98,7 +104,7 @@ void main() {
   });
 
   testWidgets('an empty period says so', (tester) async {
-    await tester.pumpWidget(app());
+    await pumpApp(tester);
     expect(find.text('No nights in this period.'), findsOneWidget);
   });
 }

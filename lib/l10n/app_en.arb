@@ -129,5 +129,51 @@
       }
     }
   },
-  "timelineEmpty": "No nights in this period."
+  "timelineEmpty": "No nights in this period.",
+  "homeInBed": "I'm in bed",
+  "homeBedtime": "Bedtime {time}",
+  "@homeBedtime": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeNextAlarm": "Next alarm {time}",
+  "@homeNextAlarm": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeNoAlarm": "No alarm set",
+  "homeBanner": "Alarms may not ring: a permission is missing.",
+  "homeBannerFix": "Fix",
+  "setupTitle": "Setup",
+  "setupStep": "Step {step} of {count}",
+  "@setupStep": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "setupAllow": "Allow",
+  "setupNext": "Next",
+  "setupDone": "Done",
+  "setupGranted": "Allowed",
+  "permExactAlarms": "Exact alarms",
+  "permExactAlarmsWhy": "Lets the alarm and the bedtime popup come at the exact minute.",
+  "permNotifications": "Notifications",
+  "permNotificationsWhy": "Android shows a ringing alarm and the bedtime popup as a notification.",
+  "permFullScreen": "Full-screen popups",
+  "permFullScreenWhy": "Lets the alarm and the bedtime popup cover the lock screen.",
+  "permBattery": "No battery optimisation",
+  "permBatteryWhy": "Keeps Android from delaying alarms to save battery.",
+  "permMusic": "Music",
+  "permMusicWhy": "Lets alarms play songs from your music library. Without it, only the phone's own sounds play."
 }
