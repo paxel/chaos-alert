@@ -1,0 +1,177 @@
+# A tag publishes: signed split APKs, the GitHub Release and the shared
+# F-Droid repository. A push to a release/** branch, or a manual run
+# without publish, is the dry run: everything is built, nothing leaves
+# GitHub.
+#
+# One-time setup (repository secrets):
+#   ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD — chaos-alert's own
+#                 signing keystore (key alias chaos-alert)
+#   FDROID_KEYSTORE_BASE64 / FDROID_KEYSTORE_PASS — the shared F-Droid
+#                 repository key, the same as cat(a)log's
+#   CHANNEL_PAT — PAT with push access to paxel/fdroid
+name: Release
+
+on:
+  push:
+    branches: ["release/**"]
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.1.0)"
+        required: true
+      publish:
+        description: "Publish (release, F-Droid); off = dry run"
+        type: boolean
+        default: false
+
+env:
+  RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+  PUBLISH: ${{ github.ref_type == 'tag' || github.event.inputs.publish == 'true' }}
+
+jobs:
+  gate:
+    name: Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Tag and pubspec version agree
+        if: env.PUBLISH == 'true'
+        run: |
+          ver=$(grep -m1 '^version:' pubspec.yaml | sed -E 's/version: *//; s/\+.*//')
+          tag=${RELEASE_TAG#v}
+          [ "$ver" = "$tag" ] || { echo "tag v$tag != pubspec version $ver" >&2; exit 1; }
+      - name: Core — analyze and test
+        working-directory: packages/chaos_core
+        run: |
+          dart pub get
+          dart analyze --fatal-infos
+          dart test
+      - name: App — analyze and test
+        run: |
+          flutter pub get
+          flutter analyze --fatal-infos
+          flutter test
+
+  build-android:
+    name: Android APKs
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Write signing config from secrets
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          cat > android/key.properties <<EOF
+          storeFile=$RUNNER_TEMP/upload.jks
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=chaos-alert
+          keyPassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          EOF
+      - run: flutter pub get
+      - name: Build split APKs
+        run: flutter build apk --release --split-per-abi --target-platform android-arm,android-arm64
+      - name: Rename artifacts
+        run: |
+          v="${RELEASE_TAG#v}"
+          v="${v#release/}"
+          d=build/app/outputs/flutter-apk
+          mkdir -p dist
+          mv "$d/app-arm64-v8a-release.apk"   "dist/chaos-alert-$v-android-arm64-v8a.apk"
+          mv "$d/app-armeabi-v7a-release.apk" "dist/chaos-alert-$v-android-armeabi-v7a.apk"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: android
+          path: dist/*
+
+  fdroid:
+    name: F-Droid repo
+    needs: build-android
+    if: github.ref_type == 'tag' || github.event.inputs.publish == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: android
+          path: apks
+      - name: Install fdroidserver
+        run: pip install --quiet fdroidserver
+      - name: Publish to the shared channel repo
+        env:
+          GH_TOKEN: ${{ secrets.CHANNEL_PAT }}
+          KEYSTORE_B64: ${{ secrets.FDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.FDROID_KEYSTORE_PASS }}
+        run: |
+          v="${RELEASE_TAG#v}"
+          git config --global user.name "chaos-alert-release-bot"
+          git config --global user.email "taum@tuta.io"
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/paxel/fdroid.git" channel
+          echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/fdroid.p12"
+          cd channel
+          mkdir -p repo
+          # The repository is shared with cat(a)log: only this app's
+          # previous APKs go, the other app's stay.
+          rm -f repo/chaos-alert-*.apk
+          cp "$GITHUB_WORKSPACE"/apks/chaos-alert-"$v"-android-*.apk repo/
+          # Must stay word for word the same as cat(a)log's release
+          # workflow, or each release renames the repository.
+          cat > config.yml <<EOF
+          repo_url: https://paxel.github.io/fdroid/repo
+          repo_name: paxel's apps
+          repo_description: Releases of paxel's Android apps.
+          repo_keyalias: repokey
+          keystore: $RUNNER_TEMP/fdroid.p12
+          keystorepass: $KEYSTORE_PASS
+          keypass: $KEYSTORE_PASS
+          archive_older: 0
+          EOF
+          fdroid update --create-metadata
+          rm config.yml
+          git add -A
+          git commit -m "chaos-alert $v"
+          git push
+
+  release:
+    name: GitHub Release
+    needs: build-android
+    if: github.ref_type == 'tag' || github.event.inputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v7
+        with:
+          name: android
+          path: dist
+      - name: Release notes from the CHANGELOG section
+        run: |
+          ver=${RELEASE_TAG#v}
+          awk -v ver="$ver" '
+            $0 ~ "^## \\[" ver "\\]" { grab = 1; next }
+            grab && (/^## \[/ || /^---/) { exit }
+            grab { print }
+          ' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "Release $ver." > notes.md
+      - name: Create release (a rerun updates instead of failing)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release edit "$RELEASE_TAG" --title "chaos-alert $RELEASE_TAG" --notes-file notes.md
+            gh release upload "$RELEASE_TAG" dist/* --clobber
+          else
+            gh release create "$RELEASE_TAG" --title "chaos-alert $RELEASE_TAG" --notes-file notes.md dist/*
+          fi
