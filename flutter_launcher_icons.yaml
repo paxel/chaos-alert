@@ -1,0 +1,12 @@
+# App icon generation: dart run flutter_launcher_icons
+# Source of truth is assets/icon/icon.svg (and icon_fg.svg for the adaptive
+# foreground); the PNGs are rendered from them, see assets/icon/README.md.
+flutter_launcher_icons:
+  image_path: assets/icon/icon.png
+  android: true
+  ios: false
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: assets/icon/icon_fg.png
+  # The foreground already places the artwork inside the safe zone.
+  adaptive_icon_foreground_inset: 0
+  min_sdk_android: 24
