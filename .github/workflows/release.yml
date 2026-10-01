@@ -63,10 +63,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+      # The keystore was made with Java 25, whose PKCS12 protection (PBMAC1)
+      # older Java reads as "keystore password was incorrect".
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '25'
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
