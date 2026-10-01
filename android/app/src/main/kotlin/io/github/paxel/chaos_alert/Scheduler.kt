@@ -1,0 +1,129 @@
+package io.github.paxel.chaos_alert
+
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.Calendar
+
+/**
+ * Hands nags and rings to AlarmManager. The schedule is kept as wall-clock
+ * times, so a reboot, a clock change or a new time zone re-arms it at the
+ * same local time without the app running.
+ */
+object Scheduler {
+    private const val PREFS = "chaos_schedule"
+    private const val KEY = "schedule"
+    private const val KEY_ARMED = "armed"
+    private const val NAG_CODE = 1000
+    private const val RING_CODE = 2000
+
+    const val EXTRA_KIND = "chaos.kind"
+    const val EXTRA_ALARM_ID = "chaos.alarmId"
+    const val EXTRA_PAYLOAD = "chaos.payload"
+
+    /** Replaces the stored schedule with [nags] and [rings] and arms it. */
+    private fun replace(context: Context, nags: JSONArray, chime: Boolean, rings: JSONArray) {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val schedule = JSONObject()
+            .put("nags", nags)
+            .put("chime", chime)
+            .put("rings", rings)
+        prefs.edit().putString(KEY, schedule.toString()).commit()
+        arm(context)
+    }
+
+    /** Replaces only the nags, keeping the rings. */
+    fun replaceNags(context: Context, nags: JSONArray, chime: Boolean) {
+        val s = stored(context)
+        replace(context, nags, chime, s.optJSONArray("rings") ?: JSONArray())
+    }
+
+    /** Replaces only the rings, keeping the nags. */
+    fun replaceRings(context: Context, rings: JSONArray) {
+        val s = stored(context)
+        replace(context, s.optJSONArray("nags") ?: JSONArray(), s.optBoolean("chime", true), rings)
+    }
+
+    private fun stored(context: Context): JSONObject {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        return JSONObject(prefs.getString(KEY, "{}"))
+    }
+
+    /** Cancels what was armed before and arms the stored schedule. */
+    fun arm(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val manager = context.getSystemService(AlarmManager::class.java)
+        val armed = JSONObject(prefs.getString(KEY_ARMED, "{}"))
+        repeat(armed.optInt("nags")) { i -> manager.cancel(pending(context, NAG_CODE + i, null)) }
+        repeat(armed.optInt("rings")) { i -> manager.cancel(pending(context, RING_CODE + i, null)) }
+
+        val schedule = stored(context)
+        val now = System.currentTimeMillis()
+        val nags = schedule.optJSONArray("nags") ?: JSONArray()
+        val chime = schedule.optBoolean("chime", true)
+        for (i in 0 until nags.length()) {
+            // A bedtime already passed means now.
+            val at = maxOf(localMillis(nags.getJSONArray(i)), now + 1000)
+            val intent = Intent(context, AlarmReceiver::class.java)
+                .putExtra(EXTRA_KIND, "nag")
+                .putExtra(EXTRA_PAYLOAD, JSONObject().put("chime", chime).toString())
+            exact(context, manager, at, pending(context, NAG_CODE + i, intent), alarmClock = false)
+        }
+        val rings = schedule.optJSONArray("rings") ?: JSONArray()
+        for (i in 0 until rings.length()) {
+            val ring = rings.getJSONObject(i)
+            val at = localMillis(ring.getJSONArray("local"))
+            if (at <= now) continue
+            val intent = Intent(context, AlarmReceiver::class.java)
+                .putExtra(EXTRA_KIND, "ring")
+                .putExtra(EXTRA_ALARM_ID, ring.getInt("alarmId"))
+                .putExtra(EXTRA_PAYLOAD, ring.toString())
+            exact(context, manager, at, pending(context, RING_CODE + i, intent), alarmClock = true)
+        }
+        prefs.edit()
+            .putString(KEY_ARMED, JSONObject().put("nags", nags.length()).put("rings", rings.length()).toString())
+            .commit()
+    }
+
+    private fun exact(
+        context: Context,
+        manager: AlarmManager,
+        at: Long,
+        operation: PendingIntent,
+        alarmClock: Boolean,
+    ) {
+        val allowed = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || manager.canScheduleExactAlarms()
+        when {
+            alarmClock && allowed -> {
+                val show = PendingIntent.getActivity(
+                    context, 0,
+                    Intent(context, MainActivity::class.java),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                )
+                manager.setAlarmClock(AlarmManager.AlarmClockInfo(at, show), operation)
+            }
+            allowed -> manager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
+            else -> manager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, at, operation)
+        }
+    }
+
+    private fun pending(context: Context, code: Int, intent: Intent?): PendingIntent =
+        PendingIntent.getBroadcast(
+            context, code,
+            intent ?: Intent(context, AlarmReceiver::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+
+    /** [year, month, day, hour, minute, second] in the phone's time zone now. */
+    private fun localMillis(local: JSONArray): Long = Calendar.getInstance().apply {
+        clear()
+        set(
+            local.getInt(0), local.getInt(1) - 1, local.getInt(2),
+            local.getInt(3), local.getInt(4), local.optInt(5),
+        )
+    }.timeInMillis
+}

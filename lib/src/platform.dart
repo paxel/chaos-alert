@@ -117,7 +117,7 @@ class ChannelAlarmPlatform implements AlarmPlatform {
   @override
   Future<void> scheduleNags(List<DateTime> nags, {required bool chime}) =>
       _channel.invokeMethod('scheduleNags', {
-        'at': [for (final n in nags) n.millisecondsSinceEpoch],
+        'local': [for (final n in nags) _local(n)],
         'chime': chime,
       });
 
@@ -146,7 +146,7 @@ class ChannelAlarmPlatform implements AlarmPlatform {
         for (final r in rings)
           {
             'alarmId': r.alarmId,
-            'at': r.at.millisecondsSinceEpoch,
+            'local': _local(r.at),
             'sounds': [
               for (final s in r.sounds)
                 {'uri': s.sound.uri, 'startMs': s.start.inMilliseconds},
@@ -193,6 +193,17 @@ class ChannelAlarmPlatform implements AlarmPlatform {
 
   @override
   Stream<Launch> get launches => _launches.stream;
+
+  /// Wall-clock fields, so Android re-arms at the same local time after a
+  /// time-zone or clock change.
+  static List<int> _local(DateTime t) => [
+    t.year,
+    t.month,
+    t.day,
+    t.hour,
+    t.minute,
+    t.second,
+  ];
 
   static Launch? _launch(Object? raw) {
     if (raw is! Map) return null;

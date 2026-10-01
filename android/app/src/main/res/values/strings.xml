@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nag_channel">Bedtime</string>
+    <string name="nag_title">Are you in bed?</string>
+    <string name="ring_channel">Alarm</string>
+    <string name="ring_title">Alarm</string>
+</resources>
