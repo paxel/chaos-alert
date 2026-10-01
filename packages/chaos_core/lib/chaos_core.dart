@@ -10,3 +10,4 @@ export 'src/sounds.dart';
 export 'src/engine.dart';
 export 'src/state.dart';
 export 'src/store.dart';
+export 'src/sqlite_store.dart';
