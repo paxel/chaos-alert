@@ -40,9 +40,12 @@ android {
         if (keystoreProperties.isNotEmpty()) {
             create("release") {
                 storeFile = file(keystoreProperties.getProperty("storeFile"))
-                storePassword = keystoreProperties.getProperty("storePassword")
+                // CI hands the password over as an environment variable, so
+                // no shell or properties escaping can change it.
+                val password = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                storePassword = password ?: keystoreProperties.getProperty("storePassword")
                 keyAlias = keystoreProperties.getProperty("keyAlias")
-                keyPassword = keystoreProperties.getProperty("keyPassword")
+                keyPassword = password ?: keystoreProperties.getProperty("keyPassword")
             }
         }
     }
