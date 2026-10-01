@@ -5,3 +5,4 @@ library;
 export 'src/model.dart';
 export 'src/schedule.dart';
 export 'src/words.dart';
+export 'src/nights.dart';
