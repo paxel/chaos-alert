@@ -66,5 +66,46 @@
   "vacationsEmpty": "No vacations planned.",
   "vacationsHint": "Repeating alarms and the bedtime nag are off on these mornings. One-time alarms still ring.",
   "vacationAdd": "Add vacation",
-  "vacationDelete": "Delete vacation"
+  "vacationDelete": "Delete vacation",
+  "settingsTitle": "Settings",
+  "settingsSleepLength": "Sleep length",
+  "settingsNagSnooze": "Bedtime snooze",
+  "settingsAlarmSnooze": "Alarm snooze",
+  "settingsAlarmTimeout": "Alarm stops after",
+  "settingsLowVolume": "Start volume",
+  "settingsMediumVolume": "Volume after 10 s",
+  "settingsChime": "Chime at bedtime",
+  "settingsChimeHint": "One soft sound with the bedtime popup",
+  "settingsMusic": "Songs are left out",
+  "settingsMusicHint": "Allow access to music so alarms can play songs too.",
+  "settingsMusicGrant": "Allow",
+  "less": "Less",
+  "more": "More",
+  "durationHm": "{hours} h {minutes} min",
+  "@durationHm": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "durationM": "{minutes} min",
+  "@durationM": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "percent": "{value} %",
+  "@percent": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -351,6 +351,108 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete vacation'**
   String get vacationDelete;
+
+  /// No description provided for @settingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get settingsTitle;
+
+  /// No description provided for @settingsSleepLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Sleep length'**
+  String get settingsSleepLength;
+
+  /// No description provided for @settingsNagSnooze.
+  ///
+  /// In en, this message translates to:
+  /// **'Bedtime snooze'**
+  String get settingsNagSnooze;
+
+  /// No description provided for @settingsAlarmSnooze.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm snooze'**
+  String get settingsAlarmSnooze;
+
+  /// No description provided for @settingsAlarmTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm stops after'**
+  String get settingsAlarmTimeout;
+
+  /// No description provided for @settingsLowVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Start volume'**
+  String get settingsLowVolume;
+
+  /// No description provided for @settingsMediumVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume after 10 s'**
+  String get settingsMediumVolume;
+
+  /// No description provided for @settingsChime.
+  ///
+  /// In en, this message translates to:
+  /// **'Chime at bedtime'**
+  String get settingsChime;
+
+  /// No description provided for @settingsChimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One soft sound with the bedtime popup'**
+  String get settingsChimeHint;
+
+  /// No description provided for @settingsMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Songs are left out'**
+  String get settingsMusic;
+
+  /// No description provided for @settingsMusicHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow access to music so alarms can play songs too.'**
+  String get settingsMusicHint;
+
+  /// No description provided for @settingsMusicGrant.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get settingsMusicGrant;
+
+  /// No description provided for @less.
+  ///
+  /// In en, this message translates to:
+  /// **'Less'**
+  String get less;
+
+  /// No description provided for @more.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get more;
+
+  /// No description provided for @durationHm.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours} h {minutes} min'**
+  String durationHm(int hours, int minutes);
+
+  /// No description provided for @durationM.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String durationM(int minutes);
+
+  /// No description provided for @percent.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} %'**
+  String percent(int value);
 }
 
 class _AppLocalizationsDelegate

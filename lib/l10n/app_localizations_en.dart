@@ -152,4 +152,62 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get vacationDelete => 'Delete vacation';
+
+  @override
+  String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsSleepLength => 'Sleep length';
+
+  @override
+  String get settingsNagSnooze => 'Bedtime snooze';
+
+  @override
+  String get settingsAlarmSnooze => 'Alarm snooze';
+
+  @override
+  String get settingsAlarmTimeout => 'Alarm stops after';
+
+  @override
+  String get settingsLowVolume => 'Start volume';
+
+  @override
+  String get settingsMediumVolume => 'Volume after 10 s';
+
+  @override
+  String get settingsChime => 'Chime at bedtime';
+
+  @override
+  String get settingsChimeHint => 'One soft sound with the bedtime popup';
+
+  @override
+  String get settingsMusic => 'Songs are left out';
+
+  @override
+  String get settingsMusicHint =>
+      'Allow access to music so alarms can play songs too.';
+
+  @override
+  String get settingsMusicGrant => 'Allow';
+
+  @override
+  String get less => 'Less';
+
+  @override
+  String get more => 'More';
+
+  @override
+  String durationHm(int hours, int minutes) {
+    return '$hours h $minutes min';
+  }
+
+  @override
+  String durationM(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String percent(int value) {
+    return '$value %';
+  }
 }
