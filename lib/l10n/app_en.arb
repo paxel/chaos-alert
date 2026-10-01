@@ -61,5 +61,10 @@
   "alarmDelete": "Delete",
   "alarmNoDays": "Pick at least one day",
   "alarmNever": "Never",
-  "alarmReminder": "Reminder"
+  "alarmReminder": "Reminder",
+  "vacationsTitle": "Vacations",
+  "vacationsEmpty": "No vacations planned.",
+  "vacationsHint": "Repeating alarms and the bedtime nag are off on these mornings. One-time alarms still ring.",
+  "vacationAdd": "Add vacation",
+  "vacationDelete": "Delete vacation"
 }

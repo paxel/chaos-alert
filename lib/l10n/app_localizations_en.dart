@@ -136,4 +136,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get alarmReminder => 'Reminder';
+
+  @override
+  String get vacationsTitle => 'Vacations';
+
+  @override
+  String get vacationsEmpty => 'No vacations planned.';
+
+  @override
+  String get vacationsHint =>
+      'Repeating alarms and the bedtime nag are off on these mornings. One-time alarms still ring.';
+
+  @override
+  String get vacationAdd => 'Add vacation';
+
+  @override
+  String get vacationDelete => 'Delete vacation';
 }

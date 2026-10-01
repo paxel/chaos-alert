@@ -321,6 +321,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reminder'**
   String get alarmReminder;
+
+  /// No description provided for @vacationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vacations'**
+  String get vacationsTitle;
+
+  /// No description provided for @vacationsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No vacations planned.'**
+  String get vacationsEmpty;
+
+  /// No description provided for @vacationsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeating alarms and the bedtime nag are off on these mornings. One-time alarms still ring.'**
+  String get vacationsHint;
+
+  /// No description provided for @vacationAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add vacation'**
+  String get vacationAdd;
+
+  /// No description provided for @vacationDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete vacation'**
+  String get vacationDelete;
 }
 
 class _AppLocalizationsDelegate
