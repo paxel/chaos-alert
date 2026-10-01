@@ -17,3 +17,9 @@ Everything stays on the phone. The full specification is
 - `packages/chaos_core` — pure Dart, every rule of the night: `dart test`.
 - The app — Flutter UI and a small Kotlin layer for alarms and playback:
   `flutter analyze && flutter test`.
+
+## License
+
+Licensed under either of [Apache License, Version 2.0](LICENSE-APACHE) or
+[MIT license](LICENSE-MIT) at your option. The word list comes from SCOWL
+and 12dicts; see [assets/WORDS-LICENSE.txt](assets/WORDS-LICENSE.txt).
