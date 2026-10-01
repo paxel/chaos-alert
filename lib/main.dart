@@ -6,15 +6,13 @@ import 'package:path_provider/path_provider.dart';
 import 'src/app.dart';
 import 'src/controller.dart';
 import 'src/platform.dart';
+import 'src/word_assets.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final dir = await getApplicationSupportDirectory();
-  final words = (await rootBundle.loadString('assets/words.txt'))
-      .split('\n')
-      .map((w) => w.trim())
-      .where((w) => w.isNotEmpty)
-      .toList();
+  registerWordLicence(rootBundle);
+  final words = await loadWords(rootBundle);
   final controller = Controller(
     store: SqliteStore.open('${dir.path}/chaos-alert.db'),
     platform: ChannelAlarmPlatform(),
