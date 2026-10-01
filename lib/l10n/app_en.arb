@@ -175,5 +175,29 @@
   "permBattery": "No battery optimisation",
   "permBatteryWhy": "Keeps Android from delaying alarms to save battery.",
   "permMusic": "Music",
-  "permMusicWhy": "Lets alarms play songs from your music library. Without it, only the phone's own sounds play."
+  "permMusicWhy": "Lets alarms play songs from your music library. Without it, only the phone's own sounds play.",
+  "aboutAndFeedback": "About & feedback",
+  "about": "About",
+  "aboutTagline": "Nags you to bed, gives you a word to remember and wakes you with a sound you never know. Your data stays on your phone — no server, no account.",
+  "sourceCode": "Source code",
+  "reportProblemOrIdea": "Report a problem or idea",
+  "githubIssues": "GitHub issues",
+  "writeTheDeveloper": "Write the developer",
+  "buyCoffee": "Buy the developer a coffee",
+  "coffeeSubtitle": "The app stays free. Even if I don't get a coffee :)",
+  "openSourceLicenses": "Open-source licenses",
+  "versionLabel": "Version {version} ({build})",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "build": {
+        "type": "String"
+      }
+    }
+  },
+  "dangerButton": "DON'T PRESS.\nDANGER",
+  "dangerThanks": "Thank you for using chaos-alert!",
+  "doneLabel": "Done"
 }

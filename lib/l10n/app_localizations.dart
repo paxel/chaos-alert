@@ -633,6 +633,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Lets alarms play songs from your music library. Without it, only the phone\'s own sounds play.'**
   String get permMusicWhy;
+
+  /// No description provided for @aboutAndFeedback.
+  ///
+  /// In en, this message translates to:
+  /// **'About & feedback'**
+  String get aboutAndFeedback;
+
+  /// No description provided for @about.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get about;
+
+  /// No description provided for @aboutTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Nags you to bed, gives you a word to remember and wakes you with a sound you never know. Your data stays on your phone — no server, no account.'**
+  String get aboutTagline;
+
+  /// No description provided for @sourceCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Source code'**
+  String get sourceCode;
+
+  /// No description provided for @reportProblemOrIdea.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a problem or idea'**
+  String get reportProblemOrIdea;
+
+  /// No description provided for @githubIssues.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub issues'**
+  String get githubIssues;
+
+  /// No description provided for @writeTheDeveloper.
+  ///
+  /// In en, this message translates to:
+  /// **'Write the developer'**
+  String get writeTheDeveloper;
+
+  /// No description provided for @buyCoffee.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy the developer a coffee'**
+  String get buyCoffee;
+
+  /// No description provided for @coffeeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The app stays free. Even if I don\'t get a coffee :)'**
+  String get coffeeSubtitle;
+
+  /// No description provided for @openSourceLicenses.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-source licenses'**
+  String get openSourceLicenses;
+
+  /// No description provided for @versionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} ({build})'**
+  String versionLabel(String version, String build);
+
+  /// No description provided for @dangerButton.
+  ///
+  /// In en, this message translates to:
+  /// **'DON\'T PRESS.\nDANGER'**
+  String get dangerButton;
+
+  /// No description provided for @dangerThanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for using chaos-alert!'**
+  String get dangerThanks;
+
+  /// No description provided for @doneLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get doneLabel;
 }
 
 class _AppLocalizationsDelegate

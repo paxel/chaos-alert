@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Week and month timeline of time in bed with average time in bed and average bedtime.
 - Settings for sleep length, snooze lengths, alarm timeout, both volume levels and the chime.
 - A first-start setup that asks for each permission, and a banner when one goes missing.
+- About page with the version, source code, feedback links and open-source licenses.
 
 ---
 

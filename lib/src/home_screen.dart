@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../l10n/app_localizations.dart';
+import 'about_screen.dart';
 import 'alarm_screens.dart';
 import 'controller.dart';
 import 'night_screens.dart';
@@ -124,6 +125,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 leading: const Icon(Icons.settings),
                 title: Text(t.settingsTitle),
                 onTap: () => _open(() => SettingsScreen(controller: _c)),
+              ),
+              ListTile(
+                leading: const Icon(Icons.info_outline),
+                title: Text(t.aboutAndFeedback),
+                onTap: () => _open(() => const AboutScreen()),
               ),
             ],
           ),

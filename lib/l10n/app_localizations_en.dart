@@ -315,4 +315,50 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get permMusicWhy =>
       'Lets alarms play songs from your music library. Without it, only the phone\'s own sounds play.';
+
+  @override
+  String get aboutAndFeedback => 'About & feedback';
+
+  @override
+  String get about => 'About';
+
+  @override
+  String get aboutTagline =>
+      'Nags you to bed, gives you a word to remember and wakes you with a sound you never know. Your data stays on your phone — no server, no account.';
+
+  @override
+  String get sourceCode => 'Source code';
+
+  @override
+  String get reportProblemOrIdea => 'Report a problem or idea';
+
+  @override
+  String get githubIssues => 'GitHub issues';
+
+  @override
+  String get writeTheDeveloper => 'Write the developer';
+
+  @override
+  String get buyCoffee => 'Buy the developer a coffee';
+
+  @override
+  String get coffeeSubtitle =>
+      'The app stays free. Even if I don\'t get a coffee :)';
+
+  @override
+  String get openSourceLicenses => 'Open-source licenses';
+
+  @override
+  String versionLabel(String version, String build) {
+    return 'Version $version ($build)';
+  }
+
+  @override
+  String get dangerButton => 'DON\'T PRESS.\nDANGER';
+
+  @override
+  String get dangerThanks => 'Thank you for using chaos-alert!';
+
+  @override
+  String get doneLabel => 'Done';
 }
