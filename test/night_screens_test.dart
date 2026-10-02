@@ -136,7 +136,17 @@ void main() {
       expect(s.platform.stops, 1);
     });
 
-    testWidgets('a wrong word shows the failure page', (tester) async {
+    /// Marks [word] and confirms it with OK.
+    Future<void> pick(WidgetTester tester, String word) async {
+      await tester.tap(find.text(word));
+      await tester.pump();
+      await tester.tap(find.text('OK'));
+      await tester.pump();
+    }
+
+    testWidgets('a wrong word says so, snoozes and keeps the word hidden', (
+      tester,
+    ) async {
       final s = Setup();
       final word = await sayInBed(s);
       await s.open(
@@ -146,17 +156,49 @@ void main() {
       final wrong = words.firstWhere(
         (w) => w != word && find.text(w).evaluate().isNotEmpty,
       );
-      await tester.tap(find.text(wrong));
-      await tester.pump();
-      await tester.tap(find.text('OK'));
+      await pick(tester, wrong);
+      expect(
+        find.text('Not this one.\nThe alarm rings again in 9 min.'),
+        findsOneWidget,
+      );
+      expect(find.text(word), findsNothing);
+      expect(s.platform.stops, 1);
+      expect(s.platform.rings.first.at, DateTime(2026, 10, 6, 6, 39));
+      expect(s.store.loadRecords(), isEmpty);
+      await tester.pump(const Duration(seconds: 3));
       await tester.pumpAndSettle();
-      expect(find.text('Not this time'), findsOneWidget);
+      expect(find.text('home'), findsOneWidget);
+    });
+
+    testWidgets('the next ring leaves the wrong word out; the right one '
+        'then shows the tries, the streak and the strip', (tester) async {
+      final s = Setup();
+      final word = await sayInBed(s);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      final wrong = words.firstWhere(
+        (w) => w != word && find.text(w).evaluate().isNotEmpty,
+      );
+      await pick(tester, wrong);
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+
+      s.now = DateTime(2026, 10, 6, 6, 39);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      expect(find.text(wrong), findsNothing);
+      await pick(tester, word);
+      await tester.pumpAndSettle();
+      expect(find.text('Found on try 2'), findsOneWidget);
       expect(find.text(word), findsOneWidget);
       expect(find.text('1 miss in a row'), findsOneWidget);
       expect(find.text('0 right, 1 wrong in total'), findsOneWidget);
-      expect(find.byKey(const ValueKey('strip-failure')), findsOneWidget);
-      expect(find.textContaining('talking to a doctor'), findsNothing);
-      expect(s.platform.stops, 1);
+      expect(find.byKey(const ValueKey('strip-failure-1')), findsOneWidget);
+      expect(s.store.loadRecords().single.wrongPicks, 1);
     });
 
     testWidgets('a tap only marks a word; OK answers, and a misclick can '
@@ -267,20 +309,25 @@ void main() {
           bedtimeAssumed: false,
           end: DateTime(2026, 9, 2 + i, 6),
           result: NightResult.failure,
+          wrongPicks: 1 + i % 3,
         ),
     ];
     await s.open(
       tester,
-      FailureScreen(
-        outcome: QuizOutcome(
-          correct: false,
+      SummaryScreen(
+        outcome: QuizOutcome.right(
+          wrongPicks: 3,
           word: 'verdict',
           stats: QuizStats.of(failures),
         ),
       ),
     );
+    expect(find.text('Found on try 4'), findsOneWidget);
     expect(find.text('5 misses in a row'), findsOneWidget);
     expect(find.textContaining('poor sleep alone'), findsOneWidget);
     expect(find.textContaining('talking to a doctor'), findsOneWidget);
+    for (final n in [1, 2, 3]) {
+      expect(find.byKey(ValueKey('strip-failure-$n')), findsWidgets);
+    }
   });
 }

@@ -52,9 +52,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ringSnooze => 'Snooze';
 
   @override
-  String get failureTitle => 'Not this time';
-
-  @override
   String get failureWord => 'The word was';
 
   @override
@@ -364,4 +361,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ringConfirm => 'OK';
+
+  @override
+  String ringWrong(int minutes) {
+    return 'Not this one.\nThe alarm rings again in $minutes min.';
+  }
+
+  @override
+  String summaryTitle(int tries) {
+    return 'Found on try $tries';
+  }
+
+  @override
+  String resultWrongPicks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Wrong $count times',
+      one: 'Wrong once',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get hintDismiss => 'OK';
+
+  @override
+  String get notThisOne => 'Not this one.';
 }

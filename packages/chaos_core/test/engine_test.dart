@@ -201,18 +201,82 @@ void main() {
       expect(n.last.end, at(6, 6, 31));
     });
 
-    test('a wrong word stops it too and records a failure', () {
+    test('a wrong word snoozes the alarm and drops that word', () {
       final a = n.alarm(6, 30);
       n.now = at(5, 22, 30);
       final word = n.engine.inBed();
       n.now = at(6, 6, 30);
-      final screen = n.ring(a.id);
-      final outcome = n.engine.answer(a.id, n.wrong(screen, word))!;
+      final first = n.ring(a.id);
+      final wrong = n.wrong(first, word);
+      final outcome = n.engine.answer(a.id, wrong)!;
       expect(outcome.correct, isFalse);
-      expect(outcome.word, word);
-      expect(outcome.stats.streak, 1);
+      expect(outcome.snooze, const Duration(minutes: 9));
+      expect(n.store.loadRecords(), isEmpty);
+      expect(n.engine.plan().rings.first.at, at(6, 6, 39));
+
+      n.now = at(6, 6, 39);
+      final second = n.ring(a.id);
+      expect(second.options, hasLength(3));
+      expect(second.options, isNot(contains(wrong)));
+      expect(second.options.toSet(), first.options.toSet()..remove(wrong));
+    });
+
+    test('the right word after a wrong one ends the night as a failure '
+        'graded by the wrong picks', () {
+      final a = n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      final word = n.engine.inBed();
+      n.now = at(6, 6, 30);
+      n.engine.answer(a.id, n.wrong(n.ring(a.id), word));
+      n.now = at(6, 6, 39);
+      n.engine.answer(a.id, n.wrong(n.ring(a.id), word));
+      n.now = at(6, 6, 48);
+      final outcome = n.engine.answer(a.id, word)!;
+      expect(outcome.correct, isTrue);
+      expect(outcome.failed, isTrue);
+      expect(outcome.wrongPicks, 2);
+      expect(outcome.stats!.streak, 1);
       expect(n.last.result, NightResult.failure);
+      expect(n.last.wrongPicks, 2);
+      expect(n.last.end, at(6, 6, 48));
       expect(n.engine.plan().nextNag, at(6, 22, 30));
+    });
+
+    test('after three wrong picks only the right word is left', () {
+      final a = n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      final word = n.engine.inBed();
+      n.now = at(6, 6, 30);
+      for (var i = 0; i < 3; i++) {
+        n.engine.answer(a.id, n.wrong(n.ring(a.id), word));
+      }
+      expect(n.ring(a.id).options, [word]);
+    });
+
+    test('the options stay the same all night', () {
+      final a = n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      n.engine.inBed();
+      n.now = at(6, 6, 30);
+      final first = n.ring(a.id).options;
+      n.engine.snoozeAlarm(a.id);
+      n.now = at(6, 6, 39);
+      expect(n.ring(a.id).options, first);
+    });
+
+    test('a timeout after a wrong pick ends the night as a failure', () {
+      final a = n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      final word = n.engine.inBed();
+      n.now = at(6, 6, 30);
+      n.engine.answer(a.id, n.wrong(n.ring(a.id), word));
+      n.now = at(6, 6, 39);
+      n.ring(a.id);
+      n.now = at(6, 6, 49);
+      n.engine.timeout(a.id);
+      expect(n.last.result, NightResult.failure);
+      expect(n.last.wrongPicks, 1);
+      expect(n.last.end, at(6, 6, 49));
     });
 
     test('without a word the alarm gets a plain dismiss and the night '
@@ -392,18 +456,42 @@ void main() {
   });
 
   group('hint', () {
+    /// One night with a wrong pick, then the right word.
+    QuizOutcome failNight(Alarm a, int i) {
+      n.now = at(5 + i, 22, 30);
+      final word = n.engine.inBed();
+      n.now = at(6 + i, 6, 30);
+      n.engine.answer(a.id, n.wrong(n.ring(a.id), word));
+      n.now = at(6 + i, 6, 39);
+      n.ring(a.id);
+      return n.engine.answer(a.id, word)!;
+    }
+
     test('comes with the fifth failure in a row', () {
       final a = n.alarm(6, 30, days: {1, 2, 3, 4, 5, 6, 7});
-      QuizOutcome? outcome;
       for (var i = 0; i < 5; i++) {
-        n.now = at(5 + i, 22, 30);
-        final word = n.engine.inBed();
-        n.now = at(6 + i, 6, 30);
-        final screen = n.ring(a.id);
-        outcome = n.engine.answer(a.id, n.wrong(screen, word));
-        expect(outcome!.stats.showHint, i == 4);
+        final outcome = failNight(a, i);
+        expect(outcome.stats!.showHint, i == 4);
       }
-      expect(outcome!.stats.streak, 5);
+      expect(n.engine.pendingHint, isFalse);
+    });
+
+    test('waits for the main screen when the fifth failure times out', () {
+      final a = n.alarm(6, 30, days: {1, 2, 3, 4, 5, 6, 7});
+      for (var i = 0; i < 4; i++) {
+        failNight(a, i);
+      }
+      n.now = at(9, 22, 30);
+      final word = n.engine.inBed();
+      n.now = at(10, 6, 30);
+      n.engine.answer(a.id, n.wrong(n.ring(a.id), word));
+      n.now = at(10, 6, 39);
+      n.ring(a.id);
+      n.now = at(10, 6, 49);
+      n.engine.timeout(a.id);
+      expect(n.engine.pendingHint, isTrue);
+      n.engine.dismissHint();
+      expect(n.engine.pendingHint, isFalse);
     });
   });
 

@@ -268,7 +268,7 @@ class _NightPainter extends CustomPainter {
     final left = axis.position(morning, r.bedtime) * size.width;
     final right = axis.position(morning, r.end) * size.width;
     final bar = Rect.fromLTRB(left, 0, right, size.height);
-    canvas.drawRect(bar, Paint()..color = resultColor(r.result));
+    canvas.drawRect(bar, Paint()..color = nightColor(r));
     if (r.bedtimeAssumed) {
       final hatch = Rect.fromLTRB(
         left,

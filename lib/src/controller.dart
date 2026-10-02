@@ -50,6 +50,7 @@ class Controller extends ChangeNotifier {
   late List<NightRecord> _nights;
   late bool _canSayInBed;
   late bool _setupDone;
+  late bool _pendingHint;
   Plan _plan = const Plan();
 
   Settings get settings => _settings;
@@ -58,6 +59,9 @@ class Controller extends ChangeNotifier {
   List<NightRecord> get nights => _nights;
   bool get canSayInBed => _canSayInBed;
   bool get setupDone => _setupDone;
+
+  /// The hint whose page never came (a timeout ended the fifth failure).
+  bool get pendingHint => _pendingHint;
 
   /// The plan last handed to Android.
   Plan get plan => _plan;
@@ -69,6 +73,14 @@ class Controller extends ChangeNotifier {
     _nights = store.loadRecords();
     _canSayInBed = engine.canSayInBed;
     _setupDone = store.loadState().setupDone;
+    _pendingHint = engine.pendingHint;
+  }
+
+  /// The hint card on the main screen was read.
+  void dismissHint() {
+    engine.dismissHint();
+    _pendingHint = false;
+    notifyListeners();
   }
 
   /// Re-reads what depends on the time of day, like the "I'm in bed"

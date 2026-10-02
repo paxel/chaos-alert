@@ -5,7 +5,8 @@ enum NightResult {
   /// The right word was picked.
   success,
 
-  /// A wrong word was picked.
+  /// At least one wrong word was picked before the right one, or before
+  /// the alarm gave up.
   failure,
 
   /// No word was shown that night, so there was no quiz.
@@ -24,6 +25,7 @@ class NightRecord {
     required this.end,
     required this.result,
     this.word,
+    this.wrongPicks = 0,
   });
 
   /// The bedtime the nag was planned for.
@@ -40,6 +42,9 @@ class NightRecord {
   final DateTime end;
   final NightResult result;
   final String? word;
+
+  /// How many wrong words were picked, 0 to 3; how bad a failure was.
+  final int wrongPicks;
 
   /// The morning this night belongs to.
   DateTime get morning => dateOf(end);
@@ -80,12 +85,9 @@ class QuizStats {
           break;
       }
     }
-    final strip = [
-      for (final r in sorted.skip(
-        sorted.length > stripLength ? sorted.length - stripLength : 0,
-      ))
-        r.result,
-    ];
+    final strip = sorted
+        .skip(sorted.length > stripLength ? sorted.length - stripLength : 0)
+        .toList();
     return QuizStats(
       streak: streak,
       failures: failures,
@@ -100,8 +102,8 @@ class QuizStats {
   final int failures;
   final int successes;
 
-  /// The results of the last [stripLength] nights, oldest first.
-  final List<NightResult> strip;
+  /// The last [stripLength] nights, oldest first.
+  final List<NightRecord> strip;
 
   /// Whether the "get it checked" hint belongs on this failure page: only
   /// on the failure that makes the streak reach [hintStreak], so once per

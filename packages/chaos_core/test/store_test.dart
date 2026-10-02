@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:chaos_core/chaos_core.dart';
+import 'package:sqlite3/sqlite3.dart';
 import 'package:test/test.dart';
 
 /// The same behaviour is asked of every store.
@@ -77,15 +78,17 @@ void contract(String name, Store Function() open) {
         bedtime: DateTime(2026, 10, 4, 22, 40),
         bedtimeAssumed: true,
         end: DateTime(2026, 10, 5, 6, 31),
-        result: NightResult.missed,
+        result: NightResult.failure,
         word: 'lantern',
+        wrongPicks: 2,
       );
       store.addRecord(record);
       final back = store.loadRecords().single;
       expect(back.bedtime, record.bedtime);
       expect(back.bedtimeAssumed, isTrue);
       expect(back.end, record.end);
-      expect(back.result, NightResult.missed);
+      expect(back.result, NightResult.failure);
+      expect(back.wrongPicks, 2);
       expect(back.word, 'lantern');
 
       final state = EngineState(
@@ -93,21 +96,27 @@ void contract(String name, Store Function() open) {
           plannedBedtime: DateTime(2026, 10, 5, 22, 30),
           lastNag: DateTime(2026, 10, 5, 22, 30),
           nagSnoozedUntil: DateTime(2026, 10, 5, 22, 40),
+          options: ['a', 'b', 'c', 'd'],
+          wrongPicks: ['b'],
         ),
         alarmSnoozes: {3: DateTime(2026, 10, 6, 6, 39)},
         lastRing: {3: DateTime(2026, 10, 6, 6, 30)},
         deck: WordDeck(order: [2, 0, 1], cursor: 1),
         setupDone: true,
+        pendingHint: true,
       );
       store.saveState(state);
       final s = store.loadState();
       expect(s.night!.nagSnoozedUntil, DateTime(2026, 10, 5, 22, 40));
       expect(s.night!.confirmed, isFalse);
+      expect(s.night!.options, ['a', 'b', 'c', 'd']);
+      expect(s.night!.wrongPicks, ['b']);
       expect(s.alarmSnoozes, {3: DateTime(2026, 10, 6, 6, 39)});
       expect(s.lastRing, {3: DateTime(2026, 10, 6, 6, 30)});
       expect(s.deck.order, [2, 0, 1]);
       expect(s.deck.cursor, 1);
       expect(s.setupDone, isTrue);
+      expect(s.pendingHint, isTrue);
       expect(EngineState().setupDone, isFalse);
     });
   });
@@ -116,6 +125,39 @@ void contract(String name, Store Function() open) {
 void main() {
   contract('memory store', MemoryStore.new);
   contract('SQLite store', SqliteStore.inMemory);
+
+  test('a database from 0.1.0 gains wrong picks, old nights at 0', () {
+    final dir = Directory.systemTemp.createTempSync('chaos_migrate');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final path = '${dir.path}/chaos.db';
+    // The 0.1.0 schema, with one night in it.
+    final old = sqlite3.open(path)
+      ..execute('''
+        create table kv (key text primary key, value text not null);
+        create table alarms (id integer primary key autoincrement,
+          hour integer not null, minute integer not null,
+          weekdays integer not null, date text, enabled integer not null,
+          wake_up integer not null);
+        create table vacations (id integer primary key autoincrement,
+          from_day text not null, to_day text not null);
+        create table nights (id integer primary key autoincrement,
+          planned_bedtime text not null, bedtime text not null,
+          bedtime_assumed integer not null, end_time text not null,
+          result text not null, word text);
+        insert into nights (planned_bedtime, bedtime, bedtime_assumed,
+          end_time, result, word) values ('2026-10-01T22:30:00.000',
+          '2026-10-01T22:30:00.000', 0, '2026-10-02T06:30:00.000',
+          'success', 'lantern');
+      ''')
+      ..userVersion = 1;
+    old.close();
+
+    final store = SqliteStore.open(path);
+    addTearDown(store.close);
+    final night = store.loadRecords().single;
+    expect(night.word, 'lantern');
+    expect(night.wrongPicks, 0);
+  });
 
   test('a night survives closing and reopening the database file', () {
     final dir = Directory.systemTemp.createTempSync('chaos_store');

@@ -46,6 +46,21 @@ void main() {
     expect(find.text("I'm in bed"), findsNothing);
   });
 
+  testWidgets('a hint whose page never came shows once on the main screen', (
+    tester,
+  ) async {
+    setupDone();
+    store.saveState(store.loadState()..pendingHint = true);
+    final c = controller();
+    await tester.pumpWidget(ChaosAlertApp(controller: c));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('talking to a doctor'), findsOneWidget);
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('talking to a doctor'), findsNothing);
+    expect(store.loadState().pendingHint, isFalse);
+  });
+
   testWidgets('the first start walks through every permission', (tester) async {
     platform.granted[Permission.exactAlarms] = false;
     final c = controller();

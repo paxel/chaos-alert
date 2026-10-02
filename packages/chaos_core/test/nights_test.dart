@@ -69,9 +69,9 @@ void main() {
     ].reversed;
     final strip = QuizStats.of(records).strip;
     expect(strip, hasLength(30));
-    expect(strip.first, s);
-    expect(strip.last, f);
-    expect(strip.where((r) => r == f), hasLength(10));
+    expect(strip.first.result, s);
+    expect(strip.last.result, f);
+    expect(strip.where((r) => r.result == f), hasLength(10));
   });
 
   group('timeline summary', () {

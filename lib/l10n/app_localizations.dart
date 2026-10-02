@@ -172,12 +172,6 @@ abstract class AppLocalizations {
   /// **'Snooze'**
   String get ringSnooze;
 
-  /// No description provided for @failureTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Not this time'**
-  String get failureTitle;
-
   /// No description provided for @failureWord.
   ///
   /// In en, this message translates to:
@@ -723,6 +717,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OK'**
   String get ringConfirm;
+
+  /// No description provided for @ringWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Not this one.\nThe alarm rings again in {minutes} min.'**
+  String ringWrong(int minutes);
+
+  /// No description provided for @summaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Found on try {tries}'**
+  String summaryTitle(int tries);
+
+  /// No description provided for @resultWrongPicks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Wrong once} other{Wrong {count} times}}'**
+  String resultWrongPicks(int count);
+
+  /// No description provided for @hintDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get hintDismiss;
+
+  /// No description provided for @notThisOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Not this one.'**
+  String get notThisOne;
 }
 
 class _AppLocalizationsDelegate

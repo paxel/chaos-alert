@@ -3,26 +3,36 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 
-/// The colour of a night's result, shared by the strip and the timeline.
-Color resultColor(NightResult result) => switch (result) {
+/// The colour of a night, shared by the strip and the timeline: green,
+/// three shades of red for one, two and three wrong picks, grey without a
+/// word, amber when missed.
+Color nightColor(NightRecord night) => switch (night.result) {
   NightResult.success => const Color(0xFF4CAF50),
-  NightResult.failure => const Color(0xFFE57373),
+  // Failures from 0.1.0 carry no count; they were one wrong pick.
+  NightResult.failure => switch (night.wrongPicks) {
+    <= 1 => const Color(0xFFEF9A9A),
+    2 => const Color(0xFFE53935),
+    _ => const Color(0xFFB71C1C),
+  },
   NightResult.noWord => const Color(0xFF78909C),
   NightResult.missed => const Color(0xFFFFB74D),
 };
 
-String resultLabel(AppLocalizations t, NightResult result) => switch (result) {
-  NightResult.success => t.resultSuccess,
-  NightResult.failure => t.resultFailure,
-  NightResult.noWord => t.resultNoWord,
-  NightResult.missed => t.resultMissed,
-};
+String nightLabel(AppLocalizations t, NightRecord night) =>
+    switch (night.result) {
+      NightResult.success => t.resultSuccess,
+      NightResult.failure => t.resultWrongPicks(
+        night.wrongPicks < 1 ? 1 : night.wrongPicks,
+      ),
+      NightResult.noWord => t.resultNoWord,
+      NightResult.missed => t.resultMissed,
+    };
 
 /// One small square per night, oldest first.
 class ResultStrip extends StatelessWidget {
-  const ResultStrip({super.key, required this.results});
+  const ResultStrip({super.key, required this.nights});
 
-  final List<NightResult> results;
+  final List<NightRecord> nights;
 
   @override
   Widget build(BuildContext context) {
@@ -31,14 +41,14 @@ class ResultStrip extends StatelessWidget {
       spacing: 3,
       runSpacing: 3,
       children: [
-        for (final r in results)
+        for (final n in nights)
           Tooltip(
-            message: resultLabel(t, r),
+            message: nightLabel(t, n),
             child: Container(
-              key: ValueKey('strip-${r.name}'),
+              key: ValueKey('strip-${n.result.name}-${n.wrongPicks}'),
               width: 9,
               height: 18,
-              color: resultColor(r),
+              color: nightColor(n),
             ),
           ),
       ],

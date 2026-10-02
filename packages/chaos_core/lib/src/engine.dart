@@ -50,17 +50,34 @@ class RingScreen {
 
 /// How a quiz answer went.
 class QuizOutcome {
-  const QuizOutcome({
-    required this.correct,
-    required this.word,
-    required this.stats,
-  });
+  const QuizOutcome.wrong({required this.snooze})
+    : correct = false,
+      wrongPicks = 0,
+      word = null,
+      stats = null;
+
+  const QuizOutcome.right({
+    required this.wrongPicks,
+    required String this.word,
+    required QuizStats this.stats,
+  }) : correct = true,
+       snooze = null;
 
   final bool correct;
 
-  /// The right word.
-  final String word;
-  final QuizStats stats;
+  /// After a wrong pick: how long until the alarm rings again; null when
+  /// nothing rings (the "I'm awake" quiz).
+  final Duration? snooze;
+
+  /// After the right pick: how many wrong ones came first.
+  final int wrongPicks;
+
+  /// After the right pick: the word, and the statistics including tonight.
+  final String? word;
+  final QuizStats? stats;
+
+  /// Whether the night failed although the word was found in the end.
+  bool get failed => correct && wrongPicks > 0;
 }
 
 /// Every rule of the night. Each event reads the store, applies the rule
@@ -194,12 +211,24 @@ class Engine {
   /// What the ringing alarm [alarmId] shows: the quiz on a wake-up alarm
   /// while the night's word waits, else a plain dismiss button.
   RingScreen screenFor(int alarmId) {
-    final word = _load(_now).night?.word;
     final alarm = _alarm(alarmId);
-    if (alarm == null || !alarm.wakeUp || word == null) {
-      return const RingScreen.dismiss();
-    }
-    return RingScreen.quiz(quizOptions(word, words, _random));
+    if (alarm == null || !alarm.wakeUp) return const RingScreen.dismiss();
+    return _quiz();
+  }
+
+  /// The quiz for the night's word: the same options all night, minus the
+  /// ones already picked wrongly; a plain dismiss without a word.
+  RingScreen _quiz() {
+    final state = _load(_now);
+    final night = state.night;
+    final word = night?.word;
+    if (night == null || word == null) return const RingScreen.dismiss();
+    final options = night.options ??= quizOptions(word, words, _random);
+    _save(state);
+    return RingScreen.quiz([
+      for (final o in options)
+        if (!night.wrongPicks.contains(o)) o,
+    ]);
   }
 
   /// Alarm [alarmId] was snoozed; it rings again after the alarm snooze.
@@ -210,7 +239,9 @@ class Engine {
     _save(state);
   }
 
-  /// [picked] was chosen on the quiz of alarm [alarmId]. Ends the night.
+  /// [picked] was chosen on the quiz of alarm [alarmId]. The right word
+  /// ends the night; a wrong one snoozes the alarm, drops that word from
+  /// the next quiz and makes the night a failure.
   QuizOutcome? answer(int alarmId, String picked) {
     final t = _now;
     final state = _load(t);
@@ -221,13 +252,45 @@ class Engine {
       _save(state);
       return null;
     }
-    final correct = picked == word;
-    _end(state, night, correct ? NightResult.success : NightResult.failure, t);
-    return QuizOutcome(
-      correct: correct,
+    if (picked != word) {
+      final snooze = store.loadSettings().alarmSnooze;
+      if (!night.wrongPicks.contains(picked)) night.wrongPicks.add(picked);
+      state.alarmSnoozes[alarmId] = t.add(snooze);
+      _save(state);
+      return QuizOutcome.wrong(snooze: snooze);
+    }
+    return _found(state, night, word, t);
+  }
+
+  /// The right word ends the night: a success, or a failure graded by the
+  /// wrong picks before it.
+  QuizOutcome _found(
+    EngineState state,
+    OpenNight night,
+    String word,
+    DateTime t,
+  ) {
+    final wrong = night.wrongPicks.length;
+    _end(
+      state,
+      night,
+      wrong == 0 ? NightResult.success : NightResult.failure,
+      t,
+    );
+    return QuizOutcome.right(
+      wrongPicks: wrong,
       word: word,
       stats: QuizStats.of(store.loadRecords()),
     );
+  }
+
+  /// Whether the main screen shows the hint card.
+  bool get pendingHint => _load(_now).pendingHint;
+
+  /// The hint card was read.
+  void dismissHint() {
+    final state = _load(_now)..pendingHint = false;
+    _save(state);
   }
 
   /// Alarm [alarmId] was turned off with the plain dismiss button. On a
@@ -245,7 +308,8 @@ class Engine {
   }
 
   /// Alarm [alarmId] rang unanswered until its timeout. When no other
-  /// wake-up alarm of the morning is left, the night is missed.
+  /// wake-up alarm of the morning is left, the night ends: missed, or a
+  /// failure when a wrong word was already picked.
   void timeout(int alarmId, {DateTime? at}) {
     final t = at ?? _now;
     final state = _load(t);
@@ -259,7 +323,13 @@ class Engine {
       exceptAlarmId: alarmId,
     );
     if (night != null && _isWakeUp(alarmId) && !otherSnoozed && !laterToday) {
-      _end(state, night, NightResult.missed, t);
+      final failed = night.wrongPicks.isNotEmpty;
+      _end(state, night, failed ? NightResult.failure : NightResult.missed, t);
+      // No page follows a timeout: a due hint waits for the main screen.
+      if (failed && QuizStats.of(store.loadRecords()).showHint) {
+        final after = _load(t)..pendingHint = true;
+        _save(after);
+      }
     } else {
       _save(state);
     }
@@ -303,6 +373,7 @@ class Engine {
         end: t,
         result: result,
         word: night.word,
+        wrongPicks: night.wrongPicks.length,
       ),
     );
     state.night = null;

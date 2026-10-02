@@ -20,7 +20,6 @@
   "ringQuiz": "Which word did you see last night?",
   "ringDismiss": "Turn off",
   "ringSnooze": "Snooze",
-  "failureTitle": "Not this time",
   "failureWord": "The word was",
   "failureStreak": "{count, plural, =1{1 miss in a row} other{{count} misses in a row}}",
   "@failureStreak": {
@@ -200,5 +199,31 @@
   "dangerButton": "DON'T PRESS.\nDANGER",
   "dangerThanks": "Thank you for using chaos-alert!",
   "doneLabel": "Done",
-  "ringConfirm": "OK"
+  "ringConfirm": "OK",
+  "ringWrong": "Not this one.\nThe alarm rings again in {minutes} min.",
+  "@ringWrong": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "summaryTitle": "Found on try {tries}",
+  "@summaryTitle": {
+    "placeholders": {
+      "tries": {
+        "type": "int"
+      }
+    }
+  },
+  "resultWrongPicks": "{count, plural, =1{Wrong once} other{Wrong {count} times}}",
+  "@resultWrongPicks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hintDismiss": "OK",
+  "notThisOne": "Not this one."
 }

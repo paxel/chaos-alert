@@ -84,6 +84,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+              if (_c.pendingHint)
+                Card(
+                  margin: const EdgeInsets.all(16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(t.failureHint),
+                        TextButton(
+                          onPressed: _c.dismissHint,
+                          child: Text(t.hintDismiss),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               const SizedBox(height: 24),
               if (nag != null)
                 Center(child: Text(t.homeBedtime(_moment(context, nag)))),

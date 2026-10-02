@@ -154,6 +154,9 @@ class _AlarmScreenState extends State<AlarmScreen> {
   /// The word marked so far; nothing counts until OK.
   String? _picked;
 
+  /// After a wrong pick: the snooze shown for a moment before closing.
+  Duration? _wrong;
+
   Controller get _c => widget.controller;
 
   @override
@@ -192,13 +195,23 @@ class _AlarmScreenState extends State<AlarmScreen> {
     _timeout?.cancel();
     final outcome = await _c.answer(widget.alarmId, picked);
     if (!mounted) return;
-    if (outcome == null || outcome.correct) {
-      Navigator.of(context).pop();
+    if (outcome != null && !outcome.correct) {
+      // Wrong: the alarm is snoozed; say so for a moment, then close.
+      setState(() => _wrong = outcome.snooze);
+      _timeout = Timer(wrongNoticeTime, () {
+        if (mounted) Navigator.of(context).pop();
+      });
       return;
     }
-    await Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => FailureScreen(outcome: outcome)),
-    );
+    if (outcome != null && outcome.failed) {
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => SummaryScreen(outcome: outcome),
+        ),
+      );
+      return;
+    }
+    Navigator.of(context).pop();
   }
 
   @override
@@ -212,6 +225,8 @@ class _AlarmScreenState extends State<AlarmScreen> {
     final t = AppLocalizations.of(context);
     final screen = _screen;
     if (screen == null) return const NightFrame(child: SizedBox.shrink());
+    final wrong = _wrong;
+    if (wrong != null) return WrongNotice(snooze: wrong);
     const tall = Size.fromHeight(64);
     final picked = _picked;
     // Half-asleep fingers: tall buttons with room between them, a word is
@@ -271,29 +286,56 @@ class _AlarmScreenState extends State<AlarmScreen> {
   }
 }
 
-/// The page after a wrong pick.
-class FailureScreen extends StatelessWidget {
-  const FailureScreen({super.key, required this.outcome});
+/// How long "Not this one" stays before it closes by itself.
+const wrongNoticeTime = Duration(seconds: 3);
+
+/// "Not this one": the word stays hidden, the alarm comes back.
+class WrongNotice extends StatelessWidget {
+  const WrongNotice({super.key, this.snooze});
+
+  /// When the alarm rings again; null when nothing rings ("I'm awake").
+  final Duration? snooze;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final snooze = this.snooze;
+    return NightFrame(
+      child: Center(
+        child: Text(
+          snooze == null ? t.notThisOne : t.ringWrong(snooze.inMinutes),
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.headlineSmall
+              ?.copyWith(color: Colors.white70),
+        ),
+      ),
+    );
+  }
+}
+
+/// The page after the right word on a night with wrong picks.
+class SummaryScreen extends StatelessWidget {
+  const SummaryScreen({super.key, required this.outcome});
 
   final QuizOutcome outcome;
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-    final stats = outcome.stats;
+    final stats = outcome.stats!;
     final text = Theme.of(context).textTheme;
     return NightFrame(
       child: ListView(
         children: [
           const SizedBox(height: 24),
           Text(
-            t.failureTitle,
+            t.summaryTitle(outcome.wrongPicks + 1),
             style: text.headlineMedium?.copyWith(color: Colors.white70),
           ),
           const SizedBox(height: 24),
           Text(t.failureWord),
           Text(
-            outcome.word,
+            outcome.word!,
             style: text.displaySmall?.copyWith(color: Colors.white),
           ),
           const SizedBox(height: 24),
@@ -302,7 +344,7 @@ class FailureScreen extends StatelessWidget {
           const SizedBox(height: 24),
           Text(t.failureStrip),
           const SizedBox(height: 8),
-          ResultStrip(results: stats.strip),
+          ResultStrip(nights: stats.strip),
           if (stats.showHint) ...[
             const SizedBox(height: 24),
             Card(

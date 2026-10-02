@@ -10,7 +10,9 @@ class OpenNight {
     this.bedtime,
     this.word,
     this.nagSnoozedUntil,
-  });
+    this.options,
+    List<String>? wrongPicks,
+  }) : wrongPicks = wrongPicks ?? [];
 
   factory OpenNight.fromJson(Map<String, Object?> json) => OpenNight(
     plannedBedtime: _time(json['plannedBedtime'])!,
@@ -19,6 +21,8 @@ class OpenNight {
     bedtime: _time(json['bedtime']),
     word: json['word'] as String?,
     nagSnoozedUntil: _time(json['nagSnoozedUntil']),
+    options: (json['options'] as List?)?.cast<String>().toList(),
+    wrongPicks: (json['wrongPicks'] as List?)?.cast<String>().toList(),
   );
 
   final DateTime plannedBedtime;
@@ -38,6 +42,12 @@ class OpenNight {
   /// When the snoozed nag comes back.
   DateTime? nagSnoozedUntil;
 
+  /// The night's four quiz options, fixed once first shown.
+  List<String>? options;
+
+  /// The options already picked wrongly; they are not shown again.
+  final List<String> wrongPicks;
+
   bool get confirmed => bedtime != null;
 
   /// The bedtime the night records: confirmed, else the last nag.
@@ -50,6 +60,8 @@ class OpenNight {
     'bedtime': bedtime?.toIso8601String(),
     'word': word,
     'nagSnoozedUntil': nagSnoozedUntil?.toIso8601String(),
+    'options': options,
+    'wrongPicks': wrongPicks,
   };
 }
 
@@ -61,6 +73,7 @@ class EngineState {
     Map<int, DateTime>? lastRing,
     WordDeck? deck,
     this.setupDone = false,
+    this.pendingHint = false,
   }) : alarmSnoozes = alarmSnoozes ?? {},
        lastRing = lastRing ?? {},
        deck = deck ?? WordDeck();
@@ -79,6 +92,7 @@ class EngineState {
               cursor: deck['cursor'] as int,
             ),
       setupDone: json['setupDone'] as bool? ?? false,
+      pendingHint: json['pendingHint'] as bool? ?? false,
     );
   }
 
@@ -94,6 +108,10 @@ class EngineState {
   /// Whether the first-start setup was walked through.
   bool setupDone;
 
+  /// The hint is due but no page showed it: the streak's fifth failure
+  /// ended in a timeout. The main screen shows it once.
+  bool pendingHint;
+
   Map<String, Object?> toJson() => {
     'night': night?.toJson(),
     'alarmSnoozes': {
@@ -105,6 +123,7 @@ class EngineState {
     },
     'deck': {'order': deck.order, 'cursor': deck.cursor},
     'setupDone': setupDone,
+    'pendingHint': pendingHint,
   };
 }
 

@@ -67,7 +67,7 @@ List<NightRecord> _nights() {
     );
     final late = random.nextInt(80) - 15;
     final result = switch (i) {
-      4 || 11 || 19 => NightResult.failure,
+      4 || 11 || 19 || 25 => NightResult.failure,
       15 => NightResult.missed,
       22 => NightResult.noWord,
       _ => NightResult.success,
@@ -86,6 +86,7 @@ List<NightRecord> _nights() {
         ).add(Duration(minutes: random.nextInt(25))),
         result: result,
         word: 'touchstone',
+        wrongPicks: result == NightResult.failure ? 1 + i % 3 : 0,
       ),
     );
   }
@@ -209,11 +210,15 @@ void main() {
       '04-quiz',
     );
 
-    final outcome = c.engine.answer(
-      alarm.id,
-      c.screenFor(alarm.id).options.firstWhere((o) => o != word),
-    )!;
-    await shoot(tester, FailureScreen(outcome: outcome), '05-failure');
+    // Two wrong picks, then the right word: the page after a failed night.
+    for (var i = 0; i < 2; i++) {
+      c.engine.answer(
+        alarm.id,
+        c.screenFor(alarm.id).options.firstWhere((o) => o != word),
+      );
+    }
+    final outcome = c.engine.answer(alarm.id, word)!;
+    await shoot(tester, SummaryScreen(outcome: outcome), '05-failure');
 
     c = await demo();
     await shoot(tester, AlarmsScreen(controller: c), '06-alarms');

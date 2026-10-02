@@ -24,7 +24,16 @@ class SqliteStore implements Store {
   void close() => _db.close();
 
   void _migrate() {
-    if (_db.userVersion >= 1) return;
+    if (_db.userVersion < 1) _createTables();
+    if (_db.userVersion < 2) {
+      _db.execute(
+        'alter table nights add column wrong_picks integer not null default 0',
+      );
+      _db.userVersion = 2;
+    }
+  }
+
+  void _createTables() {
     _db.execute('''
       create table kv (key text primary key, value text not null);
       create table alarms (
@@ -195,13 +204,14 @@ class SqliteStore implements Store {
         end: DateTime.parse(r['end_time'] as String),
         result: NightResult.values.byName(r['result'] as String),
         word: r['word'] as String?,
+        wrongPicks: r['wrong_picks'] as int,
       ),
   ];
 
   @override
   void addRecord(NightRecord record) => _db.execute(
     'insert into nights (planned_bedtime, bedtime, bedtime_assumed, '
-    'end_time, result, word) values (?, ?, ?, ?, ?, ?)',
+    'end_time, result, word, wrong_picks) values (?, ?, ?, ?, ?, ?, ?)',
     [
       record.plannedBedtime.toIso8601String(),
       record.bedtime.toIso8601String(),
@@ -209,6 +219,7 @@ class SqliteStore implements Store {
       record.end.toIso8601String(),
       record.result.name,
       record.word,
+      record.wrongPicks,
     ],
   );
 
