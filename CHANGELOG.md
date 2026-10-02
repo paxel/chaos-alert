@@ -4,21 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [0.1.0] - Unreleased
+## [0.2.0] - Unreleased
 
 ### Added
-- Bedtime nag: a full-screen popup at the earliest wake-up alarm minus your sleep length, with Yes, a default snooze and 30 min, 1 h or 2 h, plus an optional soft chime.
-- "I'm in bed" button on the main screen during the three hours before bedtime.
-- A less common English word to remember, shown once when you go to bed.
-- Alarms that play a random alarm sound, notification sound or song, low at first and louder after 10 seconds, with a new sound after every snooze.
-- Turning the alarm off by picking last night's word from four; a wrong pick shows the right word, your streak, totals, the last 30 nights and, after five misses in a row, a hint.
-- Repeating and one-time alarms with a wake-up switch; alarms can be switched off, edited and deleted.
-- Vacations as date ranges that silence repeating alarms and the bedtime nag.
-- Week and month timeline of time in bed with average time in bed and average bedtime.
-- Settings for sleep length, snooze lengths, alarm timeout, both volume levels and the chime.
-- A first-start setup that asks for each permission, and a banner when one goes missing.
-- App icon: a black chaos star with a red alarm clock.
-- About page with the version, source code, feedback links and open-source licenses.
+- "I'm awake" button on the main screen and a silent notification in the hour before the first wake-up alarm; the right word turns off that morning's wake-up alarms.
+
+### Changed
+- A wrong word now snoozes the alarm and drops out of the next try; only the right word turns the alarm off.
+- Nights with wrong picks show in three shades of red, and the page after the right word shows how many tries it took; if the fifth miss in a row ends without an answer, the hint appears on the main screen.
+- The quiz marks a word with a tap and answers with a separate OK button; the buttons are taller and further apart.
+- The time-in-bed view fits its hours to the nights shown, so daytime sleep fits too.
 
 ---
 
