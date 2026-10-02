@@ -151,9 +151,6 @@ class _AlarmScreenState extends State<AlarmScreen> {
   RingScreen? _screen;
   Timer? _timeout;
 
-  /// The word marked so far; nothing counts until OK.
-  String? _picked;
-
   /// After a wrong pick: the snooze shown for a moment before closing.
   Duration? _wrong;
 
@@ -227,18 +224,63 @@ class _AlarmScreenState extends State<AlarmScreen> {
     if (screen == null) return const NightFrame(child: SizedBox.shrink());
     final wrong = _wrong;
     if (wrong != null) return WrongNotice(snooze: wrong);
+    return QuizPanel(
+      screen: screen,
+      topLabel: t.ringSnooze,
+      onTop: _snooze,
+      onConfirm: _answer,
+      onDismiss: _dismiss,
+    );
+  }
+}
+
+/// The two-step quiz for half-asleep fingers: tall buttons with room
+/// between them, a tap only marks a word, and OK sits far below, away from
+/// the button on top (Snooze or Back). Without a word: a plain turn-off.
+class QuizPanel extends StatefulWidget {
+  const QuizPanel({
+    super.key,
+    required this.screen,
+    required this.topLabel,
+    required this.onTop,
+    required this.onConfirm,
+    required this.onDismiss,
+  });
+
+  final RingScreen screen;
+  final String topLabel;
+  final VoidCallback onTop;
+  final ValueChanged<String> onConfirm;
+  final VoidCallback onDismiss;
+
+  @override
+  State<QuizPanel> createState() => _QuizPanelState();
+}
+
+class _QuizPanelState extends State<QuizPanel> {
+  /// The word marked so far; nothing counts until OK.
+  String? _picked;
+
+  @override
+  void didUpdateWidget(QuizPanel old) {
+    super.didUpdateWidget(old);
+    if (!widget.screen.options.contains(_picked)) _picked = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final screen = widget.screen;
     const tall = Size.fromHeight(64);
     final picked = _picked;
-    // Half-asleep fingers: tall buttons with room between them, a word is
-    // only marked by a tap, and OK sits far below, away from Snooze.
     return NightFrame(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           OutlinedButton(
             style: OutlinedButton.styleFrom(minimumSize: tall),
-            onPressed: _snooze,
-            child: Text(t.ringSnooze),
+            onPressed: widget.onTop,
+            child: Text(widget.topLabel),
           ),
           const Spacer(),
           if (screen.quiz) ...[
@@ -269,19 +311,87 @@ class _AlarmScreenState extends State<AlarmScreen> {
             const Spacer(),
             FilledButton(
               style: FilledButton.styleFrom(minimumSize: tall),
-              onPressed: picked == null ? null : () => _answer(picked),
+              onPressed: picked == null ? null : () => widget.onConfirm(picked),
               child: Text(t.ringConfirm),
             ),
           ] else ...[
             FilledButton(
               style: FilledButton.styleFrom(minimumSize: tall),
-              onPressed: _dismiss,
+              onPressed: widget.onDismiss,
               child: Text(t.ringDismiss),
             ),
             const Spacer(),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// "I'm awake": the night's quiz before the alarm, with Back instead of
+/// Snooze. A wrong word says so and the quiz goes on without it; the right
+/// one, or the plain turn-off, cancels the morning's wake-up alarms.
+class AwakeScreen extends StatefulWidget {
+  const AwakeScreen({super.key, required this.controller});
+
+  final Controller controller;
+
+  @override
+  State<AwakeScreen> createState() => _AwakeScreenState();
+}
+
+class _AwakeScreenState extends State<AwakeScreen> {
+  late RingScreen _screen = widget.controller.awakeScreen();
+  var _wrong = false;
+  Timer? _notice;
+
+  Controller get _c => widget.controller;
+
+  Future<void> _answer(String picked) async {
+    final outcome = await _c.awakeAnswer(picked);
+    if (!mounted) return;
+    if (outcome != null && !outcome.correct) {
+      setState(() {
+        _wrong = true;
+        _screen = _c.awakeScreen();
+      });
+      _notice = Timer(wrongNoticeTime, () {
+        if (mounted) setState(() => _wrong = false);
+      });
+      return;
+    }
+    if (outcome != null && outcome.failed) {
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(
+          builder: (_) => SummaryScreen(outcome: outcome),
+        ),
+      );
+      return;
+    }
+    Navigator.of(context).pop();
+  }
+
+  Future<void> _dismiss() async {
+    await _c.awakeDismiss();
+    if (!mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  @override
+  void dispose() {
+    _notice?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_wrong) return const WrongNotice();
+    return QuizPanel(
+      screen: _screen,
+      topLabel: AppLocalizations.of(context).awakeBack,
+      onTop: () => Navigator.of(context).pop(),
+      onConfirm: _answer,
+      onDismiss: _dismiss,
     );
   }
 }

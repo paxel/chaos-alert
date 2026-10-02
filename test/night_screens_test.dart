@@ -299,6 +299,83 @@ void main() {
     });
   });
 
+  group("I'm awake", () {
+    /// In bed Monday 22:30, awake Tuesday 05:50 — inside the window.
+    Future<String> awakeMorning(Setup s) async {
+      final word = await s.controller.inBed();
+      s.now = DateTime(2026, 10, 6, 5, 50);
+      await s.controller.reschedule();
+      return word;
+    }
+
+    testWidgets('the right word ends the night and cancels the alarm', (
+      tester,
+    ) async {
+      final s = Setup();
+      final word = await awakeMorning(s);
+      await s.open(tester, AwakeScreen(controller: s.controller));
+      expect(find.text('Back'), findsOneWidget);
+      expect(find.text('Snooze'), findsNothing);
+      await tester.tap(find.text(word));
+      await tester.pump();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      expect(find.text('home'), findsOneWidget);
+      expect(s.store.loadRecords().single.result, NightResult.success);
+      expect(
+        s.platform.rings.where((r) => r.at == DateTime(2026, 10, 6, 6, 30)),
+        isEmpty,
+      );
+    });
+
+    testWidgets('a wrong word says so and the quiz goes on without it', (
+      tester,
+    ) async {
+      final s = Setup();
+      final word = await awakeMorning(s);
+      await s.open(tester, AwakeScreen(controller: s.controller));
+      final wrong = words.firstWhere(
+        (w) => w != word && find.text(w).evaluate().isNotEmpty,
+      );
+      await tester.tap(find.text(wrong));
+      await tester.pump();
+      await tester.tap(find.text('OK'));
+      await tester.pump();
+      expect(find.text('Not this one.'), findsOneWidget);
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pumpAndSettle();
+      expect(find.text(wrong), findsNothing);
+      expect(find.text(word), findsOneWidget);
+      await tester.tap(find.text(word));
+      await tester.pump();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      expect(find.text('Found on try 2'), findsOneWidget);
+    });
+
+    testWidgets('Back changes nothing; the alarm still rings', (tester) async {
+      final s = Setup();
+      await awakeMorning(s);
+      await s.open(tester, AwakeScreen(controller: s.controller));
+      await tester.tap(find.text('Back'));
+      await tester.pumpAndSettle();
+      expect(find.text('home'), findsOneWidget);
+      expect(s.store.loadRecords(), isEmpty);
+      expect(s.platform.rings.first.at, DateTime(2026, 10, 6, 6, 30));
+    });
+
+    testWidgets('without a word it is a plain turn-off', (tester) async {
+      final s = Setup();
+      s.controller.engine.nagShown();
+      s.now = DateTime(2026, 10, 6, 5, 50);
+      await s.open(tester, AwakeScreen(controller: s.controller));
+      expect(find.text('Which word did you see last night?'), findsNothing);
+      await tester.tap(find.text('Turn off'));
+      await tester.pumpAndSettle();
+      expect(s.store.loadRecords().single.result, NightResult.noWord);
+    });
+  });
+
   testWidgets('the fifth miss in a row shows the hint', (tester) async {
     final s = Setup();
     final failures = [

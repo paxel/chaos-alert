@@ -113,6 +113,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(height: 24),
+              if (_c.canSayAwake)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 48),
+                  child: FilledButton.icon(
+                    onPressed: () => _open(() => AwakeScreen(controller: _c)),
+                    icon: const Icon(Icons.wb_sunny),
+                    label: Text(t.homeAwake),
+                  ),
+                ),
               if (_c.canSayInBed)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 48),

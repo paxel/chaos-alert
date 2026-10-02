@@ -747,6 +747,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not this one.'**
   String get notThisOne;
+
+  /// No description provided for @awakeBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get awakeBack;
+
+  /// No description provided for @homeAwake.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m awake'**
+  String get homeAwake;
 }
 
 class _AppLocalizationsDelegate

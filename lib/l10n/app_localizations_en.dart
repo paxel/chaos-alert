@@ -388,4 +388,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notThisOne => 'Not this one.';
+
+  @override
+  String get awakeBack => 'Back';
+
+  @override
+  String get homeAwake => 'I\'m awake';
 }

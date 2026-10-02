@@ -225,5 +225,7 @@
     }
   },
   "hintDismiss": "OK",
-  "notThisOne": "Not this one."
+  "notThisOne": "Not this one.",
+  "awakeBack": "Back",
+  "homeAwake": "I'm awake"
 }

@@ -49,6 +49,7 @@ class Controller extends ChangeNotifier {
   late List<Vacation> _vacations;
   late List<NightRecord> _nights;
   late bool _canSayInBed;
+  late bool _canSayAwake;
   late bool _setupDone;
   late bool _pendingHint;
   Plan _plan = const Plan();
@@ -58,6 +59,7 @@ class Controller extends ChangeNotifier {
   List<Vacation> get vacations => List.of(_vacations);
   List<NightRecord> get nights => _nights;
   bool get canSayInBed => _canSayInBed;
+  bool get canSayAwake => _canSayAwake;
   bool get setupDone => _setupDone;
 
   /// The hint whose page never came (a timeout ended the fifth failure).
@@ -72,6 +74,7 @@ class Controller extends ChangeNotifier {
     _vacations = store.loadVacations();
     _nights = store.loadRecords();
     _canSayInBed = engine.canSayInBed;
+    _canSayAwake = engine.canSayAwake;
     _setupDone = store.loadState().setupDone;
     _pendingHint = engine.pendingHint;
   }
@@ -86,9 +89,11 @@ class Controller extends ChangeNotifier {
   /// Re-reads what depends on the time of day, like the "I'm in bed"
   /// window. Called once a minute while the main screen is shown.
   void tick() {
-    final can = engine.canSayInBed;
-    if (can == _canSayInBed) return;
-    _canSayInBed = can;
+    final inBed = engine.canSayInBed;
+    final awake = engine.canSayAwake;
+    if (inBed == _canSayInBed && awake == _canSayAwake) return;
+    _canSayInBed = inBed;
+    _canSayAwake = awake;
     notifyListeners();
   }
 
@@ -180,6 +185,20 @@ class Controller extends ChangeNotifier {
 
   Future<void> snoozeNag(Duration length) {
     engine.snoozeNag(length);
+    return reschedule();
+  }
+
+  /// What "I'm awake" shows.
+  RingScreen awakeScreen() => engine.awakeScreen();
+
+  Future<QuizOutcome?> awakeAnswer(String picked) async {
+    final outcome = engine.awakeAnswer(picked);
+    await reschedule();
+    return outcome;
+  }
+
+  Future<void> awakeDismiss() {
+    engine.awakeDismiss();
     return reschedule();
   }
 
