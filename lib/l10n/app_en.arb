@@ -199,5 +199,6 @@
   },
   "dangerButton": "DON'T PRESS.\nDANGER",
   "dangerThanks": "Thank you for using chaos-alert!",
-  "doneLabel": "Done"
+  "doneLabel": "Done",
+  "ringConfirm": "OK"
 }

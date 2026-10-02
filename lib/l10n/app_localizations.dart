@@ -717,6 +717,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done'**
   String get doneLabel;
+
+  /// No description provided for @ringConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'OK'**
+  String get ringConfirm;
 }
 
 class _AppLocalizationsDelegate

@@ -56,12 +56,94 @@ void main() {
       .widget<NightBar>(find.byKey(ValueKey('night-2026-$month-$day')))
       .record;
 
-  test('the axis runs from 20:00 to noon', () {
-    final morning = DateTime(2026, 10, 6);
-    expect(axisPosition(morning, DateTime(2026, 10, 5, 20)), 0);
-    expect(axisPosition(morning, DateTime(2026, 10, 6, 4)), 0.5);
-    expect(axisPosition(morning, DateTime(2026, 10, 6, 12)), 1);
-    expect(axisPosition(morning, DateTime(2026, 10, 5, 18)), 0);
+  group('axis', () {
+    NightRecord sleep(DateTime bed, DateTime end, {DateTime? planned}) =>
+        NightRecord(
+          plannedBedtime: planned ?? bed,
+          bedtime: bed,
+          bedtimeAssumed: false,
+          end: end,
+          result: NightResult.success,
+        );
+
+    test('without nights it runs from 20:00 to noon', () {
+      final axis = TimeAxis.fit(const []);
+      final morning = DateTime(2026, 10, 6);
+      expect(axis.position(morning, DateTime(2026, 10, 5, 20)), 0);
+      expect(axis.position(morning, DateTime(2026, 10, 6, 4)), 0.5);
+      expect(axis.position(morning, DateTime(2026, 10, 6, 12)), 1);
+      expect(axis.labels.first, const ClockTime(20, 0));
+      expect(axis.labels.last, const ClockTime(12, 0));
+    });
+
+    test('fits the earliest bedtime and the latest wake-up in whole hours', () {
+      final axis = TimeAxis.fit([
+        sleep(DateTime(2026, 10, 5, 23, 10), DateTime(2026, 10, 6, 6, 40)),
+        sleep(DateTime(2026, 10, 7, 0, 20), DateTime(2026, 10, 7, 7, 5)),
+      ]);
+      // 23:00 to 08:00 is 9 hours, widened to four 3-hour steps.
+      expect(axis.labels, const [
+        ClockTime(23, 0),
+        ClockTime(2, 0),
+        ClockTime(5, 0),
+        ClockTime(8, 0),
+        ClockTime(11, 0),
+      ]);
+      final morning = DateTime(2026, 10, 6);
+      expect(axis.position(morning, DateTime(2026, 10, 5, 23)), 0);
+      expect(axis.position(morning, DateTime(2026, 10, 6, 5)), 0.5);
+    });
+
+    test('an earlier planned bedtime widens the window', () {
+      final axis = TimeAxis.fit([
+        sleep(
+          DateTime(2026, 10, 6, 1),
+          DateTime(2026, 10, 6, 7),
+          planned: DateTime(2026, 10, 5, 22, 30),
+        ),
+      ]);
+      expect(axis.labels.first, const ClockTime(22, 0));
+    });
+
+    test('day sleepers get a daytime window', () {
+      final axis = TimeAxis.fit([
+        sleep(DateTime(2026, 10, 6, 8), DateTime(2026, 10, 6, 16)),
+        sleep(DateTime(2026, 10, 7, 9), DateTime(2026, 10, 7, 15, 30)),
+      ]);
+      expect(axis.labels.first, const ClockTime(8, 0));
+      expect(axis.labels.last, const ClockTime(16, 0));
+      final morning = DateTime(2026, 10, 6);
+      expect(axis.position(morning, DateTime(2026, 10, 6, 12)), 0.5);
+    });
+
+    test('is never wider than a day', () {
+      final axis = TimeAxis.fit([
+        sleep(DateTime(2026, 10, 5, 14), DateTime(2026, 10, 6, 7)),
+        sleep(DateTime(2026, 10, 7, 2), DateTime(2026, 10, 7, 21)),
+      ]);
+      expect(axis.hours, 24);
+      expect(axis.labels.first, const ClockTime(14, 0));
+      final morning = DateTime(2026, 10, 7);
+      expect(axis.position(morning, DateTime(2026, 10, 7, 21)), 1);
+    });
+  });
+
+  testWidgets('the axis labels follow the nights of the period', (
+    tester,
+  ) async {
+    store.addRecord(
+      NightRecord(
+        plannedBedtime: DateTime(2026, 10, 6, 8),
+        bedtime: DateTime(2026, 10, 6, 8),
+        bedtimeAssumed: false,
+        end: DateTime(2026, 10, 6, 16),
+        result: NightResult.success,
+      ),
+    );
+    await pumpApp(tester);
+    expect(find.text('8:00 AM'), findsOneWidget);
+    expect(find.text('4:00 PM'), findsOneWidget);
+    expect(find.text('8:00 PM'), findsNothing);
   });
 
   testWidgets('the week shows seven rows with this week\'s nights', (

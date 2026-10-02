@@ -151,6 +151,9 @@ class _AlarmScreenState extends State<AlarmScreen> {
   RingScreen? _screen;
   Timer? _timeout;
 
+  /// The word marked so far; nothing counts until OK.
+  String? _picked;
+
   Controller get _c => widget.controller;
 
   @override
@@ -208,35 +211,62 @@ class _AlarmScreenState extends State<AlarmScreen> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final screen = _screen;
+    if (screen == null) return const NightFrame(child: SizedBox.shrink());
+    const tall = Size.fromHeight(64);
+    final picked = _picked;
+    // Half-asleep fingers: tall buttons with room between them, a word is
+    // only marked by a tap, and OK sits far below, away from Snooze.
     return NightFrame(
-      child: screen == null
-          ? const SizedBox.shrink()
-          : Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (screen.quiz) ...[
-                  Text(
-                    t.ringQuiz,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleLarge
-                        ?.copyWith(color: Colors.white70),
-                  ),
-                  const SizedBox(height: 24),
-                  for (final option in screen.options)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      child: FilledButton.tonal(
-                        onPressed: () => _answer(option),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(minimumSize: tall),
+            onPressed: _snooze,
+            child: Text(t.ringSnooze),
+          ),
+          const Spacer(),
+          if (screen.quiz) ...[
+            Text(
+              t.ringQuiz,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            for (final option in screen.options)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: option == picked
+                    ? FilledButton.icon(
+                        key: ValueKey('picked-$option'),
+                        style: FilledButton.styleFrom(minimumSize: tall),
+                        onPressed: () => setState(() => _picked = option),
+                        icon: const Icon(Icons.check),
+                        label: Text(option),
+                      )
+                    : FilledButton.tonal(
+                        style: FilledButton.styleFrom(minimumSize: tall),
+                        onPressed: () => setState(() => _picked = option),
                         child: Text(option),
                       ),
-                    ),
-                ] else
-                  FilledButton(onPressed: _dismiss, child: Text(t.ringDismiss)),
-                const SizedBox(height: 32),
-                OutlinedButton(onPressed: _snooze, child: Text(t.ringSnooze)),
-              ],
+              ),
+            const Spacer(),
+            FilledButton(
+              style: FilledButton.styleFrom(minimumSize: tall),
+              onPressed: picked == null ? null : () => _answer(picked),
+              child: Text(t.ringConfirm),
             ),
+          ] else ...[
+            FilledButton(
+              style: FilledButton.styleFrom(minimumSize: tall),
+              onPressed: _dismiss,
+              child: Text(t.ringDismiss),
+            ),
+            const Spacer(),
+          ],
+        ],
+      ),
     );
   }
 }

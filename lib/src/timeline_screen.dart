@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:chaos_core/chaos_core.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -8,20 +10,61 @@ import 'controller.dart';
 import 'results.dart';
 import 'settings_screen.dart';
 
-/// The axis of every bar: from 20:00 in the evening to 12:00 next day.
-const axisStartHour = 20;
-const axisHours = 16;
+/// The time window a period's bars are drawn across: from the earliest
+/// bedtime to the latest end of a night in the period, in whole hours and at
+/// most a day, so day and afternoon sleepers fit as well as night owls.
+class TimeAxis {
+  const TimeAxis(this.startMinute, this.hours, this.step);
 
-/// Where [t] sits on the axis of the night ending on [morning], 0 to 1.
-double axisPosition(DateTime morning, DateTime t) {
-  final start = DateTime(
-    morning.year,
-    morning.month,
-    morning.day - 1,
-    axisStartHour,
-  );
-  final minutes = t.difference(start).inMinutes / (axisHours * 60);
-  return minutes.clamp(0.0, 1.0);
+  /// The window of a period without nights: 20:00 to noon.
+  static const fallback = TimeAxis(-240, 16, 4);
+
+  factory TimeAxis.fit(Iterable<NightRecord> records) {
+    final list = records.toList();
+    if (list.isEmpty) return fallback;
+    int offset(NightRecord r, DateTime t) => t.difference(r.morning).inMinutes;
+    final earliest = list
+        .map((r) => min(offset(r, r.bedtime), offset(r, r.plannedBedtime)))
+        .reduce(min);
+    final latest = list.map((r) => offset(r, r.end)).reduce(max);
+    final start = (earliest / 60).floor() * 60;
+    final end = (latest / 60).ceil() * 60;
+    final hours = ((end - start) ~/ 60).clamp(1, 24);
+    // Four steps between five labels; the window grows to fit them.
+    final step = (hours / 4).ceil();
+    return TimeAxis(start, min(step * 4, 24), step);
+  }
+
+  /// Minutes from midnight of the morning a night ends in; negative is the
+  /// evening before.
+  final int startMinute;
+  final int hours;
+
+  /// Hours between two labels.
+  final int step;
+
+  /// Where [t] sits on the axis of the night ending on [morning], 0 to 1.
+  double position(DateTime morning, DateTime t) =>
+      ((t.difference(morning).inMinutes - startMinute) / (hours * 60)).clamp(
+        0.0,
+        1.0,
+      );
+
+  /// The clock times along the axis, from start to end.
+  List<ClockTime> get labels => [
+    for (var m = startMinute; m <= startMinute + hours * 60; m += step * 60)
+      ClockTime((m ~/ 60) % 24, 0),
+  ];
+
+  @override
+  bool operator ==(Object other) =>
+      other is TimeAxis &&
+      other.startMinute == startMinute &&
+      other.hours == hours &&
+      other.step == step;
+
+  @override
+  int get hashCode => Object.hash(startMinute, hours, step);
 }
 
 /// The mornings of the week or month around [anchor].
@@ -77,6 +120,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
     final byMorning = {for (final r in widget.controller.nights) r.morning: r};
     final shown = [for (final m in mornings) ?byMorning[m]];
     final summary = TimelineSummary.of(shown);
+    final axis = TimeAxis.fit(shown);
     final title = _month
         ? DateFormat.yMMMM(locale).format(_anchor)
         : '${DateFormat.MMMd(locale).format(mornings.first)} – '
@@ -124,7 +168,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
             ),
           ],
           const SizedBox(height: 16),
-          const _AxisLabels(),
+          _AxisLabels(axis: axis),
           for (final m in mornings)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 1),
@@ -144,6 +188,7 @@ class _TimelineScreenState extends State<TimelineScreen> {
                         key: ValueKey('night-${m.year}-${m.month}-${m.day}'),
                         morning: m,
                         record: byMorning[m],
+                        axis: axis,
                       ),
                     ),
                   ),
@@ -157,7 +202,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
 }
 
 class _AxisLabels extends StatelessWidget {
-  const _AxisLabels();
+  const _AxisLabels({required this.axis});
+
+  final TimeAxis axis;
 
   @override
   Widget build(BuildContext context) {
@@ -167,8 +214,8 @@ class _AxisLabels extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          for (final h in [20, 0, 4, 8, 12])
-            Text(clockText(context, ClockTime(h % 24, 0)), style: style),
+          for (final time in axis.labels)
+            Text(clockText(context, time), style: style),
         ],
       ),
     );
@@ -178,16 +225,23 @@ class _AxisLabels extends StatelessWidget {
 /// The bar of one night: coloured by its result, hatched at the start when
 /// the bedtime was assumed, with a tick at the planned bedtime.
 class NightBar extends StatelessWidget {
-  const NightBar({super.key, required this.morning, required this.record});
+  const NightBar({
+    super.key,
+    required this.morning,
+    required this.record,
+    this.axis = TimeAxis.fallback,
+  });
 
   final DateTime morning;
   final NightRecord? record;
+  final TimeAxis axis;
 
   @override
   Widget build(BuildContext context) => CustomPaint(
     painter: _NightPainter(
       morning: morning,
       record: record,
+      axis: axis,
       track: Theme.of(context).colorScheme.surfaceContainerHighest,
     ),
   );
@@ -197,11 +251,13 @@ class _NightPainter extends CustomPainter {
   _NightPainter({
     required this.morning,
     required this.record,
+    required this.axis,
     required this.track,
   });
 
   final DateTime morning;
   final NightRecord? record;
+  final TimeAxis axis;
   final Color track;
 
   @override
@@ -209,8 +265,8 @@ class _NightPainter extends CustomPainter {
     canvas.drawRect(Offset.zero & size, Paint()..color = track);
     final r = record;
     if (r == null) return;
-    final left = axisPosition(morning, r.bedtime) * size.width;
-    final right = axisPosition(morning, r.end) * size.width;
+    final left = axis.position(morning, r.bedtime) * size.width;
+    final right = axis.position(morning, r.end) * size.width;
     final bar = Rect.fromLTRB(left, 0, right, size.height);
     canvas.drawRect(bar, Paint()..color = resultColor(r.result));
     if (r.bedtimeAssumed) {
@@ -234,7 +290,7 @@ class _NightPainter extends CustomPainter {
       }
       canvas.restore();
     }
-    final planned = axisPosition(morning, r.plannedBedtime) * size.width;
+    final planned = axis.position(morning, r.plannedBedtime) * size.width;
     canvas.drawLine(
       Offset(planned, 0),
       Offset(planned, size.height),
@@ -246,5 +302,8 @@ class _NightPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_NightPainter old) =>
-      old.record != record || old.morning != morning || old.track != track;
+      old.record != record ||
+      old.morning != morning ||
+      old.axis != axis ||
+      old.track != track;
 }

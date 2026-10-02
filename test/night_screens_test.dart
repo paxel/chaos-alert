@@ -128,6 +128,8 @@ void main() {
       );
       expect(find.text('Which word did you see last night?'), findsOneWidget);
       await tester.tap(find.text(word));
+      await tester.pump();
+      await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
       expect(find.text('home'), findsOneWidget);
       expect(s.store.loadRecords().single.result, NightResult.success);
@@ -145,6 +147,8 @@ void main() {
         (w) => w != word && find.text(w).evaluate().isNotEmpty,
       );
       await tester.tap(find.text(wrong));
+      await tester.pump();
+      await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
       expect(find.text('Not this time'), findsOneWidget);
       expect(find.text(word), findsOneWidget);
@@ -153,6 +157,60 @@ void main() {
       expect(find.byKey(const ValueKey('strip-failure')), findsOneWidget);
       expect(find.textContaining('talking to a doctor'), findsNothing);
       expect(s.platform.stops, 1);
+    });
+
+    testWidgets('a tap only marks a word; OK answers, and a misclick can '
+        'be fixed first', (tester) async {
+      final s = Setup();
+      final word = await sayInBed(s);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      final ok = find.widgetWithText(FilledButton, 'OK');
+      expect(tester.widget<FilledButton>(ok).onPressed, isNull);
+
+      final wrong = words.firstWhere(
+        (w) => w != word && find.text(w).evaluate().isNotEmpty,
+      );
+      await tester.tap(find.text(wrong));
+      await tester.pump();
+      expect(find.byKey(ValueKey('picked-$wrong')), findsOneWidget);
+      expect(s.store.loadRecords(), isEmpty);
+      expect(s.platform.stops, 0);
+
+      await tester.tap(find.text(word));
+      await tester.pump();
+      expect(find.byKey(ValueKey('picked-$word')), findsOneWidget);
+      expect(find.byKey(ValueKey('picked-$wrong')), findsNothing);
+
+      await tester.tap(ok);
+      await tester.pumpAndSettle();
+      expect(s.store.loadRecords().single.result, NightResult.success);
+    });
+
+    testWidgets('the words have room between them', (tester) async {
+      final s = Setup();
+      await sayInBed(s);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      final shown = words.where((w) => find.text(w).evaluate().isNotEmpty);
+      final rects = [
+        for (final w in shown)
+          tester.getRect(
+            find.ancestor(
+              of: find.text(w),
+              matching: find.bySubtype<ButtonStyleButton>(),
+            ),
+          ),
+      ]..sort((a, b) => a.top.compareTo(b.top));
+      expect(rects, hasLength(4));
+      for (var i = 0; i < 3; i++) {
+        expect(rects[i].height, greaterThanOrEqualTo(64));
+        expect(rects[i + 1].top - rects[i].bottom, greaterThanOrEqualTo(20));
+      }
     });
 
     testWidgets('without a word it offers a plain turn-off', (tester) async {
