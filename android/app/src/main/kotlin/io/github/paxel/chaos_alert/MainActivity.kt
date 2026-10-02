@@ -46,6 +46,14 @@ class MainActivity : FlutterActivity() {
                         Scheduler.replaceRings(this@MainActivity, json(call.arguments) as JSONArray)
                         result.success(null)
                     }
+                    "scheduleAwake" -> {
+                        Scheduler.replaceAwake(this@MainActivity, json(call.arguments) as JSONArray)
+                        result.success(null)
+                    }
+                    "clearAwakeNotice" -> {
+                        AlarmReceiver.clearAwake(this@MainActivity)
+                        result.success(null)
+                    }
                     "drainEvents" -> result.success(EventQueue.drain(this@MainActivity))
                     "stopRinging" -> {
                         RingService.stop(this@MainActivity)
@@ -88,6 +96,7 @@ class MainActivity : FlutterActivity() {
     private fun launchOf(intent: Intent?): Map<String, Any>? =
         when (intent?.getStringExtra(Scheduler.EXTRA_KIND)) {
             "nag" -> mapOf("kind" to "nag")
+            "awake" -> mapOf("kind" to "awake")
             "ring" -> mapOf("kind" to "ring", "alarmId" to (intent?.getIntExtra(Scheduler.EXTRA_ALARM_ID, -1) ?: -1))
             else -> null
         }

@@ -9,6 +9,8 @@ class FakePlatform implements AlarmPlatform {
   bool? chime;
   final events = <PlatformEvent>[];
   List<ScheduledRing> rings = [];
+  List<AwakeNotice> awake = [];
+  int awakeCleared = 0;
   int stops = 0;
   final requested = <Permission>[];
   Map<Permission, bool> granted = {for (final p in Permission.values) p: true};
@@ -42,6 +44,13 @@ class FakePlatform implements AlarmPlatform {
     events.clear();
     return drained;
   }
+
+  @override
+  Future<void> scheduleAwake(List<AwakeNotice> notices) async =>
+      awake = notices;
+
+  @override
+  Future<void> clearAwakeNotice() async => awakeCleared++;
 
   @override
   Future<void> scheduleRings(List<ScheduledRing> rings) async =>

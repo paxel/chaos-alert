@@ -4,4 +4,6 @@
     <string name="nag_title">Are you in bed?</string>
     <string name="ring_channel">Alarm</string>
     <string name="ring_title">Alarm</string>
+    <string name="awake_channel">I\'m awake</string>
+    <string name="awake_title">Awake already? Tap to turn off the alarm.</string>
 </resources>

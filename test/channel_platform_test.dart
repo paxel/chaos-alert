@@ -31,6 +31,22 @@ void main() {
     });
   });
 
+  test('awake notices travel with their show and hide times', () async {
+    await ChannelAlarmPlatform().scheduleAwake([
+      AwakeNotice(
+        at: DateTime(2026, 10, 6, 5, 30),
+        until: DateTime(2026, 10, 6, 6, 30),
+      ),
+    ]);
+    expect(calls.single.method, 'scheduleAwake');
+    expect(calls.single.arguments, [
+      {
+        'local': [2026, 10, 6, 5, 30, 0],
+        'until': [2026, 10, 6, 6, 30, 0],
+      },
+    ]);
+  });
+
   test('rings carry everything Android needs to ring alone', () async {
     await ChannelAlarmPlatform().scheduleRings([
       ScheduledRing(
@@ -93,6 +109,11 @@ void main() {
     expect(perms[Permission.exactAlarms], isTrue);
     expect(perms[Permission.music], isFalse);
     expect(perms[Permission.battery], isFalse);
+  });
+
+  test('a launch from the awake notice opens I am awake', () async {
+    answer = (_) => {'kind': 'awake'};
+    expect(await ChannelAlarmPlatform().initialLaunch(), isA<AwakeLaunch>());
   });
 
   test('a launch reads the nag or the ring', () async {

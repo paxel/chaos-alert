@@ -69,6 +69,7 @@ class _ChaosAlertAppState extends State<ChaosAlertApp>
     if (!mounted) return;
     final screen = switch (launch) {
       NagLaunch() => NagScreen(controller: _c),
+      AwakeLaunch() => AwakeScreen(controller: _c),
       RingLaunch(:final alarmId) => AlarmScreen(
         controller: _c,
         alarmId: alarmId,

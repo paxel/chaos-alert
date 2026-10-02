@@ -131,6 +131,10 @@ class Controller extends ChangeNotifier {
     final settings = store.loadSettings();
     final sounds = _sounds ??= await platform.sounds();
     await platform.scheduleNags(plan.nags, chime: settings.chime);
+    await platform.scheduleAwake([
+      for (final ring in plan.awake)
+        AwakeNotice(at: ring.subtract(awakeWindow), until: ring),
+    ]);
     await platform.scheduleRings([
       for (final r in plan.rings)
         ScheduledRing(
@@ -193,13 +197,15 @@ class Controller extends ChangeNotifier {
 
   Future<QuizOutcome?> awakeAnswer(String picked) async {
     final outcome = engine.awakeAnswer(picked);
+    if (outcome != null && outcome.correct) await platform.clearAwakeNotice();
     await reschedule();
     return outcome;
   }
 
-  Future<void> awakeDismiss() {
+  Future<void> awakeDismiss() async {
     engine.awakeDismiss();
-    return reschedule();
+    await platform.clearAwakeNotice();
+    await reschedule();
   }
 
   /// What the ringing alarm [alarmId] shows.

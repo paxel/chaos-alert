@@ -153,6 +153,15 @@ void main() {
     expect(find.text('Are you in bed?'), findsOneWidget);
   });
 
+  testWidgets('the awake notice opens I am awake', (tester) async {
+    setupDone();
+    platform.initial = const AwakeLaunch();
+    now = DateTime(2026, 10, 6, 5, 45);
+    await tester.pumpWidget(ChaosAlertApp(controller: controller()));
+    await tester.pumpAndSettle();
+    expect(find.text('Back'), findsOneWidget);
+  });
+
   testWidgets('a ring while the app runs shows the alarm', (tester) async {
     setupDone();
     await tester.pumpWidget(ChaosAlertApp(controller: controller()));

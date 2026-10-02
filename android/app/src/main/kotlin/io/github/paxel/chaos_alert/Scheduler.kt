@@ -20,33 +20,31 @@ object Scheduler {
     private const val KEY_ARMED = "armed"
     private const val NAG_CODE = 1000
     private const val RING_CODE = 2000
+    private const val AWAKE_CODE = 3000
 
     const val EXTRA_KIND = "chaos.kind"
     const val EXTRA_ALARM_ID = "chaos.alarmId"
     const val EXTRA_PAYLOAD = "chaos.payload"
 
-    /** Replaces the stored schedule with [nags] and [rings] and arms it. */
-    private fun replace(context: Context, nags: JSONArray, chime: Boolean, rings: JSONArray) {
+    /** Changes the stored schedule with [change] and arms it again. */
+    private fun update(context: Context, change: (JSONObject) -> Unit) {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val schedule = JSONObject()
-            .put("nags", nags)
-            .put("chime", chime)
-            .put("rings", rings)
+        val schedule = stored(context).also(change)
         prefs.edit().putString(KEY, schedule.toString()).commit()
         arm(context)
     }
 
-    /** Replaces only the nags, keeping the rings. */
-    fun replaceNags(context: Context, nags: JSONArray, chime: Boolean) {
-        val s = stored(context)
-        replace(context, nags, chime, s.optJSONArray("rings") ?: JSONArray())
-    }
+    /** Replaces only the nags, keeping the rest. */
+    fun replaceNags(context: Context, nags: JSONArray, chime: Boolean) =
+        update(context) { it.put("nags", nags).put("chime", chime) }
 
-    /** Replaces only the rings, keeping the nags. */
-    fun replaceRings(context: Context, rings: JSONArray) {
-        val s = stored(context)
-        replace(context, s.optJSONArray("nags") ?: JSONArray(), s.optBoolean("chime", true), rings)
-    }
+    /** Replaces only the rings, keeping the rest. */
+    fun replaceRings(context: Context, rings: JSONArray) =
+        update(context) { it.put("rings", rings) }
+
+    /** Replaces only the "I'm awake" notices, keeping the rest. */
+    fun replaceAwake(context: Context, awake: JSONArray) =
+        update(context) { it.put("awake", awake) }
 
     private fun stored(context: Context): JSONObject {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -60,6 +58,7 @@ object Scheduler {
         val armed = JSONObject(prefs.getString(KEY_ARMED, "{}"))
         repeat(armed.optInt("nags")) { i -> manager.cancel(pending(context, NAG_CODE + i, null)) }
         repeat(armed.optInt("rings")) { i -> manager.cancel(pending(context, RING_CODE + i, null)) }
+        repeat(armed.optInt("awake")) { i -> manager.cancel(pending(context, AWAKE_CODE + i, null)) }
 
         val schedule = stored(context)
         val now = System.currentTimeMillis()
@@ -84,8 +83,27 @@ object Scheduler {
                 .putExtra(EXTRA_PAYLOAD, ring.toString())
             exact(context, manager, at, pending(context, RING_CODE + i, intent), alarmClock = true)
         }
+        val awake = schedule.optJSONArray("awake") ?: JSONArray()
+        for (i in 0 until awake.length()) {
+            val notice = awake.getJSONObject(i)
+            val until = localMillis(notice.getJSONArray("until"))
+            if (until <= now) continue
+            // Inside the window already: show it now.
+            val at = maxOf(localMillis(notice.getJSONArray("local")), now + 1000)
+            val intent = Intent(context, AlarmReceiver::class.java)
+                .putExtra(EXTRA_KIND, "awake")
+                .putExtra(EXTRA_PAYLOAD, JSONObject().put("until", until).toString())
+            exact(context, manager, at, pending(context, AWAKE_CODE + i, intent), alarmClock = false)
+        }
         prefs.edit()
-            .putString(KEY_ARMED, JSONObject().put("nags", nags.length()).put("rings", rings.length()).toString())
+            .putString(
+                KEY_ARMED,
+                JSONObject()
+                    .put("nags", nags.length())
+                    .put("rings", rings.length())
+                    .put("awake", awake.length())
+                    .toString(),
+            )
             .commit()
     }
 

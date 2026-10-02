@@ -28,6 +28,14 @@ class ScheduledRing {
   final Duration timeout;
 }
 
+/// The silent "I'm awake" notice of one morning.
+class AwakeNotice {
+  const AwakeNotice({required this.at, required this.until});
+
+  final DateTime at;
+  final DateTime until;
+}
+
 /// Why Android opened the app.
 sealed class Launch {
   const Launch();
@@ -35,6 +43,10 @@ sealed class Launch {
 
 class NagLaunch extends Launch {
   const NagLaunch();
+}
+
+class AwakeLaunch extends Launch {
+  const AwakeLaunch();
 }
 
 class RingLaunch extends Launch {
@@ -74,6 +86,14 @@ class RingTimedOut extends PlatformEvent {
 abstract interface class AlarmPlatform {
   /// Schedules exactly [nags], replacing every nag scheduled before.
   Future<void> scheduleNags(List<DateTime> nags, {required bool chime});
+
+  /// Schedules the silent "I'm awake" notices, replacing the ones before:
+  /// each shows at [AwakeNotice.at] and goes away at [AwakeNotice.until],
+  /// when the alarm rings.
+  Future<void> scheduleAwake(List<AwakeNotice> notices);
+
+  /// Removes the "I'm awake" notice that is showing, once it is done.
+  Future<void> clearAwakeNotice();
 
   /// Schedules exactly [rings], replacing every ring scheduled before.
   Future<void> scheduleRings(List<ScheduledRing> rings);
@@ -120,6 +140,16 @@ class ChannelAlarmPlatform implements AlarmPlatform {
         'local': [for (final n in nags) _local(n)],
         'chime': chime,
       });
+
+  @override
+  Future<void> scheduleAwake(List<AwakeNotice> notices) =>
+      _channel.invokeMethod('scheduleAwake', [
+        for (final n in notices)
+          {'local': _local(n.at), 'until': _local(n.until)},
+      ]);
+
+  @override
+  Future<void> clearAwakeNotice() => _channel.invokeMethod('clearAwakeNotice');
 
   @override
   Future<List<PlatformEvent>> drainEvents() async {
@@ -209,6 +239,7 @@ class ChannelAlarmPlatform implements AlarmPlatform {
     if (raw is! Map) return null;
     return switch (raw['kind']) {
       'nag' => const NagLaunch(),
+      'awake' => const AwakeLaunch(),
       'ring' => RingLaunch(raw['alarmId'] as int),
       _ => null,
     };

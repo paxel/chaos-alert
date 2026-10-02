@@ -22,9 +22,12 @@ class AlarmReceiver : BroadcastReceiver() {
                 EventQueue.add(context, "nag")
                 showNag(context, payload.optBoolean("chime", true))
             }
+            "awake" -> showAwake(context, payload.optLong("until"))
             "ring" -> {
                 val alarmId = intent.getIntExtra(Scheduler.EXTRA_ALARM_ID, -1)
                 EventQueue.add(context, "ring", alarmId)
+                // Too late for "I'm awake": the alarm is ringing.
+                clearAwake(context)
                 ContextCompat.startForegroundService(
                     context,
                     Intent(context, RingService::class.java)
@@ -37,8 +40,47 @@ class AlarmReceiver : BroadcastReceiver() {
 
     companion object {
         private const val NAG_NOTIFICATION = 1
+        private const val AWAKE_NOTIFICATION = 3
+        private const val CHANNEL_AWAKE = "awake"
         private const val CHANNEL_CHIME = "nag_chime"
         private const val CHANNEL_SILENT = "nag_silent"
+
+        /**
+         * The silent "I'm awake" notice in the hour before the alarm; it
+         * goes away by itself when the alarm rings at [until].
+         */
+        fun showAwake(context: Context, until: Long) {
+            val manager = context.getSystemService(NotificationManager::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                manager.createNotificationChannel(
+                    NotificationChannel(CHANNEL_AWAKE, context.getString(R.string.awake_channel), NotificationManager.IMPORTANCE_LOW).apply {
+                        setSound(null, null)
+                        enableVibration(false)
+                    },
+                )
+            }
+            val open = PendingIntent.getActivity(
+                context, AWAKE_NOTIFICATION,
+                Intent(context, MainActivity::class.java)
+                    .putExtra(Scheduler.EXTRA_KIND, "awake")
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            val notification = NotificationCompat.Builder(context, CHANNEL_AWAKE)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(context.getString(R.string.awake_title))
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setSilent(true)
+                .setAutoCancel(true)
+                .setContentIntent(open)
+                .setTimeoutAfter(maxOf(until - System.currentTimeMillis(), 1000))
+                .build()
+            manager.notify(AWAKE_NOTIFICATION, notification)
+        }
+
+        /** Removes the "I'm awake" notice. */
+        fun clearAwake(context: Context) =
+            context.getSystemService(NotificationManager::class.java).cancel(AWAKE_NOTIFICATION)
 
         /** The bedtime popup: full screen over the lock screen. */
         fun showNag(context: Context, chime: Boolean) {

@@ -132,6 +132,26 @@ void main() {
     ]);
   });
 
+  test(
+    'the silent awake notice comes an hour before each first alarm',
+    () async {
+      await addAlarm();
+      expect(platform.awake.first.at, DateTime(2026, 10, 6, 5, 30));
+      expect(platform.awake.first.until, DateTime(2026, 10, 6, 6, 30));
+      expect(platform.awake, hasLength(3));
+    },
+  );
+
+  test("answering I'm awake clears the notice", () async {
+    await addAlarm();
+    now = DateTime(2026, 10, 5, 22, 30);
+    final word = await c.inBed();
+    now = DateTime(2026, 10, 6, 5, 45);
+    await c.awakeAnswer(word);
+    expect(platform.awakeCleared, 1);
+    expect(platform.awake.first.until, DateTime(2026, 10, 13, 6, 30));
+  });
+
   test('missing permissions are listed until granted', () async {
     platform.granted[Permission.fullScreen] = false;
     await c.refresh();
