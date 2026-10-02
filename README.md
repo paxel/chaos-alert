@@ -16,8 +16,8 @@ Your alarm always sounds the same, so you sleep right through it. And
 
 chaos-alert nags you to bed when it's time, gives you one word to remember,
 and wakes you with a sound you have never heard coming. To turn the alarm
-off, you pick last night's word from four — right or wrong, it stops, and
-the app keeps count of how well you remembered.
+off, you pick last night's word from four. A wrong pick only snoozes it,
+and the app keeps count of how well you remembered.
 
 ## What it does
 
@@ -34,9 +34,14 @@ the app keeps count of how well you remembered.
   a notification sound or a song from your music, starting somewhere in its
   first half. Quiet at first, louder after 10 seconds. A new surprise after
   every snooze.
-- **The quiz** — four words, one of them last night's. Pick it and the
-  alarm stops. Pick wrong and it stops too, and you see the word, your
-  streak and your last 30 nights. Five misses in a row bring a gentle hint.
+- **The quiz** — four words, one of them last night's. Tap one to mark
+  it, then OK. The right word stops the alarm; a wrong one snoozes it and
+  drops out of the next try. A night with wrong picks counts as failed,
+  shaded by how many it took, and shows your streak and your last 30
+  nights. Five misses in a row bring a gentle hint.
+- **I'm awake** — up before the alarm? In the hour before it, a button on
+  the main screen and a silent notification take you to the quiz; the
+  right word turns off that morning's alarms.
 - **Alarms** — repeating on weekdays or once on a date; switch them on and
   off, edit, delete. Reminder alarms that shouldn't move your bedtime get
   their wake-up switch turned off.
