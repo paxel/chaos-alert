@@ -575,6 +575,103 @@ void main() {
     });
   });
 
+  group("I'm awake", () {
+    test('appears an hour before the first wake-up alarm', () {
+      n.alarm(6, 30);
+      n.alarm(5, 0, wakeUp: false);
+      n.now = at(6, 5, 29);
+      expect(n.engine.canSayAwake, isFalse);
+      n.now = at(6, 5, 30);
+      expect(n.engine.canSayAwake, isTrue);
+    });
+
+    test('the right word ends the night and cancels the morning\'s wake-up '
+        'alarms, reminders still ring', () {
+      final first = n.alarm(6, 30);
+      final backup = n.alarm(6, 45);
+      final reminder = n.alarm(7, 0, wakeUp: false);
+      n.now = at(5, 22, 30);
+      final word = n.engine.inBed();
+      n.now = at(6, 5, 50);
+      expect(n.engine.awakeScreen().options, contains(word));
+      final outcome = n.engine.awakeAnswer(word)!;
+      expect(outcome.correct, isTrue);
+      expect(outcome.failed, isFalse);
+      expect(n.last.result, NightResult.success);
+      expect(n.last.end, at(6, 5, 50));
+      final rings = n.engine.plan().rings;
+      final today = rings.where((r) => dateOf(r.at) == at(6, 0));
+      expect(today.map((r) => r.alarmId), [reminder.id]);
+      expect(rings.where((r) => r.alarmId == first.id).first.at, at(7, 6, 30));
+      expect(rings.where((r) => r.alarmId == backup.id).first.at, at(7, 6, 45));
+      expect(n.engine.canSayAwake, isFalse);
+    });
+
+    test('a wrong word drops it and the quiz goes on without a snooze', () {
+      n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      final word = n.engine.inBed();
+      n.now = at(6, 5, 50);
+      final first = n.engine.awakeScreen();
+      final wrong = n.wrong(first, word);
+      final outcome = n.engine.awakeAnswer(wrong)!;
+      expect(outcome.correct, isFalse);
+      expect(outcome.snooze, isNull);
+      expect(n.engine.awakeScreen().options, isNot(contains(wrong)));
+      expect(n.engine.awakeAnswer(word)!.wrongPicks, 1);
+      expect(n.last.result, NightResult.failure);
+    });
+
+    test('back out after a wrong pick: the alarm rings with the word still '
+        'removed', () {
+      final a = n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      final word = n.engine.inBed();
+      n.now = at(6, 5, 50);
+      final wrong = n.wrong(n.engine.awakeScreen(), word);
+      n.engine.awakeAnswer(wrong);
+      expect(n.engine.plan().rings.first.at, at(6, 6, 30));
+      n.now = at(6, 6, 30);
+      expect(n.ring(a.id).options, isNot(contains(wrong)));
+    });
+
+    test('without a word it is a plain turn-off that ends the night', () {
+      final a = n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      n.engine.nagShown();
+      n.now = at(6, 5, 50);
+      expect(n.engine.awakeScreen().quiz, isFalse);
+      n.engine.awakeDismiss();
+      expect(n.last.result, NightResult.noWord);
+      expect(
+        n.engine.plan().rings.where((r) => r.alarmId == a.id).first.at,
+        at(7, 6, 30),
+      );
+    });
+
+    test('a morning without a night only loses its alarm; a one-time alarm '
+        'ends up switched off', () {
+      final once = n.alarm(9, 0, date: at(7, 0));
+      n.store.saveVacation(Vacation(id: 0, from: at(7, 0), to: at(7, 0)));
+      n.now = at(7, 8, 15);
+      expect(n.engine.canSayAwake, isTrue);
+      n.engine.awakeDismiss();
+      expect(n.store.loadRecords(), isEmpty);
+      expect(n.store.loadAlarms().single.enabled, isFalse);
+      expect(n.engine.plan().rings.where((r) => r.alarmId == once.id), isEmpty);
+    });
+
+    test('the plan lists the coming mornings for the silent notice', () {
+      n.alarm(6, 30);
+      n.now = at(9, 12);
+      expect(n.engine.plan().awake, [
+        at(12, 6, 30),
+        at(13, 6, 30),
+        at(14, 6, 30),
+      ]);
+    });
+  });
+
   test('the engine keeps nothing in memory between events', () {
     final a = n.alarm(6, 30);
     n.now = at(5, 22, 30);

@@ -13,13 +13,20 @@ const inBedWindow = Duration(hours: 3);
 /// How long a shown word waits for a wake-up alarm before it expires.
 const wordLifetime = Duration(hours: 24);
 
+/// How long before the first wake-up alarm "I'm awake" appears.
+const awakeWindow = Duration(hours: 1);
+
 /// How many nags and how many rings per alarm the plan looks ahead, so
 /// Android keeps nagging and ringing on days the app never runs.
 const planAhead = 3;
 
 /// What the platform has to schedule next.
 class Plan {
-  const Plan({this.nags = const [], this.rings = const []});
+  const Plan({
+    this.nags = const [],
+    this.rings = const [],
+    this.awake = const [],
+  });
 
   /// When the bedtime nag pops up, earliest first; a time in the past
   /// means now.
@@ -27,6 +34,10 @@ class Plan {
 
   /// The coming rings of every alarm, snoozes included, earliest first.
   final List<PlannedRing> rings;
+
+  /// The coming mornings' first wake-up rings, for the silent "I'm awake"
+  /// notice an hour before each.
+  final List<DateTime> awake;
 
   DateTime? get nextNag => nags.isEmpty ? null : nags.first;
 }
@@ -145,8 +156,91 @@ class Engine {
       if (snooze != null) rings.add(PlannedRing(a.id, snooze));
     }
     rings.sort((a, b) => a.at.compareTo(b.at));
+    final awake = <DateTime>[];
+    var after = now;
+    for (var i = 0; i < planAhead; i++) {
+      final next = _firstWakeUpAfter(after, state, days: 8);
+      if (next == null) break;
+      awake.add(next);
+      after = DateTime(next.year, next.month, next.day + 1);
+    }
     _save(state);
-    return Plan(nags: nags, rings: rings);
+    return Plan(nags: nags, rings: rings, awake: awake);
+  }
+
+  /// The first wake-up ring after [t] that has not rung or been cancelled
+  /// yet, vacations respected, within the next [days] days.
+  DateTime? _firstWakeUpAfter(DateTime t, EngineState state, {int days = 2}) {
+    final alarms = store.loadAlarms();
+    final vacations = store.loadVacations();
+    DateTime? first;
+    for (var d = 0; d <= days; d++) {
+      final day = DateTime(t.year, t.month, t.day + d);
+      for (final r in ringsOn(day, alarms, vacations)) {
+        final done = state.lastRing[r.alarm.id];
+        if (!r.alarm.wakeUp || !r.at.isAfter(t)) continue;
+        if (done != null && !done.isBefore(r.at)) continue;
+        if (first == null || r.at.isBefore(first)) first = r.at;
+      }
+      if (first != null) return first;
+    }
+    return null;
+  }
+
+  /// Whether the main screen offers "I'm awake" now: within an hour before
+  /// the next wake-up ring.
+  bool get canSayAwake {
+    final now = _now;
+    final next = _firstWakeUpAfter(now, _load(now));
+    return next != null && !now.isBefore(next.subtract(awakeWindow));
+  }
+
+  /// What "I'm awake" shows: the night's quiz, or a plain turn-off.
+  RingScreen awakeScreen() => _quiz();
+
+  /// [picked] was chosen on the "I'm awake" quiz. The right word ends the
+  /// night and cancels the morning's wake-up alarms; a wrong one drops the
+  /// word and makes the night a failure, with nothing to snooze.
+  QuizOutcome? awakeAnswer(String picked) {
+    final t = _now;
+    final state = _load(t);
+    final night = state.night;
+    final word = night?.word;
+    if (night == null || word == null) return null;
+    if (picked != word) {
+      if (!night.wrongPicks.contains(picked)) night.wrongPicks.add(picked);
+      _save(state);
+      return const QuizOutcome.wrong(snooze: null);
+    }
+    _cancelMorning(state, t);
+    return _found(state, night, word, t);
+  }
+
+  /// "I'm awake" without a word: the night ends as "no word", or nothing is
+  /// recorded when there was no night; the morning's alarms are cancelled.
+  void awakeDismiss() {
+    final t = _now;
+    final state = _load(t);
+    _cancelMorning(state, t);
+    final night = state.night;
+    if (night != null) {
+      _end(state, night, NightResult.noWord, t);
+    } else {
+      _save(state);
+    }
+  }
+
+  /// Cancels the rest of the coming morning's wake-up rings; reminder
+  /// alarms still ring.
+  void _cancelMorning(EngineState state, DateTime t) {
+    final next = _firstWakeUpAfter(t, state);
+    if (next == null) return;
+    for (final r in ringsOn(next, store.loadAlarms(), store.loadVacations())) {
+      if (!r.alarm.wakeUp || r.at.isBefore(next)) continue;
+      state.lastRing[r.alarm.id] = r.at;
+      state.alarmSnoozes.remove(r.alarm.id);
+      if (r.alarm.oneTime) store.saveAlarm(r.alarm.copyWith(enabled: false));
+    }
   }
 
   /// Whether the main screen offers "I'm in bed" now.
