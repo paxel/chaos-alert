@@ -173,6 +173,13 @@ jobs:
           archive_name: paxel's apps (archive)
           archive_description: Older versions of paxel's Android apps.
           EOF
+          # fdroidserver links each icon and feature graphic to a copy named
+          # after its hash. Git keeps no hard links, so on the next run the
+          # copies look stale and get deleted while the index still points
+          # at them. Removing every app's copies first makes fdroidserver
+          # create them all again.
+          find repo -path 'repo/*/*' -regextype posix-extended \
+            -regex '.*/(icon|featureGraphic|promoGraphic|tvBanner)_[A-Za-z0-9_=-]+\.(png|jpe?g)' -delete
           fdroid update --create-metadata
           rm config.yml
           git add -A
