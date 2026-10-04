@@ -38,7 +38,7 @@ and the app keeps count of how well you remembered.
   it, then OK. The right word stops the alarm; a wrong one snoozes it and
   drops out of the next try. A night with wrong picks counts as failed,
   shaded by how many it took, and shows your streak and your last 30
-  nights. Five misses in a row bring a gentle hint.
+  nights. Five failures in a row bring a gentle hint.
 - **I'm awake** — up before the alarm? In the hour before it, a button on
   the main screen and a silent notification take you to the quiz; the
   right word turns off that morning's alarms.

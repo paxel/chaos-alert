@@ -1,0 +1,3 @@
+# Own Kotlin layer instead of a third-party alarm plugin
+
+Exact scheduling, the full-screen nag and ring screens over the lock screen, and ring playback run in a small Kotlin layer of our own rather than a Flutter alarm plugin. The pure-Dart night engine owns every rule and picks each ring's sound candidates, so the platform side must hold no state beyond the next pending firings and must play exactly what it is handed: a list of candidates (songs at a start offset), falling back to the phone's default alarm sound after three failures, on the alarm stream, low for 10 seconds and then medium. An alarm plugin brings its own alarm model, state and playback, which would duplicate or fight the engine; the cost is a few hundred lines of Kotlin we maintain ourselves.
