@@ -27,10 +27,11 @@ DateTime at(int day, int h, [int m = 0]) => DateTime(2026, 10, day, h, m);
 
 /// An engine over a memory store whose clock the test moves.
 class Night {
-  Night() {
+  Night({List<String> nagLines = const []}) {
     engine = Engine(
       store: store,
       words: words,
+      nagLines: nagLines,
       clock: () => now,
       random: Random(1),
     );
@@ -113,6 +114,43 @@ void main() {
       n.engine.nagShown();
       n.engine.inBed();
       expect(n.engine.plan().nextNag, at(6, 22, 30));
+    });
+
+    test('shows a line from the list and keeps it while that nag shows '
+        'again', () {
+      n = Night(nagLines: ['one', 'two', 'three']);
+      n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      expect(n.engine.nagLine, isNull);
+      n.engine.nagShown();
+      final line = n.engine.nagLine;
+      expect(['one', 'two', 'three'], contains(line));
+      n.now = at(5, 22, 35);
+      expect(n.engine.nagLine, line);
+    });
+
+    test('every nag after a snooze gets the next line, none repeating until '
+        'all were shown', () {
+      n = Night(nagLines: ['one', 'two', 'three']);
+      n.alarm(6, 30);
+      final shown = <String?>[];
+      for (var i = 0; i < 3; i++) {
+        n.now = at(5, 22, 30 + 10 * i);
+        n.engine.nagShown();
+        shown.add(n.engine.nagLine);
+        n.engine.snoozeNag(const Duration(minutes: 10));
+      }
+      expect(shown.toSet(), {'one', 'two', 'three'});
+      n.now = at(5, 23, 0);
+      n.engine.nagShown();
+      expect(['one', 'two', 'three'], contains(n.engine.nagLine));
+    });
+
+    test('says nothing without lines', () {
+      n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      n.engine.nagShown();
+      expect(n.engine.nagLine, isNull);
     });
 
     test('a past bedtime with no night yet nags right away', () {

@@ -12,6 +12,7 @@ class Controller extends ChangeNotifier {
     required this.store,
     required this.platform,
     required List<String> words,
+    List<String> nagLines = const [],
     DateTime Function()? clock,
     Random? random,
   }) : clock = clock ?? DateTime.now,
@@ -19,6 +20,7 @@ class Controller extends ChangeNotifier {
     engine = Engine(
       store: store,
       words: words,
+      nagLines: nagLines,
       clock: this.clock,
       random: _random,
     );
@@ -52,6 +54,7 @@ class Controller extends ChangeNotifier {
   late bool _canSayAwake;
   late bool _setupDone;
   late bool _pendingHint;
+  String? _nagLine;
   Plan _plan = const Plan();
 
   Settings get settings => _settings;
@@ -61,6 +64,9 @@ class Controller extends ChangeNotifier {
   bool get canSayInBed => _canSayInBed;
   bool get canSayAwake => _canSayAwake;
   bool get setupDone => _setupDone;
+
+  /// The line on the nag last shown tonight.
+  String? get nagLine => _nagLine;
 
   /// The hint whose page never came (a timeout ended the fifth failure).
   bool get pendingHint => _pendingHint;
@@ -77,6 +83,7 @@ class Controller extends ChangeNotifier {
     _canSayAwake = engine.canSayAwake;
     _setupDone = store.loadState().setupDone;
     _pendingHint = engine.pendingHint;
+    _nagLine = engine.nagLine;
   }
 
   /// The hint card on the main screen was read.

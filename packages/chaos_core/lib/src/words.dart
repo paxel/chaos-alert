@@ -1,7 +1,8 @@
 import 'dart:math';
 
 /// Where the night's word comes from: the list worked through in a shuffled
-/// order, so no word repeats before every word was used once.
+/// order, so no word repeats before every word was used once. The nag lines
+/// are handed out the same way.
 class WordDeck {
   WordDeck({List<int>? order, this.cursor = 0}) : order = order ?? [];
 

@@ -1,0 +1,311 @@
+# Nag lines: one per line, shown above "Are you in bed?" on a nag.
+# Lines starting with # and empty lines are ignored.
+
+# Funny
+
+Dying peacefully in your sleep is the best way to go. Bad news: it needs you asleep.
+Everyone wants to die in their sleep one day. Practice the sleeping part tonight.
+When you go, go peacefully in your sleep. Step one: get good at sleeping.
+Legends die in their sleep, surrounded by pillows. Start the training.
+Death will knock one day. Make sure it finds you well rested.
+The only way out of the Matrix is through the dream portal. It opens when you close your eyes.
+Red pill, blue pill? Neither. Pillow.
+Every night the simulation runs maintenance. Users are asked to log off and lie down.
+Agents can't follow you into dreams. Go hide there.
+The dream portal closes at sunrise. Hurry.
+Reality is a loading screen. Dreams are the actual game.
+Glitch in the system detected: you, still awake.
+Rabbit holes are best explored lying down.
+The machines want you awake and scrolling. Rebel. Sleep.
+Somewhere a server room hums. It wants you to stay up. Ignore it.
+Sleeping Beauty slept a hundred years and still looked great. You can manage one night.
+Rip Van Winkle overslept. You haven't even started.
+The princess felt one pea through twenty mattresses. You can't even feel one bed, because you're not in it.
+Every hero rests before the final battle. Tomorrow is the final battle. Probably.
+Even the chosen one needs a nap before saving the world.
+Hobbits sleep in round holes and still make it to second breakfast. Learn from them.
+Dracula sleeps all day and lives forever. Coincidence? Try it at night instead.
+Cinderella left the party at midnight. Be like Cinderella. Shoes optional.
+Morpheus is the god of dreams. The ancient Greeks knew. Go meet him.
+Hypnos, the Greek god of sleep, is waiting. Gods hate waiting.
+The Sandman is circling your house. He gets grumpy when you're still up.
+Odysseus took twenty years to get home. Your bed is three metres away.
+Every great detective cracks the case after a good night. Sleep on it.
+In fairy tales, the one who sleeps on time wakes up royalty. Probably.
+The dragon guarding your bed is asleep. Sneak in now.
+Captain's log: the crew refuses to sleep. Captain orders bedtime.
+In a bedroom not so far away, someone went to bed on time. Be that legend.
+Snow White slept so well a whole forest got involved. Set your standards high.
+The knights of the round table had a strict bedtime. Probably. Lie down.
+The hero's journey begins with a call. Tonight the call says: bed.
+Even Scheherazade stopped telling stories at dawn. You don't even have a sultan to entertain.
+Alice fell down a rabbit hole into a dream. Your bed is the rabbit hole.
+Peter Pan never grew up because he never went to bed. Don't be Peter Pan.
+Frankenstein's monster was built at night by someone who should have been asleep. Look how that went.
+Macbeth killed sleep and look how his story ended. Let sleep live.
+Every vampire novel agrees: nothing good happens after midnight.
+Goldilocks tested three beds. You only have one, and it's just right. Go.
+Odysseus had sirens. Yours is a glowing screen. Tie yourself to the bed.
+Wizards are famous for perfect timing. Yours says bed, right now.
+In every quest there's an inn. Tonight, your bed is the inn. Rest, traveller.
+The bard will sing of your deeds tomorrow, but only if you sleep tonight.
+Achilles had one weak spot. Yours is "one more episode".
+The prophecy said the chosen one would go to bed at a reasonable hour. Fulfil it.
+Plot twist: the villain of this story is your phone.
+Every horror movie starts when someone says "I'll just stay up a bit longer".
+The haunted house is quiet. The ghosts went to bed. Follow their lead.
+Dreamland has no queues, no taxes and no emails. Emigrate nightly.
+Your dream self has been waiting for you all day. Rude.
+Somewhere in dreamland a dragon is waiting to be ridden. It won't wait forever.
+In dreams you can speak every language and fly. Awake you can scroll. Choose.
+Lucid dreaming is a cheat code. You have to be asleep to enter it.
+Dream heists need sleep. So does every other kind of dream.
+Dream architects need clients. Report to the pillow.
+The tooth fairy, the Sandman and Santa all agree: people who sleep get stuff.
+Owls look wise because they nap all day. You are not an owl.
+Cats sleep most of the day and still run the internet. Think about it.
+Your pillow just sighed. Pillows don't sigh. You're more tired than you think.
+The bed called. It said it misses you.
+The duvet is lonely. Go keep it company.
+Warning: blanket levels critically low on your body.
+Night mode activated. Human mode: still on. Please fix.
+Your phone needs charging. So do you. Different cables, same idea.
+The internet will still be there tomorrow. Unfortunately.
+Nothing interesting has been posted since you last checked. Go to bed.
+You've reached the end of the internet. It's this popup.
+Error 404: sleep not found. Please restart the user.
+Your sheep are lined up. They can't jump until you lie down.
+The sheep are on strike until you get into bed.
+Counting sheep only works horizontally.
+The moon clocked in hours ago. Time for you to clock out.
+The night shift is the dream team. Report for duty.
+Breaking news: local person still awake. Experts baffled.
+Your bed has filed a missing person report.
+A wild bed appeared! You chose "lie down". It worked brilliantly.
+Achievement unlocked: stayed up too late. Next achievement: bed.
+Respawn point available: bed. Save your progress.
+You cannot save the game while awake. Find the bed checkpoint.
+Your energy bar is blinking red. Rest at the nearest bed.
+The final boss is tomorrow morning. Level up overnight.
+Dreams are the only streaming service with no subscription.
+Tonight's dream lineup is fantastic. Doors close soon.
+Your brain's night cinema has a new feature. Tickets: one closed pair of eyes.
+Tonight's dreams are already on the menu. Table for one?
+Your dream about flying is ready. Takeoff requires lying down.
+Gravity works best on people in bed. Let it.
+This popup will self-destruct when you say yes.
+Top secret mission tonight: horizontal position, eyes closed, no questions.
+Knock knock. Who's there? Bed. Bed who? Bedtime. Sorry.
+Bedtime is like a train. It leaves whether you're on it or not.
+You're not a night owl. You're a day person on overtime.
+Your dreams are buffering. Lie down for a better connection.
+Even vampires go to bed. Granted, at sunrise. But still.
+The monster under your bed gets lonely when you're not in it.
+The monster under the bed only scares people who are still awake.
+Ghosts only haunt people who stay up. Go to bed and become unhauntable.
+The fairies close the dream gates at a reasonable hour. Hurry.
+Your guardian angel is tired. Let them clock off.
+Dreams don't come to people who wait for them on the sofa.
+Your brain is doing late-night improv. Cancel the show.
+You've been awake so long the sun is getting suspicious.
+Your bed is a time machine. Lie down, close your eyes, and it's morning.
+A whole night of time travel, free, every night. Board now.
+The universe has been around for billions of years. It can wait until tomorrow.
+If you go to bed and nobody nags you, did you really sleep? Go find out.
+Descartes thought, so he was. He also slept, so he thought well.
+Schrödinger's sleeper: tired and awake at the same time until someone opens the bedroom door.
+Newton figured out gravity under a tree. Probably right after a nap.
+Archimedes had his best idea in the bath. Yours is waiting in bed.
+Ancient philosophers agree: an unrested mind argues badly. Go rest yours.
+Sleeping is the only thing you can be a total pro at by doing nothing.
+If sleeping were an Olympic sport, you'd win gold. But only if you started now.
+The pillow is the true throne. Claim your kingdom.
+Kings and queens all sleep. Act royal. Retire to your chambers.
+Somewhere a dream is wandering around looking for a sleeper. Volunteer.
+Tonight's forecast: heavy eyelids with a good chance of dreams.
+The stars are up, the moon is out, and you are still scrolling. Even the cat is judging you.
+Your bedtime called. It wants to know if you're still coming.
+This is your brain speaking. Please return to the bedroom.
+This is your captain speaking. We are beginning our descent into bed.
+Please fasten your duvet and return your head to the pillow position.
+The dream train now departs from platform pillow. All aboard.
+If you can read this, you're not asleep. That's the problem.
+Your eyelids have formally requested a meeting with your pillow.
+Yawning detected. Fighting it only makes it worse.
+Dreams are where your brain tries out stories it would never publish. Read tonight's issue.
+Legend says nightmares stop chasing people who go to bed on time.
+The castle drawbridge is up. The knights are asleep. Only you are still on watch.
+The night watch is covered. You're relieved of duty. Go to bed.
+The fellowship rests before the long road. Your long road is tomorrow.
+Robin Hood stole from the rich. Your phone steals your sleep. Outlaw it.
+Even Sherlock Holmes put the violin down eventually. Put the phone down.
+The beanstalk will still be there tomorrow, Jack. Bed.
+Pinocchio's nose grows every time he says "I'm not tired". Just saying.
+Rapunzel let her hair down. Let your guard down. Go to sleep.
+The three little pigs built houses. All you need to build is a pillow fort.
+Hansel and Gretel followed crumbs. Follow the trail to your bed.
+The genie grants three wishes. Wish one: sleep. Two and three: also sleep.
+Aladdin had a flying carpet. You have a duvet. Close enough.
+The emperor had no clothes. You have pyjamas. Use them.
+Every epic needs an interlude. Tonight's is called sleep.
+Nobody in a fairy tale ever got their happy ending by staying up late.
+And they all lived happily ever after, because they went to bed on time.
+Dreams are the only adventure where you get to be the hero, the villain and the flying horse.
+Your blanket is a cape. Superheroes rest in theirs. Go suit up.
+The end. Of the day, that is. Go to bed.
+
+# Benefits
+
+Sleep is when your brain gets to clean house. Let it vacuum.
+A rested you is nicer to people. Do it for them.
+Tomorrow's coffee works better on a rested brain. Go to bed and make it count.
+Dreams are free cinema. The show starts when you close your eyes.
+Sleep sorts today's memories into the right drawers. Give it the night shift.
+Rested people make better decisions. Your first good one: bed.
+Your pillow has been waiting all day. It's getting emotional.
+Every hour of sleep is a small gift to tomorrow morning's you.
+Sleeping well is the laziest self-improvement there is. You just lie there.
+A good night makes the morning shorter and kinder.
+Your muscles repair themselves at night. They can't start while you scroll.
+Rested eyes see the morning in a better light. Give them the chance.
+Sleep is when today's learning settles in. Don't interrupt the download.
+The blanket is warm. The bed is soft. The case closes itself.
+Mornings are much easier to like after a full night.
+Rested people laugh more. Tomorrow could be funny.
+Sleep is a reset button you get to press every night for free.
+Your mood tomorrow is being decided right now, in the bed you're not in.
+Good sleep makes patience grow back. You'll need some tomorrow.
+Dreaming is your brain playing. Let it out to play.
+The best ideas often show up after a good night. Go make room for one.
+Rested hands are steadier. Tomorrow's coffee will stay in the cup.
+A full night of sleep: the original productivity hack.
+You can't pour from an empty cup. Go refill it horizontally.
+Sleep turns a hard day into a story you can tell. Go finish the chapter.
+Rested you remembers where the keys are.
+Every great morning starts the night before. Like right now.
+Lying down is the first step. The rest happens on its own.
+Sleep is the one appointment you never have to dress up for.
+Go to bed now and tomorrow you will thank you. Out loud, maybe.
+A rested face smiles more easily. Free charm, delivered overnight.
+Your brain does its tidying while you dream. Leave it the key.
+Sleep makes worries smaller. They look huge at midnight and tiny at breakfast.
+Nights are for growing back the energy you spent today.
+The quiet of the night is best enjoyed with your eyes closed.
+A good night's sleep is a holiday that fits between dinner and breakfast.
+Well-rested people walk into rooms like they meant to.
+Sleep is when your body does the chores you never see.
+The word you're about to get sticks better if you actually sleep on it.
+Rested brains remember more. Tomorrow's quiz agrees.
+Sleep is free, legal and has no side effects except being rested.
+Get some sleep and tomorrow's problems will meet a stronger opponent.
+Your bed is the only place where doing nothing counts as doing something.
+Rested people are better at saying no. Practise by saying no to one more episode.
+Dreams are where you can fly without a ticket.
+A full night tastes like a good breakfast.
+Sleep gently puts today away so tomorrow has room.
+You are one good night away from a better mood.
+The stars are out. They do their best work while you sleep.
+Sleep is the cheapest way to feel rich in the morning.
+Your future self asked for a full night. Be kind to them.
+Rested you handles surprises like a pro. Alarms included.
+Rest now, shine later.
+In bed, everything you didn't finish today can wait without guilt.
+Sleep is the bridge between a long day and a fresh start. Cross it.
+The night is long enough for a good sleep if you start now.
+A rested body feels lighter in the morning, like it's been on holiday.
+Sleep is when your heart gets to slow down. It's earned it.
+Wake up rested and the day starts on your side.
+Sleep restores your sense of humour. Some of these lines need you rested.
+Your best work tomorrow starts with your best sleep tonight.
+Every night in bed on time is a vote for a calmer tomorrow.
+Pillows are just dreams waiting for a head.
+Rested people forgive faster. Tomorrow could use some forgiving.
+The day is done. You did enough. Go collect your reward: sleep.
+Sleep brings a calm no app can deliver. Not even this one.
+Go recharge. You're not a phone, but the principle stands.
+A night of sleep makes yesterday's mess look manageable.
+Close your eyes and let the night do the heavy lifting.
+Dreams give you a second life every night, with better special effects.
+Rest is not lost time. It's the time that makes the other time work.
+A rested mind wanders less and finds more.
+Morning light feels better on a face that slept.
+Your bed is warm now. In an hour it will still be warm, but you'll be more tired.
+Sleep is how you get tomorrow's energy in advance.
+
+# Downsides
+
+Stay up longer and tomorrow your eyes will bring their own luggage.
+Short night, long face.
+Every minute you stay up now is a minute of grumpy tomorrow.
+Tired you will reply to emails in a tone you regret.
+Puffy eyes are not a fashion statement. Go to bed.
+Your bed hair tomorrow is being styled right now by your bad decisions.
+Tomorrow's coffee can only do so much.
+Stay up and tomorrow will feel like a Monday, whatever day it is.
+Tired people walk into doors. Doors don't apologise.
+Skip sleep and tomorrow you'll read the same sentence four times.
+The mirror tomorrow will have opinions about your eyes.
+One more episode tonight, one more yawn in every meeting tomorrow.
+Tired you puts the milk in the cupboard and the cereal in the fridge.
+Sleep less and your patience runs out before lunch.
+Short sleep makes small problems look like mountains.
+Your hair will look like you've been through a hedge backwards. Twice.
+The alarm will sound extra loud to someone who stayed up now.
+Late nights make for zombie mornings. And not the cool movie kind.
+Tired you forgets why you opened the fridge.
+Stay up now and tomorrow's word will slip right out of your head.
+Tomorrow's yawns are being booked right now.
+Late night now, snooze button marathon tomorrow.
+Tired eyes and a bright screen: a match made in morning regret.
+Your dark circles are filing for more territory.
+A short night makes you the slowest person in every queue.
+Tired you laughs at nothing and then cries at an advert.
+Keep scrolling and tomorrow your eyes will look like two sad raisins.
+Sleep is cheap. Undoing a sleepless morning is expensive.
+Skip sleep and tomorrow will charge you interest.
+Tomorrow you'll put the keys in the fridge and blame a poltergeist.
+Short sleep: because who doesn't love a groggy breakfast?
+Stay up longer and tomorrow will be one long sigh.
+Your bed hair tomorrow will look like it lost an argument with the pillow.
+Tired people send texts to the wrong person. Choose wisely. Choose sleep.
+The later it gets, the worse the decisions. You're at "one more snack" level.
+Grumpy tomorrow is a choice you're making tonight.
+Late night, early alarm, long day. The maths is not on your side.
+Tired you will stare at the coffee machine until it gets awkward.
+You can't fake rested eyes. Concealer has limits.
+Skip sleep and tomorrow will have the vibe of a wet sock.
+Short nights make the afternoon slump start at ten in the morning.
+You'll be yawning so wide tomorrow that people can count your teeth.
+Stay up and tomorrow you'll have the reflexes of a sleepy sloth.
+Tired you is clumsy, slow and weirdly sad about toast.
+A short night makes every little noise tomorrow feel personal.
+Your bed hair tomorrow will be visible from orbit.
+Tomorrow's you is already annoyed with tonight's you.
+Stay up now and the snooze button becomes your best friend and worst enemy.
+Tired people say "what?" a lot. What? Exactly.
+Nobody wants to meet tomorrow-morning-you after a short night. Nobody.
+Late nights steal tomorrow's good mood and leave no receipt.
+Keep going and you'll be the colleague who nods off in the meeting.
+Without sleep, tomorrow's to-do list becomes a to-don't list.
+Tired eyes squint. Squinting is not your best look.
+Short sleep makes you crave all the wrong snacks tomorrow.
+Stay up and the morning will hit you like a wet towel.
+Tomorrow you'll press "reply all" by accident. Tired fingers do that.
+Every late night puts a few wrinkles in tomorrow's mood.
+Tomorrow your hair will point in directions that don't have names yet.
+Skip sleep now and tomorrow will feel twice as long.
+Short sleep turns charming you into a grumbling kettle.
+Your pillow will look so inviting tomorrow at noon. Too late then.
+Tired you forgets names. Even easy ones.
+The night owl gets the puffy eyes.
+Stay up and you'll spend tomorrow fighting your own eyelids.
+Short nights make you snappy. Your friends will notice before you do.
+Late nights make mornings blurry, and not in a soft-focus way.
+Keep this up and your eye bags will need a baggage claim.
+Tomorrow you'll nod off on the sofa at eight and wake up confused at midnight. Again.
+Tired you puts salt in the coffee.
+A short night makes good news feel meh and bad news feel huge.
+Stay up and tomorrow you'll be the one yawning in every photo.
+Without sleep the day drags its feet, and so will you.
+You'll spend tomorrow wishing you had listened to this popup.
+Every minute awake now is borrowed from tomorrow's sparkle.

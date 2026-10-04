@@ -54,11 +54,21 @@ class _NagScreenState extends State<NagScreen> {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final standard = widget.controller.settings.nagSnooze;
+    final line = widget.controller.nagLine;
     return NightFrame(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (line != null) ...[
+            Text(
+              line,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(color: Colors.white70),
+            ),
+            const SizedBox(height: 32),
+          ],
           Text(
             t.nagQuestion,
             textAlign: TextAlign.center,

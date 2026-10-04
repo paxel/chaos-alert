@@ -9,6 +9,14 @@ Future<List<String>> loadWords(AssetBundle bundle) async =>
         .where((w) => w.isNotEmpty)
         .toList();
 
+/// The bundled nag lines, one per line; lines starting with # are notes.
+Future<List<String>> loadNagLines(AssetBundle bundle) async =>
+    (await bundle.loadString('assets/nag_lines.txt'))
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty && !l.startsWith('#'))
+        .toList();
+
 /// Puts the word list's copyright notice on the licences page; SCOWL's
 /// licence asks for it in every copy.
 void registerWordLicence(AssetBundle bundle) =>

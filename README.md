@@ -25,7 +25,9 @@ and the app keeps count of how well you remembered.
   you in bed?* Bedtime is worked out from tomorrow's first alarm and how
   much sleep you want. Not yet? Snooze it — 10 minutes, or 30 min, 1 h,
   2 h when you're out. Fell asleep without answering? The app takes the
-  popup's time as your bedtime and doesn't wake you.
+  popup's time as your bedtime and doesn't wake you. Each popup also
+  makes its case first: one of 300 lines about sleep, dreams, puffy eyes,
+  the Matrix and fairy tales.
 - **I'm in bed early** — the main screen has a button for that in the
   three hours before bedtime.
 - **A word for the night** — say *Yes* and you get one less common English

@@ -13,10 +13,12 @@ Future<void> main() async {
   final dir = await getApplicationSupportDirectory();
   registerWordLicence(rootBundle);
   final words = await loadWords(rootBundle);
+  final nagLines = await loadNagLines(rootBundle);
   final controller = Controller(
     store: SqliteStore.open('${dir.path}/chaos-alert.db'),
     platform: ChannelAlarmPlatform(),
     words: words,
+    nagLines: nagLines,
   );
   runApp(ChaosAlertApp(controller: controller));
 }

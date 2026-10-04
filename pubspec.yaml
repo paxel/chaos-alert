@@ -30,4 +30,5 @@ flutter:
   generate: true
   assets:
     - assets/words.txt
+    - assets/nag_lines.txt
     - assets/WORDS-LICENSE.txt

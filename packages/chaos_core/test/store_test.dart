@@ -98,10 +98,12 @@ void contract(String name, Store Function() open) {
           nagSnoozedUntil: DateTime(2026, 10, 5, 22, 40),
           options: ['a', 'b', 'c', 'd'],
           wrongPicks: ['b'],
+          nagLine: 'Go to bed.',
         ),
         alarmSnoozes: {3: DateTime(2026, 10, 6, 6, 39)},
         lastRing: {3: DateTime(2026, 10, 6, 6, 30)},
         deck: WordDeck(order: [2, 0, 1], cursor: 1),
+        lineDeck: WordDeck(order: [1, 0], cursor: 2),
         setupDone: true,
         pendingHint: true,
       );
@@ -115,6 +117,9 @@ void contract(String name, Store Function() open) {
       expect(s.lastRing, {3: DateTime(2026, 10, 6, 6, 30)});
       expect(s.deck.order, [2, 0, 1]);
       expect(s.deck.cursor, 1);
+      expect(s.night!.nagLine, 'Go to bed.');
+      expect(s.lineDeck.order, [1, 0]);
+      expect(s.lineDeck.cursor, 2);
       expect(s.setupDone, isTrue);
       expect(s.pendingHint, isTrue);
       expect(EngineState().setupDone, isFalse);

@@ -101,12 +101,16 @@ class Engine {
   Engine({
     required this.store,
     required this.words,
+    this.nagLines = const [],
     required this.clock,
     Random? random,
   }) : _random = random ?? Random();
 
   final Store store;
   final List<String> words;
+
+  /// What a nag says above its question; a nag without lines says nothing.
+  final List<String> nagLines;
   final DateTime Function() clock;
   final Random _random;
 
@@ -260,8 +264,17 @@ class Engine {
     final night = state.night = _current(state, t) ?? _openNight(t);
     night
       ..lastNag = t
-      ..nagSnoozedUntil = null;
+      ..nagSnoozedUntil = null
+      ..nagLine = nagLines.isEmpty
+          ? null
+          : state.lineDeck.next(nagLines, _random);
     _save(state);
+  }
+
+  /// The line on the nag last shown tonight; null without one.
+  String? get nagLine {
+    final now = _now;
+    return _current(_load(now), now)?.nagLine;
   }
 
   /// The user is in bed, by Yes on the nag or the button on the main

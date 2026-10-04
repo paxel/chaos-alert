@@ -12,6 +12,7 @@ class OpenNight {
     this.nagSnoozedUntil,
     this.options,
     List<String>? wrongPicks,
+    this.nagLine,
   }) : wrongPicks = wrongPicks ?? [];
 
   factory OpenNight.fromJson(Map<String, Object?> json) => OpenNight(
@@ -23,6 +24,7 @@ class OpenNight {
     nagSnoozedUntil: _time(json['nagSnoozedUntil']),
     options: (json['options'] as List?)?.cast<String>().toList(),
     wrongPicks: (json['wrongPicks'] as List?)?.cast<String>().toList(),
+    nagLine: json['nagLine'] as String?,
   );
 
   final DateTime plannedBedtime;
@@ -48,6 +50,9 @@ class OpenNight {
   /// The options already picked wrongly; they are not shown again.
   final List<String> wrongPicks;
 
+  /// The line on the nag last shown, kept while that nag shows again.
+  String? nagLine;
+
   bool get confirmed => bedtime != null;
 
   /// The bedtime the night records: confirmed, else the last nag.
@@ -62,6 +67,7 @@ class OpenNight {
     'nagSnoozedUntil': nagSnoozedUntil?.toIso8601String(),
     'options': options,
     'wrongPicks': wrongPicks,
+    'nagLine': nagLine,
   };
 }
 
@@ -72,25 +78,22 @@ class EngineState {
     Map<int, DateTime>? alarmSnoozes,
     Map<int, DateTime>? lastRing,
     WordDeck? deck,
+    WordDeck? lineDeck,
     this.setupDone = false,
     this.pendingHint = false,
   }) : alarmSnoozes = alarmSnoozes ?? {},
        lastRing = lastRing ?? {},
-       deck = deck ?? WordDeck();
+       deck = deck ?? WordDeck(),
+       lineDeck = lineDeck ?? WordDeck();
 
   factory EngineState.fromJson(Map<String, Object?> json) {
     final night = json['night'] as Map<String, Object?>?;
-    final deck = json['deck'] as Map<String, Object?>?;
     return EngineState(
       night: night == null ? null : OpenNight.fromJson(night),
       alarmSnoozes: _times(json['alarmSnoozes']),
       lastRing: _times(json['lastRing']),
-      deck: deck == null
-          ? null
-          : WordDeck(
-              order: (deck['order'] as List).cast<int>().toList(),
-              cursor: deck['cursor'] as int,
-            ),
+      deck: _deck(json['deck']),
+      lineDeck: _deck(json['lineDeck']),
       setupDone: json['setupDone'] as bool? ?? false,
       pendingHint: json['pendingHint'] as bool? ?? false,
     );
@@ -104,6 +107,9 @@ class EngineState {
   /// Alarm id to the moment it last started ringing.
   final Map<int, DateTime> lastRing;
   final WordDeck deck;
+
+  /// The nag lines, worked through like the words.
+  final WordDeck lineDeck;
 
   /// Whether the first-start setup was walked through.
   bool setupDone;
@@ -122,9 +128,20 @@ class EngineState {
       for (final e in lastRing.entries) '${e.key}': e.value.toIso8601String(),
     },
     'deck': {'order': deck.order, 'cursor': deck.cursor},
+    'lineDeck': {'order': lineDeck.order, 'cursor': lineDeck.cursor},
     'setupDone': setupDone,
     'pendingHint': pendingHint,
   };
+}
+
+WordDeck? _deck(Object? value) {
+  final deck = value as Map<String, Object?>?;
+  return deck == null
+      ? null
+      : WordDeck(
+          order: (deck['order'] as List).cast<int>().toList(),
+          cursor: deck['cursor'] as int,
+        );
 }
 
 DateTime? _time(Object? value) =>

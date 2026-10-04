@@ -27,6 +27,17 @@ void main() {
     }
   });
 
+  test('the bundled nag lines are 300 distinct lines of at most 200 '
+      'characters, notes left out', () async {
+    final lines = await loadNagLines(rootBundle);
+    expect(lines, hasLength(300));
+    expect(lines.toSet(), hasLength(300));
+    for (final l in lines) {
+      expect(l.startsWith('#'), isFalse);
+      expect(l.length, lessThanOrEqualTo(200));
+    }
+  });
+
   test('the licences page carries the word list notice', () async {
     registerWordLicence(rootBundle);
     final entries = await LicenseRegistry.licenses.toList();

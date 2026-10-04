@@ -4,7 +4,7 @@ chaos-alert nags you to bed when it's time, gives you one word to remember, and 
 
 <b>What it does</b>
 <ul>
-<li><b>Bedtime nag</b> — at bedtime a quiet full-screen popup asks: Are you in bed? Bedtime follows from tomorrow's first alarm and how much sleep you want. Not yet? Snooze 10 minutes, or 30 min, 1 h, 2 h when you're out. Fell asleep without answering? The popup's time counts as your bedtime and nothing wakes you.</li>
+<li><b>Bedtime nag</b> — at bedtime a quiet full-screen popup asks: Are you in bed? Bedtime follows from tomorrow's first alarm and how much sleep you want. Not yet? Snooze 10 minutes, or 30 min, 1 h, 2 h when you're out. Fell asleep without answering? The popup's time counts as your bedtime and nothing wakes you. Each popup also makes its case first, with one of 300 lines about sleep, dreams, puffy eyes, the Matrix and fairy tales.</li>
 <li><b>In bed early</b> — the main screen offers "I'm in bed" in the three hours before bedtime.</li>
 <li><b>A word for the night</b> — one less common English word, shown once.</li>
 <li><b>The chaos alarm</b> — every ring picks something random: an alarm sound, a notification sound or a song from your music. Quiet at first, louder after 10 seconds, a new surprise after every snooze.</li>

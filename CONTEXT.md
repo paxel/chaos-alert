@@ -26,6 +26,10 @@ _Avoid_: bedtime (for the plan), target bedtime
 One full-screen popup asking whether the user is in bed, answered with Yes or a snooze; every snooze leads to a new nag.
 _Avoid_: popup, bedtime reminder, nag (for the whole evening)
 
+**Nag line**:
+One message on a nag that argues, threatens or jokes the user into going to bed.
+_Avoid_: nag (for the message), quote, tip
+
 **Confirmed bedtime**:
 A bedtime the user gave by answering Yes to the nag or tapping "I'm in bed".
 

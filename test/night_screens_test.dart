@@ -19,6 +19,7 @@ class Setup {
       store: store,
       platform: platform,
       words: words,
+      nagLines: const ['The pillow misses you.'],
       clock: () => now,
       random: Random(1),
     );
@@ -74,6 +75,7 @@ void main() {
     testWidgets('Yes shows the word once and closes to home', (tester) async {
       final s = Setup();
       await s.open(tester, NagScreen(controller: s.controller));
+      expect(find.text('The pillow misses you.'), findsOneWidget);
       expect(find.text('Are you in bed?'), findsOneWidget);
       await tester.tap(find.text('Yes'));
       await tester.pumpAndSettle();

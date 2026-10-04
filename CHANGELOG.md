@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [0.3.0] - Unreleased
 
 ### Added
+- The bedtime nag now argues before it asks: each popup brings one of 300 lines about sleep, dreams, puffy eyes, the Matrix and fairy tales, none repeating until all were shown.
 - F-Droid keeps the three versions before the current one in its archive, so you can go back after a bad update.
 
 ### Changed
