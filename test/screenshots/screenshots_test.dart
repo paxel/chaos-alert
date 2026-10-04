@@ -26,6 +26,11 @@ import '../fake_platform.dart';
 
 const _out = 'fastlane/metadata/android/en-US/images/phoneScreenshots';
 
+/// The nag line on the nag screenshot.
+const _nagLine =
+    'The only way out of the Matrix is through the dream portal. '
+    'It opens when you close your eyes.';
+
 Future<void> _loadRealFonts() async {
   final root = Platform.environment['FLUTTER_ROOT']!;
   final fonts = '$root/bin/cache/artifacts/material_fonts';
@@ -142,6 +147,7 @@ void main() {
       store: store,
       platform: FakePlatform(),
       words: words,
+      nagLines: const [_nagLine],
       clock: () => now ?? _now,
       random: Random(3),
     );
@@ -193,6 +199,8 @@ void main() {
     await shoot(tester, HomeScreen(controller: c), '01-home');
 
     c = await demo(now: DateTime(2026, 10, 29, 22, 30));
+    c.engine.nagShown();
+    await c.reschedule();
     await shoot(tester, NagScreen(controller: c), '02-nag');
     await shoot(tester, const WordScreen(word: 'lantern'), '03-word');
 
