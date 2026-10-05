@@ -320,6 +320,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get about => 'About';
 
   @override
+  String get eventLog => 'Event log';
+
+  @override
+  String get eventLogSubtitle =>
+      'What the app did in the last 7 days, to copy into a bug report';
+
+  @override
+  String get eventLogCopy => 'Copy';
+
+  @override
+  String get eventLogCopied => 'Event log copied';
+
+  @override
+  String get eventLogEmpty => 'Nothing logged yet';
+
+  @override
   String get aboutTagline =>
       'Nags you to bed, gives you a word to remember and wakes you with a sound you never know. Your data stays on your phone — no server, no account.';
 

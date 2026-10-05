@@ -88,7 +88,7 @@ void main() {
   test('turning a ring off stops the sound', () async {
     final a = await addAlarm();
     now = DateTime(2026, 10, 5, 22, 30);
-    final word = await c.inBed();
+    final word = (await c.inBed())!;
     // Tonight's nag is done; next Monday's comes next.
     expect(platform.nag, DateTime(2026, 10, 12, 22, 30));
     now = DateTime(2026, 10, 6, 6, 30);
@@ -145,7 +145,7 @@ void main() {
   test("answering I'm awake clears the notice", () async {
     await addAlarm();
     now = DateTime(2026, 10, 5, 22, 30);
-    final word = await c.inBed();
+    final word = (await c.inBed())!;
     now = DateTime(2026, 10, 6, 5, 45);
     await c.awakeAnswer(word);
     expect(platform.awakeCleared, 1);
@@ -159,5 +159,47 @@ void main() {
     await c.request(Permission.fullScreen);
     expect(platform.requested, [Permission.fullScreen]);
     expect(c.missingPermissions, isEmpty);
+  });
+
+  group('alarm snooze', () {
+    Future<Alarm> ringing() async {
+      final a = await addAlarm();
+      now = DateTime(2026, 10, 6, 6, 30);
+      platform.events.add(RingStarted(a.id, now));
+      await c.refresh();
+      return a;
+    }
+
+    test('stops the sound before anything else is recorded', () async {
+      final a = await ringing();
+      platform.store = c.store;
+      now = DateTime(2026, 10, 6, 6, 31);
+      await c.snoozeAlarm(a.id);
+      expect(platform.stateAtStop.single.alarmSnoozes, isEmpty);
+      expect(c.alarmSnoozes[a.id], DateTime(2026, 10, 6, 6, 40));
+    });
+
+    test('from the notification is read with the queue and rings again '
+        'after the snooze', () async {
+      final a = await ringing();
+      now = DateTime(2026, 10, 6, 6, 45);
+      platform.events.add(RingSnoozed(a.id, DateTime(2026, 10, 6, 6, 31)));
+      await c.refresh();
+      expect(platform.rings.first.alarmId, a.id);
+      expect(platform.rings.first.at, DateTime(2026, 10, 6, 6, 40));
+      expect(platform.rings.first.snooze, const Duration(minutes: 9));
+    });
+
+    test('lands in the event log', () async {
+      final a = await ringing();
+      await c.snoozeAlarm(a.id);
+      expect(platform.logged, contains('app: alarm ${a.id} snoozed on screen'));
+    });
+  });
+
+  test('"I\'m in bed" outside bedtime gives no word and logs it', () async {
+    await addAlarm();
+    expect(await c.inBed(), isNull);
+    expect(platform.logged, contains('app: in bed ignored'));
   });
 }

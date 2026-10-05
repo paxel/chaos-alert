@@ -257,11 +257,12 @@ class Engine {
     return !now.isBefore(morning.bedtime.subtract(inBedWindow));
   }
 
-  /// The nag popped up.
+  /// The nag popped up. Outside bedtime, a nag that fired late is dropped.
   void nagShown({DateTime? at}) {
     final t = at ?? _now;
     final state = _load(t);
-    final night = state.night = _current(state, t) ?? _openNight(t);
+    final night = _bedtimeNight(state, t);
+    if (night == null) return;
     night
       ..lastNag = t
       ..nagSnoozedUntil = null
@@ -278,12 +279,13 @@ class Engine {
   }
 
   /// The user is in bed, by Yes on the nag or the button on the main
-  /// screen. Returns the word to remember.
-  String inBed() {
+  /// screen. Returns the word to remember; null outside bedtime or when
+  /// tonight's bedtime was already given, and then nothing changes.
+  String? inBed() {
     final t = _now;
     final state = _load(t);
-    final night = state.night = _current(state, t) ?? _openNight(t);
-    if (night.confirmed) throw StateError('already in bed tonight');
+    final night = _bedtimeNight(state, t);
+    if (night == null || night.confirmed) return null;
     final word = state.deck.next(words, _random);
     night
       ..bedtime = t
@@ -293,11 +295,12 @@ class Engine {
     return word;
   }
 
-  /// The nag was snoozed for [length].
+  /// The nag was snoozed for [length]; ignored outside bedtime.
   void snoozeNag(Duration length) {
     final t = _now;
     final state = _load(t);
-    final night = state.night = _current(state, t) ?? _openNight(t);
+    final night = _bedtimeNight(state, t);
+    if (night == null) return;
     night.nagSnoozedUntil = t.add(length);
     _save(state);
   }
@@ -338,9 +341,11 @@ class Engine {
     ]);
   }
 
-  /// Alarm [alarmId] was snoozed; it rings again after the alarm snooze.
-  void snoozeAlarm(int alarmId) {
-    final t = _now;
+  /// Alarm [alarmId] was snoozed, on its screen or, while the app was not
+  /// running, from its notification; it rings again after the alarm
+  /// snooze.
+  void snoozeAlarm(int alarmId, {DateTime? at}) {
+    final t = at ?? _now;
     final state = _load(t);
     state.alarmSnoozes[alarmId] = t.add(store.loadSettings().alarmSnooze);
     _save(state);
@@ -462,6 +467,19 @@ class Engine {
     final wake = night?.expectedWake;
     if (night == null || (wake != null && t.isAfter(wake))) return null;
     return night;
+  }
+
+  /// The night a bedtime action at [t] belongs to: the open one, else a new
+  /// one from the "I'm in bed" window on; null outside bedtime, so a stray
+  /// action after the morning started cannot open the next night early.
+  OpenNight? _bedtimeNight(EngineState state, DateTime t) {
+    final current = _current(state, t);
+    if (current != null) return current;
+    final morning = _nextMorning(t);
+    if (morning == null || t.isBefore(morning.bedtime.subtract(inBedWindow))) {
+      return null;
+    }
+    return state.night = _openNight(t);
   }
 
   void _save(EngineState state) => store.saveState(state);

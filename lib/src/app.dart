@@ -32,6 +32,7 @@ class _ChaosAlertAppState extends State<ChaosAlertApp>
     with WidgetsBindingObserver {
   final _navigator = GlobalKey<NavigatorState>();
   StreamSubscription<Launch>? _launches;
+  StreamSubscription<void>? _events;
 
   Controller get _c => widget.controller;
 
@@ -40,6 +41,7 @@ class _ChaosAlertAppState extends State<ChaosAlertApp>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _launches = _c.platform.launches.listen(_open);
+    _events = _c.platform.eventsArrived.listen((_) => _c.refresh());
     _start();
   }
 
@@ -67,6 +69,9 @@ class _ChaosAlertAppState extends State<ChaosAlertApp>
   Future<void> _open(Launch launch) async {
     await _c.refresh();
     if (!mounted) return;
+    _c.log('opened for $launch');
+    // A nag that fired outside bedtime was dropped; it shows nothing.
+    if (launch is NagLaunch && !_c.canSayInBed) return;
     final screen = switch (launch) {
       NagLaunch() => NagScreen(controller: _c),
       AwakeLaunch() => AwakeScreen(controller: _c),
@@ -86,6 +91,7 @@ class _ChaosAlertAppState extends State<ChaosAlertApp>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _launches?.cancel();
+    _events?.cancel();
     super.dispose();
   }
 

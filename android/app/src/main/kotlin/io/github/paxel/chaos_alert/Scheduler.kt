@@ -42,6 +42,10 @@ object Scheduler {
     fun replaceRings(context: Context, rings: JSONArray) =
         update(context) { it.put("rings", rings) }
 
+    /** Adds one ring, e.g. a snooze from the notification, keeping the rest. */
+    fun addRing(context: Context, ring: JSONObject) =
+        update(context) { it.put("rings", (it.optJSONArray("rings") ?: JSONArray()).put(ring)) }
+
     /** Replaces only the "I'm awake" notices, keeping the rest. */
     fun replaceAwake(context: Context, awake: JSONArray) =
         update(context) { it.put("awake", awake) }
@@ -95,6 +99,10 @@ object Scheduler {
                 .putExtra(EXTRA_PAYLOAD, JSONObject().put("until", until).toString())
             exact(context, manager, at, pending(context, AWAKE_CODE + i, intent), alarmClock = false)
         }
+        EventLog.add(
+            context,
+            "android: armed ${nags.length()} nags, ${rings.length()} rings, ${awake.length()} awake notices",
+        )
         prefs.edit()
             .putString(
                 KEY_ARMED,
@@ -135,6 +143,14 @@ object Scheduler {
             intent ?: Intent(context, AlarmReceiver::class.java),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
+
+    /** [year, month, day, hour, minute, second] of [millis] in the phone's time zone. */
+    fun localFields(millis: Long): List<Int> = Calendar.getInstance().apply { timeInMillis = millis }.let {
+        listOf(
+            it.get(Calendar.YEAR), it.get(Calendar.MONTH) + 1, it.get(Calendar.DAY_OF_MONTH),
+            it.get(Calendar.HOUR_OF_DAY), it.get(Calendar.MINUTE), it.get(Calendar.SECOND),
+        )
+    }
 
     /** [year, month, day, hour, minute, second] in the phone's time zone now. */
     private fun localMillis(local: JSONArray): Long = Calendar.getInstance().apply {

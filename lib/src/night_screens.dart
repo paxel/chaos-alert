@@ -39,6 +39,8 @@ class _NagScreenState extends State<NagScreen> {
   Future<void> _yes() async {
     final word = await widget.controller.inBed();
     if (!mounted) return;
+    // Outside bedtime nothing was recorded; the nag just closes.
+    if (word == null) return Navigator.of(context).pop();
     await Navigator.of(context).pushReplacement(
       MaterialPageRoute<void>(builder: (_) => WordScreen(word: word)),
     );
@@ -161,6 +163,10 @@ class _AlarmScreenState extends State<AlarmScreen> {
   RingScreen? _screen;
   Timer? _timeout;
 
+  /// Set once a button was pressed here; until then a snooze can only
+  /// come from the ring's notification.
+  var _acted = false;
+
   /// After a wrong pick: the snooze shown for a moment before closing.
   Duration? _wrong;
 
@@ -176,6 +182,16 @@ class _AlarmScreenState extends State<AlarmScreen> {
   void _start() {
     _screen = _c.screenFor(widget.alarmId);
     _timeout = Timer(_c.settings.alarmTimeout, _timedOut);
+    _c.addListener(_snoozedElsewhere);
+  }
+
+  /// Snoozed from the notification: the screen closes, and its timeout
+  /// must not undo the snooze.
+  void _snoozedElsewhere() {
+    if (_acted || !_c.alarmSnoozes.containsKey(widget.alarmId)) return;
+    _acted = true;
+    _timeout?.cancel();
+    if (mounted) Navigator.of(context).pop();
   }
 
   Future<void> _timedOut() async {
@@ -185,6 +201,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
   }
 
   Future<void> _snooze() async {
+    _acted = true;
     _timeout?.cancel();
     await _c.snoozeAlarm(widget.alarmId);
     if (!mounted) return;
@@ -192,6 +209,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
   }
 
   Future<void> _dismiss() async {
+    _acted = true;
     _timeout?.cancel();
     await _c.dismiss(widget.alarmId);
     if (!mounted) return;
@@ -199,6 +217,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
   }
 
   Future<void> _answer(String picked) async {
+    _acted = true;
     _timeout?.cancel();
     final outcome = await _c.answer(widget.alarmId, picked);
     if (!mounted) return;
@@ -224,6 +243,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
   @override
   void dispose() {
     _timeout?.cancel();
+    _c.removeListener(_snoozedElsewhere);
     super.dispose();
   }
 

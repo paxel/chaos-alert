@@ -640,6 +640,36 @@ abstract class AppLocalizations {
   /// **'About'**
   String get about;
 
+  /// No description provided for @eventLog.
+  ///
+  /// In en, this message translates to:
+  /// **'Event log'**
+  String get eventLog;
+
+  /// No description provided for @eventLogSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What the app did in the last 7 days, to copy into a bug report'**
+  String get eventLogSubtitle;
+
+  /// No description provided for @eventLogCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get eventLogCopy;
+
+  /// No description provided for @eventLogCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Event log copied'**
+  String get eventLogCopied;
+
+  /// No description provided for @eventLogEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing logged yet'**
+  String get eventLogEmpty;
+
   /// No description provided for @aboutTagline.
   ///
   /// In en, this message translates to:

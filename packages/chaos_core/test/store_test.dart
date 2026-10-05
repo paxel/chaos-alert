@@ -180,7 +180,7 @@ void main() {
       words: words,
       clock: () => now,
       random: Random(1),
-    ).inBed();
+    ).inBed()!;
     store.close();
 
     store = SqliteStore.open(path);

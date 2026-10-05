@@ -61,6 +61,7 @@ void main() {
         lowVolume: 0.2,
         mediumVolume: 0.5,
         timeout: const Duration(minutes: 10),
+        snooze: const Duration(minutes: 9),
       ),
     ]);
     expect(calls.single.arguments, [
@@ -73,6 +74,7 @@ void main() {
         'low': 0.2,
         'medium': 0.5,
         'timeoutMs': 600000,
+        'snoozeMs': 540000,
       },
     ]);
   });
@@ -83,13 +85,32 @@ void main() {
       {'kind': 'nag', 'at': at.millisecondsSinceEpoch},
       {'kind': 'ring', 'alarmId': 3, 'at': at.millisecondsSinceEpoch},
       {'kind': 'timeout', 'alarmId': 3, 'at': at.millisecondsSinceEpoch},
+      {'kind': 'snooze', 'alarmId': 3, 'at': at.millisecondsSinceEpoch},
       {'kind': 'other', 'at': at.millisecondsSinceEpoch},
     ];
     final events = await ChannelAlarmPlatform().drainEvents();
-    expect(events, hasLength(3));
+    expect(events, hasLength(4));
     expect(events[0], isA<NagFired>().having((e) => e.at, 'at', at));
     expect(events[1], isA<RingStarted>().having((e) => e.alarmId, 'id', 3));
     expect(events[2], isA<RingTimedOut>());
+    expect(events[3], isA<RingSnoozed>().having((e) => e.alarmId, 'id', 3));
+  });
+
+  test('the event log goes to Android and comes back with its times', () async {
+    final at = DateTime(2026, 10, 6, 6, 31);
+    answer = (call) => switch (call.method) {
+      'readLog' => [
+        {'at': at.millisecondsSinceEpoch, 'text': 'android: ring stopped'},
+      ],
+      _ => null,
+    };
+    final p = ChannelAlarmPlatform();
+    await p.log('app: hello');
+    expect(calls.last.method, 'log');
+    expect(calls.last.arguments, 'app: hello');
+    final log = await p.readLog();
+    expect(log.single.at, at);
+    expect(log.single.text, 'android: ring stopped');
   });
 
   test('sounds and permissions are read from Android', () async {

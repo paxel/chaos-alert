@@ -19,6 +19,7 @@ import android.os.Looper
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
@@ -30,6 +31,9 @@ class RingService : Service() {
     private var player: MediaPlayer? = null
     private var plan: RingPlan? = null
     private var alarmId = -1
+
+    /** The ring playing now, to schedule its snooze from the notification. */
+    private var ring: JSONObject? = null
     private var originalVolume: Int? = null
     private var wakeLock: PowerManager.WakeLock? = null
 
@@ -38,7 +42,11 @@ class RingService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> start(JSONObject(intent.getStringExtra(Scheduler.EXTRA_PAYLOAD) ?: "{}"))
-            else -> stopRinging()
+            ACTION_SNOOZE -> snooze()
+            else -> {
+                EventLog.add(this, "android: stop requested for alarm $alarmId")
+                stopRinging()
+            }
         }
         return START_NOT_STICKY
     }
@@ -46,7 +54,9 @@ class RingService : Service() {
     private fun start(ring: JSONObject) {
         // A second alarm at the same minute takes over from the first.
         stopPlayback()
+        this.ring = ring
         alarmId = ring.optInt("alarmId", -1)
+        EventLog.add(this, "android: ring of alarm $alarmId started")
         ServiceCompat.startForeground(
             this, NOTIFICATION, notification(),
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK else 0,
@@ -63,6 +73,7 @@ class RingService : Service() {
             audio.setStreamVolume(AudioManager.STREAM_ALARM, RingPlan.volumeIndex(ring.optDouble("medium", 0.5), max), 0)
         }, LOW_PHASE_MS)
         handler.postDelayed({
+            EventLog.add(this, "android: ring of alarm $alarmId timed out")
             EventQueue.add(this, "timeout", alarmId)
             stopRinging()
         }, ring.optLong("timeoutMs", 600_000))
@@ -75,8 +86,27 @@ class RingService : Service() {
         plan = RingPlan(candidates).also { play(it.current()) }
     }
 
+    /**
+     * The Snooze action on the notification: stops the sound first, then
+     * queues the snooze for the app and schedules the ring again after the
+     * alarm snooze, so it rings again even when the app never runs.
+     */
+    private fun snooze() {
+        val current = ring
+        stopRinging()
+        if (current == null) return
+        val id = current.optInt("alarmId", -1)
+        EventLog.add(this, "android: ring of alarm $id snoozed from the notification")
+        EventQueue.add(this, "snooze", id)
+        val at = System.currentTimeMillis() + current.optLong("snoozeMs", 540_000)
+        val again = JSONObject(current.toString()).put("local", JSONArray(Scheduler.localFields(at)))
+        Scheduler.addRing(this, again)
+        MainActivity.eventsArrived()
+    }
+
     /** Plays [sound], or the phone's default alarm sound for null. */
     private fun play(sound: SoundCandidate?) {
+        EventLog.add(this, "android: playing ${sound?.uri ?: "the default alarm sound"}")
         player?.release()
         val uri = sound?.let { Uri.parse(it.uri) }
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
@@ -96,18 +126,21 @@ class RingService : Service() {
                 if ((sound?.startMs ?: 0) > 0) it.seekTo(sound!!.startMs)
                 it.start()
             }
-            p.setOnErrorListener { _, _, _ ->
+            p.setOnErrorListener { _, what, extra ->
+                EventLog.add(this, "android: sound failed ($what, $extra)")
                 if (sound != null) play(plan?.failed())
                 true
             }
             p.prepareAsync()
         } catch (e: Exception) {
+            EventLog.add(this, "android: sound failed (${e.javaClass.simpleName})")
             if (sound != null) play(plan?.failed())
         }
     }
 
     private fun stopPlayback() {
         handler.removeCallbacksAndMessages(null)
+        if (player != null) EventLog.add(this, "android: sound stopped")
         player?.release()
         player = null
         originalVolume?.let {
@@ -120,6 +153,7 @@ class RingService : Service() {
 
     private fun stopRinging() {
         stopPlayback()
+        ring = null
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -155,12 +189,22 @@ class RingService : Service() {
             .setOngoing(true)
             .setContentIntent(open)
             .setFullScreenIntent(open, true)
+            .addAction(
+                0,
+                getString(R.string.ring_snooze),
+                PendingIntent.getService(
+                    this, NOTIFICATION,
+                    Intent(this, RingService::class.java).setAction(ACTION_SNOOZE),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                ),
+            )
             .build()
     }
 
     companion object {
         const val ACTION_START = "io.github.paxel.chaos_alert.RING"
         const val ACTION_STOP = "io.github.paxel.chaos_alert.STOP"
+        const val ACTION_SNOOZE = "io.github.paxel.chaos_alert.SNOOZE"
         private const val NOTIFICATION = 2
         private const val CHANNEL = "ring"
 

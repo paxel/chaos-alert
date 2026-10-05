@@ -10,6 +10,7 @@ import android.content.Intent
  */
 class RearmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        EventLog.add(context, "android: re-arm after ${intent.action}")
         Scheduler.arm(context)
     }
 }

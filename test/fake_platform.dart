@@ -12,6 +12,11 @@ class FakePlatform implements AlarmPlatform {
   List<AwakeNotice> awake = [];
   int awakeCleared = 0;
   int stops = 0;
+
+  /// What the store held when [stopRinging] was called, newest last.
+  final stateAtStop = <EngineState>[];
+  Store? store;
+  final logged = <String>[];
   final requested = <Permission>[];
   Map<Permission, bool> granted = {for (final p in Permission.values) p: true};
   List<Sound> inventory = [
@@ -27,8 +32,15 @@ class FakePlatform implements AlarmPlatform {
   ];
   Launch? initial;
   final _launches = StreamController<Launch>.broadcast();
+  final _events = StreamController<void>.broadcast();
 
   void launch(Launch launch) => _launches.add(launch);
+
+  /// Android queued [event] while the app runs.
+  void arrive(PlatformEvent event) {
+    events.add(event);
+    _events.add(null);
+  }
 
   DateTime? get nag => nags.isEmpty ? null : nags.first;
 
@@ -57,7 +69,10 @@ class FakePlatform implements AlarmPlatform {
       this.rings = rings;
 
   @override
-  Future<void> stopRinging() async => stops++;
+  Future<void> stopRinging() async {
+    stops++;
+    if (store case final s?) stateAtStop.add(s.loadState());
+  }
 
   @override
   Future<List<Sound>> sounds() async => inventory;
@@ -76,4 +91,16 @@ class FakePlatform implements AlarmPlatform {
 
   @override
   Stream<Launch> get launches => _launches.stream;
+
+  @override
+  Stream<void> get eventsArrived => _events.stream;
+
+  @override
+  Future<void> log(String text) async => logged.add(text);
+
+  @override
+  Future<List<LogEntry>> readLog() async => [
+    for (var i = 0; i < logged.length; i++)
+      LogEntry(DateTime(2026, 10, 6, 6, 30, i), logged[i]),
+  ];
 }

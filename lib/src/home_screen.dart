@@ -47,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _inBed() async {
     final word = await _c.inBed();
-    if (!mounted) return;
+    if (!mounted || word == null) return;
     _open(() => WordScreen(word: word));
   }
 
@@ -155,7 +155,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ListTile(
                 leading: const Icon(Icons.info_outline),
                 title: Text(t.aboutAndFeedback),
-                onTap: () => _open(() => const AboutScreen()),
+                onTap: () =>
+                    _open(() => AboutScreen(readLog: _c.platform.readLog)),
               ),
             ],
           ),

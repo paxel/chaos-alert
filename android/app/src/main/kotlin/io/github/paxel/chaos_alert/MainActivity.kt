@@ -30,6 +30,7 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        active = this
         channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).apply {
             setMethodCallHandler { call, result ->
                 when (call.method) {
@@ -59,6 +60,13 @@ class MainActivity : FlutterActivity() {
                         RingService.stop(this@MainActivity)
                         result.success(null)
                     }
+                    "log" -> {
+                        EventLog.add(this@MainActivity, call.arguments as String)
+                        result.success(null)
+                    }
+                    "readLog" -> result.success(
+                        EventLog.read(this@MainActivity).map { mapOf("at" to it.at, "text" to it.text) },
+                    )
                     "sounds" -> Thread {
                         val sounds = runCatching { Device.sounds(this@MainActivity) }.getOrDefault(emptyList())
                         runOnUiThread { result.success(sounds) }
@@ -76,6 +84,11 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        if (active === this) active = null
+        super.onDestroy()
     }
 
     /** The nag and the alarm show over the lock screen and wake it. */
@@ -112,5 +125,12 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         private const val CHANNEL = "io.github.paxel.chaos_alert/alarm"
+        private var active: MainActivity? = null
+
+        /** Tells a running app that Android queued an event, so it reads the queue now. */
+        fun eventsArrived() {
+            val activity = active ?: return
+            activity.runOnUiThread { activity.channel?.invokeMethod("events", null) }
+        }
     }
 }

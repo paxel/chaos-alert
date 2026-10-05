@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:chaos_core/chaos_core.dart';
@@ -54,6 +55,7 @@ class Controller extends ChangeNotifier {
   late bool _canSayAwake;
   late bool _setupDone;
   late bool _pendingHint;
+  late Map<int, DateTime> _alarmSnoozes;
   String? _nagLine;
   Plan _plan = const Plan();
 
@@ -67,6 +69,9 @@ class Controller extends ChangeNotifier {
 
   /// The line on the nag last shown tonight.
   String? get nagLine => _nagLine;
+
+  /// When each snoozed alarm rings again.
+  Map<int, DateTime> get alarmSnoozes => Map.of(_alarmSnoozes);
 
   /// The hint whose page never came (a timeout ended the fifth failure).
   bool get pendingHint => _pendingHint;
@@ -84,7 +89,11 @@ class Controller extends ChangeNotifier {
     _setupDone = store.loadState().setupDone;
     _pendingHint = engine.pendingHint;
     _nagLine = engine.nagLine;
+    _alarmSnoozes = store.loadState().alarmSnoozes;
   }
+
+  /// Adds [text] to the event log on the phone, without waiting for it.
+  void log(String text) => unawaited(platform.log('app: $text'));
 
   /// The hint card on the main screen was read.
   void dismissHint() {
@@ -125,6 +134,8 @@ class Controller extends ChangeNotifier {
           engine.nagShown(at: at);
         case RingStarted(:final alarmId, :final at):
           engine.ring(alarmId, at: at);
+        case RingSnoozed(:final alarmId, :final at):
+          engine.snoozeAlarm(alarmId, at: at);
         case RingTimedOut(:final alarmId, :final at):
           engine.timeout(alarmId, at: at);
       }
@@ -136,6 +147,10 @@ class Controller extends ChangeNotifier {
   Future<void> reschedule() async {
     final plan = _plan = engine.plan();
     final settings = store.loadSettings();
+    log(
+      'plan: nags ${plan.nags.take(1).join()}, rings '
+      '${[for (final r in plan.rings.take(3)) '${r.alarmId}@${r.at}'].join(', ')}',
+    );
     final sounds = _sounds ??= await platform.sounds();
     await platform.scheduleNags(plan.nags, chime: settings.chime);
     await platform.scheduleAwake([
@@ -151,6 +166,7 @@ class Controller extends ChangeNotifier {
           lowVolume: settings.lowVolume,
           mediumVolume: settings.mediumVolume,
           timeout: settings.alarmTimeout,
+          snooze: settings.alarmSnooze,
         ),
     ]);
     _reload();
@@ -187,14 +203,17 @@ class Controller extends ChangeNotifier {
     await refresh();
   }
 
-  /// Returns the word to remember.
-  Future<String> inBed() async {
+  /// Returns the word to remember; null outside bedtime, when nothing
+  /// changes.
+  Future<String?> inBed() async {
     final word = engine.inBed();
+    log(word == null ? 'in bed ignored' : 'in bed, word given');
     await reschedule();
     return word;
   }
 
   Future<void> snoozeNag(Duration length) {
+    log('nag snoozed for ${length.inMinutes} min');
     engine.snoozeNag(length);
     return reschedule();
   }
@@ -218,26 +237,34 @@ class Controller extends ChangeNotifier {
   /// What the ringing alarm [alarmId] shows.
   RingScreen screenFor(int alarmId) => engine.screenFor(alarmId);
 
+  /// The sound stops first, so nothing after it can leave the alarm
+  /// playing.
   Future<void> snoozeAlarm(int alarmId) async {
-    engine.snoozeAlarm(alarmId);
+    log('alarm $alarmId snoozed on screen');
     await platform.stopRinging();
+    engine.snoozeAlarm(alarmId);
     await reschedule();
   }
 
   Future<QuizOutcome?> answer(int alarmId, String picked) async {
     final outcome = engine.answer(alarmId, picked);
+    log(
+      'alarm $alarmId answered ${outcome?.correct == true ? 'right' : 'wrong'}',
+    );
     await platform.stopRinging();
     await reschedule();
     return outcome;
   }
 
   Future<void> dismiss(int alarmId) async {
+    log('alarm $alarmId dismissed');
     engine.dismiss(alarmId);
     await platform.stopRinging();
     await reschedule();
   }
 
   Future<void> timeout(int alarmId) async {
+    log('alarm $alarmId timed out on screen');
     engine.timeout(alarmId);
     await platform.stopRinging();
     await reschedule();

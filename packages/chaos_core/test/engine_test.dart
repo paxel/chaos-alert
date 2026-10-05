@@ -160,6 +160,63 @@ void main() {
     });
   });
 
+  group('outside bedtime', () {
+    /// Yes at 23:00, the 06:30 alarm rings and is snoozed at 06:31.
+    String snoozedMorning() {
+      final a = n.alarm(6, 30);
+      n.now = at(5, 23);
+      n.engine.nagShown();
+      final word = n.engine.inBed()!;
+      n.now = at(6, 6, 30);
+      n.ring(a.id);
+      n.now = at(6, 6, 31);
+      n.engine.snoozeAlarm(a.id);
+      return word;
+    }
+
+    test("\"I'm in bed\" after the morning started gives no word and keeps "
+        "the night's word", () {
+      final word = snoozedMorning();
+      expect(n.engine.canSayInBed, isFalse);
+      expect(n.engine.inBed(), isNull);
+      expect(n.store.loadState().night!.word, word);
+    });
+
+    test('a nag firing after the morning started opens no night', () {
+      final word = snoozedMorning();
+      n.engine.nagShown();
+      expect(n.engine.canSayInBed, isFalse);
+      expect(n.store.loadState().night!.word, word);
+      expect(n.engine.plan().nextNag, at(6, 22, 30));
+    });
+
+    test('a nag snoozed after the morning started is ignored', () {
+      snoozedMorning();
+      n.engine.snoozeNag(const Duration(minutes: 10));
+      expect(n.engine.plan().nextNag, at(6, 22, 30));
+    });
+
+    test('a second "I\'m in bed" on the same night gives no word', () {
+      n.alarm(6, 30);
+      n.now = at(5, 23);
+      final word = n.engine.inBed()!;
+      expect(n.engine.inBed(), isNull);
+      expect(n.store.loadState().night!.word, word);
+    });
+
+    test('a snooze from the notification counts from when it was tapped', () {
+      final a = n.alarm(6, 30);
+      n.now = at(6, 6, 30);
+      n.engine.ring(a.id);
+      n.now = at(6, 6, 45);
+      n.engine.snoozeAlarm(a.id, at: at(6, 6, 31));
+      expect(
+        n.engine.plan().rings.where((r) => r.alarmId == a.id).first.at,
+        at(6, 6, 40),
+      );
+    });
+  });
+
   group('in bed', () {
     test('shows a word from the list', () {
       n.alarm(6, 30);
@@ -202,7 +259,7 @@ void main() {
       final seen = <String>[];
       for (var i = 0; i < words.length; i++) {
         n.now = at(5 + i, 22, 30);
-        seen.add(n.engine.inBed());
+        seen.add(n.engine.inBed()!);
         n.now = at(6 + i, 6, 30);
         expect(n.ring(a.id).quiz, isTrue);
         n.engine.answer(a.id, seen.last);
@@ -215,7 +272,7 @@ void main() {
     test('quizzes on the first wake-up alarm when a word was shown', () {
       final a = n.alarm(6, 30);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 6, 30);
       final screen = n.ring(a.id);
       expect(screen.quiz, isTrue);
@@ -226,7 +283,7 @@ void main() {
     test('the right word stops it and records a success', () {
       final a = n.alarm(6, 30);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 6, 30);
       n.ring(a.id);
       n.now = at(6, 6, 31);
@@ -242,7 +299,7 @@ void main() {
     test('a wrong word snoozes the alarm and drops that word', () {
       final a = n.alarm(6, 30);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 6, 30);
       final first = n.ring(a.id);
       final wrong = n.wrong(first, word);
@@ -263,7 +320,7 @@ void main() {
         'graded by the wrong picks', () {
       final a = n.alarm(6, 30);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 6, 30);
       n.engine.answer(a.id, n.wrong(n.ring(a.id), word));
       n.now = at(6, 6, 39);
@@ -283,7 +340,7 @@ void main() {
     test('after three wrong picks only the right word is left', () {
       final a = n.alarm(6, 30);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 6, 30);
       for (var i = 0; i < 3; i++) {
         n.engine.answer(a.id, n.wrong(n.ring(a.id), word));
@@ -305,7 +362,7 @@ void main() {
     test('a timeout after a wrong pick ends the night as a failure', () {
       final a = n.alarm(6, 30);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 6, 30);
       n.engine.answer(a.id, n.wrong(n.ring(a.id), word));
       n.now = at(6, 6, 39);
@@ -337,7 +394,7 @@ void main() {
     test('snoozing keeps the quiz for the next ring', () {
       final a = n.alarm(6, 30);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 6, 30);
       n.ring(a.id);
       n.engine.snoozeAlarm(a.id);
@@ -364,7 +421,7 @@ void main() {
       final first = n.alarm(6, 30);
       final backup = n.alarm(6, 45);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 6, 30);
       n.ring(first.id);
       n.engine.answer(first.id, word);
@@ -379,7 +436,7 @@ void main() {
       final reminder = n.alarm(6, 0, wakeUp: false);
       final wake = n.alarm(6, 30);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 6);
       expect(n.ring(reminder.id).quiz, isFalse);
       n.engine.dismiss(reminder.id);
@@ -418,7 +475,7 @@ void main() {
       final first = n.alarm(6, 30);
       final backup = n.alarm(6, 45);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 6, 30);
       n.ring(first.id);
       n.now = at(6, 6, 40);
@@ -454,7 +511,7 @@ void main() {
     test('the word waits for a moved alarm', () {
       final a = n.alarm(6, 30);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.store.saveAlarm(a.copyWith(time: const ClockTime(8, 0)));
       n.now = at(6, 8);
       expect(n.ring(a.id).quiz, isTrue);
@@ -497,7 +554,7 @@ void main() {
     /// One night with a wrong pick, then the right word.
     QuizOutcome failNight(Alarm a, int i) {
       n.now = at(5 + i, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6 + i, 6, 30);
       n.engine.answer(a.id, n.wrong(n.ring(a.id), word));
       n.now = at(6 + i, 6, 39);
@@ -520,7 +577,7 @@ void main() {
         failNight(a, i);
       }
       n.now = at(9, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(10, 6, 30);
       n.engine.answer(a.id, n.wrong(n.ring(a.id), word));
       n.now = at(10, 6, 39);
@@ -629,7 +686,7 @@ void main() {
       final backup = n.alarm(6, 45);
       final reminder = n.alarm(7, 0, wakeUp: false);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 5, 50);
       expect(n.engine.awakeScreen().options, contains(word));
       final outcome = n.engine.awakeAnswer(word)!;
@@ -648,7 +705,7 @@ void main() {
     test('a wrong word drops it and the quiz goes on without a snooze', () {
       n.alarm(6, 30);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 5, 50);
       final first = n.engine.awakeScreen();
       final wrong = n.wrong(first, word);
@@ -664,7 +721,7 @@ void main() {
         'removed', () {
       final a = n.alarm(6, 30);
       n.now = at(5, 22, 30);
-      final word = n.engine.inBed();
+      final word = n.engine.inBed()!;
       n.now = at(6, 5, 50);
       final wrong = n.wrong(n.engine.awakeScreen(), word);
       n.engine.awakeAnswer(wrong);
@@ -713,7 +770,7 @@ void main() {
   test('the engine keeps nothing in memory between events', () {
     final a = n.alarm(6, 30);
     n.now = at(5, 22, 30);
-    final word = n.engine.inBed();
+    final word = n.engine.inBed()!;
     final restarted = Engine(
       store: n.store,
       words: words,

@@ -206,7 +206,7 @@ void main() {
 
     // The morning after: the quiz on the 06:30 alarm.
     c = await demo(now: DateTime(2026, 10, 29, 22, 30));
-    final word = await c.inBed();
+    final word = (await c.inBed())!;
     final alarm = c.alarms.firstWhere((a) => a.time == const ClockTime(6, 30));
     (c.platform as FakePlatform).events.add(
       RingStarted(alarm.id, DateTime(2026, 10, 30, 6, 30)),

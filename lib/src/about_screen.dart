@@ -3,6 +3,8 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../l10n/app_localizations.dart';
+import 'event_log_screen.dart';
+import 'platform.dart';
 
 const _repoUrl = 'https://github.com/paxel/chaos-alert';
 const _issuesUrl = '$_repoUrl/issues';
@@ -12,10 +14,13 @@ const _donateUrl = 'https://ko-fi.com/paxel7';
 /// Who made the app, where its source lives, how to reach the developer,
 /// and the licences.
 class AboutScreen extends StatefulWidget {
-  const AboutScreen({super.key, this.version});
+  const AboutScreen({super.key, this.version, this.readLog});
 
   /// The version to show; read from the platform when null.
   final Future<PackageInfo>? version;
+
+  /// Reads the event log; without it the page has no event log entry.
+  final Future<List<LogEntry>> Function()? readLog;
 
   @override
   State<AboutScreen> createState() => _AboutScreenState();
@@ -101,6 +106,17 @@ class _AboutScreenState extends State<AboutScreen> {
             onTap: () =>
                 showLicensePage(context: context, applicationName: t.appTitle),
           ),
+          if (widget.readLog case final readLog?)
+            ListTile(
+              leading: const Icon(Icons.receipt_long_outlined),
+              title: Text(t.eventLog),
+              subtitle: Text(t.eventLogSubtitle),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => EventLogScreen(readLog: readLog),
+                ),
+              ),
+            ),
           const SizedBox(height: 24),
           const Center(child: _DangerButton()),
           const SizedBox(height: 32),

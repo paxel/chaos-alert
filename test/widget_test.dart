@@ -153,6 +153,35 @@ void main() {
     expect(find.text('Are you in bed?'), findsOneWidget);
   });
 
+  testWidgets('a nag that fires after the morning started shows nothing', (
+    tester,
+  ) async {
+    setupDone();
+    platform.initial = const NagLaunch();
+    now = DateTime(2026, 10, 6, 6, 31);
+    platform.events.add(NagFired(now));
+    await tester.pumpWidget(ChaosAlertApp(controller: controller()));
+    await tester.pumpAndSettle();
+    expect(find.text('Are you in bed?'), findsNothing);
+    expect(find.text("I'm in bed"), findsNothing);
+  });
+
+  testWidgets('a snooze from the notification closes the alarm screen', (
+    tester,
+  ) async {
+    setupDone();
+    await tester.pumpWidget(ChaosAlertApp(controller: controller()));
+    await tester.pumpAndSettle();
+    now = DateTime(2026, 10, 6, 6, 30);
+    platform.events.add(RingStarted(1, now));
+    platform.launch(const RingLaunch(1));
+    await tester.pumpAndSettle();
+    expect(find.text('Turn off'), findsOneWidget);
+    platform.arrive(RingSnoozed(1, now));
+    await tester.pumpAndSettle();
+    expect(find.text('Turn off'), findsNothing);
+  });
+
   testWidgets('the awake notice opens I am awake', (tester) async {
     setupDone();
     platform.initial = const AwakeLaunch();

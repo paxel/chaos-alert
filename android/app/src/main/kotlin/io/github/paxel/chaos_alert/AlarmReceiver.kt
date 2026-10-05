@@ -19,12 +19,14 @@ class AlarmReceiver : BroadcastReceiver() {
         val payload = JSONObject(intent.getStringExtra(Scheduler.EXTRA_PAYLOAD) ?: "{}")
         when (intent.getStringExtra(Scheduler.EXTRA_KIND)) {
             "nag" -> {
+                EventLog.add(context, "android: nag fired")
                 EventQueue.add(context, "nag")
                 showNag(context, payload.optBoolean("chime", true))
             }
             "awake" -> showAwake(context, payload.optLong("until"))
             "ring" -> {
                 val alarmId = intent.getIntExtra(Scheduler.EXTRA_ALARM_ID, -1)
+                EventLog.add(context, "android: ring of alarm $alarmId fired")
                 EventQueue.add(context, "ring", alarmId)
                 // Too late for "I'm awake": the alarm is ringing.
                 clearAwake(context)

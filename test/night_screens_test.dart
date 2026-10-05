@@ -107,6 +107,17 @@ void main() {
       expect(s.platform.nag, DateTime(2026, 10, 6, 0, 30));
     });
 
+    testWidgets('Yes on a nag left over after the bedtime was given closes '
+        'without a new word', (tester) async {
+      final s = Setup();
+      final word = (await s.controller.inBed())!;
+      await s.open(tester, NagScreen(controller: s.controller));
+      await tester.tap(find.text('Yes'));
+      await tester.pumpAndSettle();
+      expect(find.text('home'), findsOneWidget);
+      expect(s.store.loadState().night!.word, word);
+    });
+
     testWidgets("Android's nag event records the nag time", (tester) async {
       final s = Setup();
       await s.open(tester, NagScreen(controller: s.controller));
@@ -116,10 +127,30 @@ void main() {
 
   group('alarm', () {
     Future<String> sayInBed(Setup s) async {
-      final word = await s.controller.inBed();
+      final word = (await s.controller.inBed())!;
       s.now = DateTime(2026, 10, 6, 6, 30);
       return word;
     }
+
+    testWidgets('a snooze from the notification closes it, and its timeout '
+        'leaves the snooze alone', (tester) async {
+      final s = Setup();
+      await sayInBed(s);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      s.now = DateTime(2026, 10, 6, 6, 31);
+      s.platform.events.add(RingSnoozed(s.alarm.id, s.now));
+      await s.controller.refresh();
+      await tester.pumpAndSettle();
+      expect(find.text('home'), findsOneWidget);
+      await tester.pump(const Duration(minutes: 11));
+      expect(
+        s.controller.alarmSnoozes[s.alarm.id],
+        DateTime(2026, 10, 6, 6, 40),
+      );
+    });
 
     testWidgets('the right word closes it', (tester) async {
       final s = Setup();
@@ -304,7 +335,7 @@ void main() {
   group("I'm awake", () {
     /// In bed Monday 22:30, awake Tuesday 05:50 — inside the window.
     Future<String> awakeMorning(Setup s) async {
-      final word = await s.controller.inBed();
+      final word = (await s.controller.inBed())!;
       s.now = DateTime(2026, 10, 6, 5, 50);
       await s.controller.reschedule();
       return word;

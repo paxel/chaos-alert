@@ -16,6 +16,7 @@ class ScheduledRing {
     required this.lowVolume,
     required this.mediumVolume,
     required this.timeout,
+    required this.snooze,
   });
 
   final int alarmId;
@@ -26,6 +27,9 @@ class ScheduledRing {
   final double lowVolume;
   final double mediumVolume;
   final Duration timeout;
+
+  /// How long the Snooze action on the ring's notification snoozes it.
+  final Duration snooze;
 }
 
 /// The silent "I'm awake" notice of one morning.
@@ -43,16 +47,25 @@ sealed class Launch {
 
 class NagLaunch extends Launch {
   const NagLaunch();
+
+  @override
+  String toString() => 'nag';
 }
 
 class AwakeLaunch extends Launch {
   const AwakeLaunch();
+
+  @override
+  String toString() => "I'm awake";
 }
 
 class RingLaunch extends Launch {
   const RingLaunch(this.alarmId);
 
   final int alarmId;
+
+  @override
+  String toString() => 'ring of alarm $alarmId';
 }
 
 /// Something Android did on its own, kept in a queue until the app reads
@@ -71,6 +84,13 @@ class NagFired extends PlatformEvent {
 /// An alarm started ringing.
 class RingStarted extends PlatformEvent {
   const RingStarted(this.alarmId, DateTime at) : super(at);
+
+  final int alarmId;
+}
+
+/// A ring was snoozed from its notification.
+class RingSnoozed extends PlatformEvent {
+  const RingSnoozed(this.alarmId, DateTime at) : super(at);
 
   final int alarmId;
 }
@@ -118,6 +138,24 @@ abstract interface class AlarmPlatform {
 
   /// Nags and rings that arrive while the app runs.
   Stream<Launch> get launches;
+
+  /// Android queued an event while the app runs, e.g. a ring snoozed from
+  /// its notification; [drainEvents] reads it.
+  Stream<void> get eventsArrived;
+
+  /// Adds [text] to the event log on the phone.
+  Future<void> log(String text);
+
+  /// The event log of the last seven days, oldest first.
+  Future<List<LogEntry>> readLog();
+}
+
+/// One line of the event log.
+class LogEntry {
+  const LogEntry(this.at, this.text);
+
+  final DateTime at;
+  final String text;
 }
 
 /// [AlarmPlatform] over the app's method channel.
@@ -127,12 +165,15 @@ class ChannelAlarmPlatform implements AlarmPlatform {
       if (call.method == 'launch') {
         final launch = _launch(call.arguments);
         if (launch != null) _launches.add(launch);
+      } else if (call.method == 'events') {
+        _events.add(null);
       }
     });
   }
 
   static const _channel = MethodChannel('io.github.paxel.chaos_alert/alarm');
   final _launches = StreamController<Launch>.broadcast();
+  final _events = StreamController<void>.broadcast();
 
   @override
   Future<void> scheduleNags(List<DateTime> nags, {required bool chime}) =>
@@ -163,6 +204,8 @@ class ChannelAlarmPlatform implements AlarmPlatform {
           events.add(NagFired(at));
         case 'ring' when alarmId != null:
           events.add(RingStarted(alarmId, at));
+        case 'snooze' when alarmId != null:
+          events.add(RingSnoozed(alarmId, at));
         case 'timeout' when alarmId != null:
           events.add(RingTimedOut(alarmId, at));
       }
@@ -184,6 +227,7 @@ class ChannelAlarmPlatform implements AlarmPlatform {
             'low': r.lowVolume,
             'medium': r.mediumVolume,
             'timeoutMs': r.timeout.inMilliseconds,
+            'snoozeMs': r.snooze.inMilliseconds,
           },
       ]);
 
@@ -223,6 +267,24 @@ class ChannelAlarmPlatform implements AlarmPlatform {
 
   @override
   Stream<Launch> get launches => _launches.stream;
+
+  @override
+  Stream<void> get eventsArrived => _events.stream;
+
+  @override
+  Future<void> log(String text) => _channel.invokeMethod('log', text);
+
+  @override
+  Future<List<LogEntry>> readLog() async {
+    final raw = await _channel.invokeListMethod<Map>('readLog') ?? const [];
+    return [
+      for (final m in raw)
+        LogEntry(
+          DateTime.fromMillisecondsSinceEpoch(m['at'] as int),
+          m['text'] as String,
+        ),
+    ];
+  }
 
   /// Wall-clock fields, so Android re-arms at the same local time after a
   /// time-zone or clock change.
