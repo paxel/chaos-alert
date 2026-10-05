@@ -2,6 +2,18 @@
 
 Versions before the current one.
 
+## [0.3.0] - 2026-10-04
+
+### Added
+- The bedtime nag now argues before it asks: each popup brings one of 300 lines about sleep, dreams, puffy eyes, the Matrix and fairy tales, none repeating until all were shown.
+- F-Droid keeps the three versions before the current one in its archive, so you can go back after a bad update.
+
+### Changed
+- F-Droid now ships the 64-bit build only; the 32-bit APK stays available on the GitHub release page.
+
+### Fixed
+- The app's icon and feature graphic no longer go missing in F-Droid after a cat(a)log release.
+
 ## [0.2.0] - 2026-10-02
 
 ### Added
