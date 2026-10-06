@@ -20,6 +20,7 @@ class AlarmReceiver : BroadcastReceiver() {
         when (intent.getStringExtra(Scheduler.EXTRA_KIND)) {
             "nag" -> {
                 EventLog.add(context, "android: nag fired")
+                if (payload.has("planned")) Scheduler.nagFired(context, payload.getLong("planned"))
                 EventQueue.add(context, "nag")
                 showNag(context, payload.optBoolean("chime", true))
             }

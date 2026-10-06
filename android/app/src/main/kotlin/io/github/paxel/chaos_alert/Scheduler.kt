@@ -50,6 +50,26 @@ object Scheduler {
     fun replaceAwake(context: Context, awake: JSONArray) =
         update(context) { it.put("awake", awake) }
 
+    /**
+     * Drops the nag planned for [planned] from the stored schedule once it
+     * fired, so re-arming after a reboot or a snooze does not show it again.
+     * The other nags stay armed as they are.
+     */
+    fun nagFired(context: Context, planned: Long) {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val schedule = stored(context)
+        val nags = schedule.optJSONArray("nags") ?: return
+        val kept = JSONArray()
+        for (i in keptNags(List(nags.length()) { localMillis(nags.getJSONArray(it)) }, planned)) {
+            kept.put(nags.getJSONArray(i))
+        }
+        prefs.edit().putString(KEY, schedule.put("nags", kept).toString()).commit()
+    }
+
+    /** The indices of the nags in [planned] other than the one that [fired]. */
+    fun keptNags(planned: List<Long>, fired: Long): List<Int> =
+        planned.indices.filter { planned[it] != fired }
+
     private fun stored(context: Context): JSONObject {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         return JSONObject(prefs.getString(KEY, "{}"))
@@ -69,11 +89,12 @@ object Scheduler {
         val nags = schedule.optJSONArray("nags") ?: JSONArray()
         val chime = schedule.optBoolean("chime", true)
         for (i in 0 until nags.length()) {
+            val planned = localMillis(nags.getJSONArray(i))
             // A bedtime already passed means now.
-            val at = maxOf(localMillis(nags.getJSONArray(i)), now + 1000)
+            val at = maxOf(planned, now + 1000)
             val intent = Intent(context, AlarmReceiver::class.java)
                 .putExtra(EXTRA_KIND, "nag")
-                .putExtra(EXTRA_PAYLOAD, JSONObject().put("chime", chime).toString())
+                .putExtra(EXTRA_PAYLOAD, JSONObject().put("chime", chime).put("planned", planned).toString())
             exact(context, manager, at, pending(context, NAG_CODE + i, intent), alarmClock = false)
         }
         val rings = schedule.optJSONArray("rings") ?: JSONArray()
