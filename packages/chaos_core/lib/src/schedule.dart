@@ -35,18 +35,6 @@ List<Ring> ringsOn(DateTime day, List<Alarm> alarms, List<Vacation> vacations) {
   return rings;
 }
 
-/// The earliest wake-up ring on the morning of [day], or null.
-DateTime? firstWakeUpOn(
-  DateTime day,
-  List<Alarm> alarms,
-  List<Vacation> vacations,
-) {
-  for (final r in ringsOn(day, alarms, vacations)) {
-    if (r.alarm.wakeUp) return r.at;
-  }
-  return null;
-}
-
 /// A morning the bedtime nag is planned for.
 class Morning {
   const Morning({required this.firstWakeUp, required this.bedtime});
@@ -62,21 +50,31 @@ class Morning {
 
 /// The next morning that gets a bedtime nag: the first day whose earliest
 /// wake-up ring is still ahead of [now] and which is not a vacation morning.
+///
+/// [lastRing] holds each alarm's last ring; a morning whose earliest
+/// wake-up ring is already in it was turned off by "I'm awake" and is over.
 Morning? nextMorning(
   DateTime now,
   List<Alarm> alarms,
   List<Vacation> vacations,
-  Settings settings,
-) {
+  Settings settings, {
+  Map<int, DateTime> lastRing = const {},
+}) {
   final today = dateOf(now);
   for (var i = 0; i <= _horizonDays; i++) {
     final day = DateTime(today.year, today.month, today.day + i);
     if (vacations.any((v) => v.covers(day))) continue;
-    final first = firstWakeUpOn(day, alarms, vacations);
-    if (first == null || !first.isAfter(now)) continue;
+    final first = ringsOn(
+      day,
+      alarms,
+      vacations,
+    ).where((r) => r.alarm.wakeUp).firstOrNull;
+    if (first == null || !first.at.isAfter(now)) continue;
+    final done = lastRing[first.alarm.id];
+    if (done != null && !done.isBefore(first.at)) continue;
     return Morning(
-      firstWakeUp: first,
-      bedtime: first.subtract(settings.sleepLength),
+      firstWakeUp: first.at,
+      bedtime: first.at.subtract(settings.sleepLength),
     );
   }
   return null;

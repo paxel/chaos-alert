@@ -136,7 +136,13 @@ class Engine {
     }
     var cursor = now;
     for (var i = 0; nags.length < planAhead && i < planAhead + 1; i++) {
-      final m = nextMorning(cursor, alarms, vacations, settings);
+      final m = nextMorning(
+        cursor,
+        alarms,
+        vacations,
+        settings,
+        lastRing: state.lastRing,
+      );
       if (m == null) break;
       cursor = m.firstWakeUp;
       // The open night already had its nag.
@@ -250,9 +256,10 @@ class Engine {
   /// Whether the main screen offers "I'm in bed" now.
   bool get canSayInBed {
     final now = _now;
-    final night = _current(_load(now), now);
+    final state = _load(now);
+    final night = _current(state, now);
     if (night != null) return !night.confirmed;
-    final morning = _nextMorning(now);
+    final morning = _nextMorning(state, now);
     if (morning == null) return false;
     return !now.isBefore(morning.bedtime.subtract(inBedWindow));
   }
@@ -475,11 +482,14 @@ class Engine {
   OpenNight? _bedtimeNight(EngineState state, DateTime t) {
     final current = _current(state, t);
     if (current != null) return current;
-    final morning = _nextMorning(t);
+    final morning = _nextMorning(state, t);
     if (morning == null || t.isBefore(morning.bedtime.subtract(inBedWindow))) {
       return null;
     }
-    return state.night = _openNight(t);
+    return state.night = OpenNight(
+      plannedBedtime: morning.bedtime,
+      expectedWake: morning.firstWakeUp,
+    );
   }
 
   void _save(EngineState state) => store.saveState(state);
@@ -505,20 +515,13 @@ class Engine {
     _save(state);
   }
 
-  Morning? _nextMorning(DateTime t) => nextMorning(
+  Morning? _nextMorning(EngineState state, DateTime t) => nextMorning(
     t,
     store.loadAlarms(),
     store.loadVacations(),
     store.loadSettings(),
+    lastRing: state.lastRing,
   );
-
-  OpenNight _openNight(DateTime t) {
-    final m = _nextMorning(t);
-    return OpenNight(
-      plannedBedtime: m?.bedtime ?? t,
-      expectedWake: m?.firstWakeUp,
-    );
-  }
 
   Alarm? _alarm(int id) {
     for (final a in store.loadAlarms()) {

@@ -113,6 +113,18 @@ void main() {
       expect(m.firstWakeUp, at(6, 6, 30));
     });
 
+    test("skips a morning whose wake-up alarms \"I'm awake\" turned off", () {
+      const alarms = [Alarm(id: 1, time: ClockTime(6, 30), weekdays: weekdays)];
+      final m = nextMorning(
+        at(6, 6, 5),
+        alarms,
+        [],
+        settings,
+        lastRing: {1: at(6, 6, 30)},
+      )!;
+      expect(m.firstWakeUp, at(7, 6, 30));
+    });
+
     test('a night belongs to the morning it ends in: the vacation mornings '
         'have no nag, the morning after does', () {
       const alarms = [Alarm(id: 1, time: ClockTime(6, 30), weekdays: weekdays)];

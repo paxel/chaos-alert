@@ -702,6 +702,22 @@ void main() {
       expect(n.engine.canSayAwake, isFalse);
     });
 
+    test("the right word ends the morning: tonight's nag is next, \"I'm in "
+        "bed\" waits for tonight and a nag arriving now opens no night", () {
+      n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      final word = n.engine.inBed()!;
+      n.now = at(6, 6, 5);
+      n.engine.awakeAnswer(word);
+      expect(n.engine.plan().nextNag, at(6, 22, 30));
+      expect(n.engine.canSayInBed, isFalse);
+      n.engine.nagShown();
+      expect(n.store.loadState().night, isNull);
+      expect(n.engine.inBed(), isNull);
+      n.now = at(6, 19, 30);
+      expect(n.engine.canSayInBed, isTrue);
+    });
+
     test('a wrong word drops it and the quiz goes on without a snooze', () {
       n.alarm(6, 30);
       n.now = at(5, 22, 30);
