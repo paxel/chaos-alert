@@ -106,6 +106,15 @@ void main() {
     expect(platform.chime, isFalse);
   });
 
+  testWidgets('the easier quiz is off until switched on', (tester) async {
+    await tester.pumpWidget(app());
+    await tester.scrollUntilVisible(find.text('Easier quiz'), 200);
+    expect(store.loadSettings().easierQuiz, isFalse);
+    await tester.tap(find.text('Easier quiz'));
+    await tester.pumpAndSettle();
+    expect(store.loadSettings().easierQuiz, isTrue);
+  });
+
   testWidgets('without music access a hint offers to allow it', (tester) async {
     platform.granted[Permission.music] = false;
     await controller.refresh();

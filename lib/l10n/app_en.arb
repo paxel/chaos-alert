@@ -18,6 +18,13 @@
   "wordHint": "It is shown only once. Tomorrow's alarm asks for it.",
   "wordClose": "Good night",
   "ringQuiz": "Which word did you see last night?",
+  "ringLetters": "How does last night's word begin?",
+  "quizLetters": "{letters}…",
+  "@quizLetters": {
+    "placeholders": {
+      "letters": {"type": "String"}
+    }
+  },
   "ringDismiss": "Turn off",
   "ringSnooze": "Snooze",
   "failureWord": "The word was",
@@ -75,6 +82,8 @@
   "settingsMediumVolume": "Volume after 10 s",
   "settingsChime": "Chime at bedtime",
   "settingsChimeHint": "One soft sound with the bedtime popup",
+  "settingsEasierQuiz": "Easier quiz",
+  "settingsEasierQuizHint": "Pick the whole word from four instead of its first letters",
   "settingsMusic": "Songs are left out",
   "settingsMusicHint": "Allow access to music so alarms can play songs too.",
   "settingsMusicGrant": "Allow",

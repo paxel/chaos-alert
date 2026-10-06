@@ -51,11 +51,18 @@ class PlannedRing {
 
 /// What a ringing alarm shows.
 class RingScreen {
-  const RingScreen.quiz(this.options) : quiz = true;
-  const RingScreen.dismiss() : quiz = false, options = const [];
+  const RingScreen.quiz(this.options, {this.letters = false}) : quiz = true;
+  const RingScreen.dismiss()
+    : quiz = false,
+      letters = false,
+      options = const [];
 
   /// Whether turning it off takes the quiz; else a plain dismiss button.
   final bool quiz;
+
+  /// Whether the options are the word's first letters (the letter quiz)
+  /// rather than whole words.
+  final bool letters;
   final List<String> options;
 }
 
@@ -63,18 +70,33 @@ class RingScreen {
 class QuizOutcome {
   const QuizOutcome.wrong({required this.snooze})
     : correct = false,
+      next = false,
       wrongPicks = 0,
       word = null,
       stats = null;
+
+  /// A right letter quiz round with more rounds to come; the alarm goes on
+  /// ringing.
+  const QuizOutcome.next()
+    : correct = true,
+      next = true,
+      wrongPicks = 0,
+      word = null,
+      stats = null,
+      snooze = null;
 
   const QuizOutcome.right({
     required this.wrongPicks,
     required String this.word,
     required QuizStats this.stats,
   }) : correct = true,
+       next = false,
        snooze = null;
 
   final bool correct;
+
+  /// Whether the quiz goes on with the next letter quiz round.
+  final bool next;
 
   /// After a wrong pick: how long until the alarm rings again; null when
   /// nothing rings (the "I'm awake" quiz).
@@ -217,11 +239,13 @@ class Engine {
     final night = state.night;
     final word = night?.word;
     if (night == null || word == null) return null;
-    if (picked != word) {
+    _fixForm(night, word);
+    if (!_isRight(night, word, picked)) {
       if (!night.wrongPicks.contains(picked)) night.wrongPicks.add(picked);
       _save(state);
       return const QuizOutcome.wrong(snooze: null);
     }
+    if (_nextRound(state, night)) return const QuizOutcome.next();
     _cancelMorning(state, t);
     return _found(state, night, word, t);
   }
@@ -335,17 +359,50 @@ class Engine {
 
   /// The quiz for the night's word: the same options all night, minus the
   /// ones already picked wrongly; a plain dismiss without a word.
+  ///
+  /// The form, letter quiz or word quiz, follows the settings when the quiz
+  /// first shows and stays for the night.
   RingScreen _quiz() {
     final state = _load(_now);
     final night = state.night;
     final word = night?.word;
     if (night == null || word == null) return const RingScreen.dismiss();
-    final options = night.options ??= quizOptions(word, words, _random);
+    _fixForm(night, word);
     _save(state);
+    final rounds = night.rounds;
+    final options = rounds == null ? night.options! : rounds[night.solved];
     return RingScreen.quiz([
       for (final o in options)
         if (!night.wrongPicks.contains(o)) o,
-    ]);
+    ], letters: rounds != null);
+  }
+
+  /// Settles the night's quiz form and options the first time they are
+  /// needed.
+  void _fixForm(OpenNight night, String word) {
+    if (night.options != null || night.rounds != null) return;
+    if (store.loadSettings().easierQuiz) {
+      night.options = quizOptions(word, words, _random);
+    } else {
+      night.rounds = letterRounds(word, words, _random);
+    }
+  }
+
+  /// Whether [picked] is right on the quiz as it stands: the word, or on
+  /// the letter quiz the word's beginning one letter past what was found.
+  bool _isRight(OpenNight night, String word, String picked) =>
+      night.rounds == null
+      ? picked == word
+      : picked == word.substring(0, night.solved + 1);
+
+  /// After a right pick: whether a letter quiz round follows, counting this
+  /// one as solved.
+  bool _nextRound(EngineState state, OpenNight night) {
+    final rounds = night.rounds;
+    if (rounds == null || night.solved + 1 >= rounds.length) return false;
+    night.solved++;
+    _save(state);
+    return true;
   }
 
   /// Alarm [alarmId] was snoozed, on its screen or, while the app was not
@@ -371,13 +428,15 @@ class Engine {
       _save(state);
       return null;
     }
-    if (picked != word) {
+    _fixForm(night, word);
+    if (!_isRight(night, word, picked)) {
       final snooze = store.loadSettings().alarmSnooze;
       if (!night.wrongPicks.contains(picked)) night.wrongPicks.add(picked);
       state.alarmSnoozes[alarmId] = t.add(snooze);
       _save(state);
       return QuizOutcome.wrong(snooze: snooze);
     }
+    if (_nextRound(state, night)) return const QuizOutcome.next();
     return _found(state, night, word, t);
   }
 

@@ -72,4 +72,50 @@ void main() {
       expect(options.toSet(), words.toSet());
     });
   });
+
+  group('letter rounds', () {
+    test('three rounds of four distinct options, each adding one letter to '
+        'what was found', () {
+      final words = ['arabesque', 'artisan', 'abash', 'tundra', 'harbour'];
+      for (var seed = 0; seed < 50; seed++) {
+        final rounds = letterRounds('arabesque', words, Random(seed));
+        expect(rounds, hasLength(3));
+        for (var k = 1; k <= 3; k++) {
+          final options = rounds[k - 1];
+          expect(options, hasLength(4));
+          expect(options.toSet(), hasLength(4));
+          expect(options, contains('arabesque'.substring(0, k)));
+          for (final o in options) {
+            expect(o, hasLength(k));
+            expect(o.startsWith('arabesque'.substring(0, k - 1)), isTrue);
+          }
+        }
+      }
+    });
+
+    test('distractors come from other words first', () {
+      final words = [
+        'arabesque',
+        'artisan',
+        'abash',
+        'alder',
+        'afoot',
+        'arid',
+        'argue',
+      ];
+      for (var seed = 0; seed < 50; seed++) {
+        final rounds = letterRounds('arabesque', words, Random(seed));
+        expect(rounds[1].toSet(), {'ar', 'ab', 'al', 'af'});
+        expect(rounds[2].toSet(), {'ara', 'art', 'ari', 'arg'});
+      }
+    });
+
+    test('random letters fill in when too few words share the beginning', () {
+      final words = ['verdict', 'venture', 'harbour'];
+      final rounds = letterRounds('verdict', words, Random(1));
+      expect(rounds[0], containsAll(['v', 'h']));
+      expect(rounds[1], contains('ve'));
+      expect(rounds[2], containsAll(['ver', 'ven']));
+    });
+  });
 }

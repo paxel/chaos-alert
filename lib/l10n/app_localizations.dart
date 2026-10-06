@@ -160,6 +160,18 @@ abstract class AppLocalizations {
   /// **'Which word did you see last night?'**
   String get ringQuiz;
 
+  /// No description provided for @ringLetters.
+  ///
+  /// In en, this message translates to:
+  /// **'How does last night\'s word begin?'**
+  String get ringLetters;
+
+  /// No description provided for @quizLetters.
+  ///
+  /// In en, this message translates to:
+  /// **'{letters}…'**
+  String quizLetters(String letters);
+
   /// No description provided for @ringDismiss.
   ///
   /// In en, this message translates to:
@@ -399,6 +411,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'One soft sound with the bedtime popup'**
   String get settingsChimeHint;
+
+  /// No description provided for @settingsEasierQuiz.
+  ///
+  /// In en, this message translates to:
+  /// **'Easier quiz'**
+  String get settingsEasierQuiz;
+
+  /// No description provided for @settingsEasierQuizHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the whole word from four instead of its first letters'**
+  String get settingsEasierQuizHint;
 
   /// No description provided for @settingsMusic.
   ///

@@ -92,6 +92,7 @@ class SqliteStore implements Store {
       lowVolume: (m['lowVolume'] as num?)?.toDouble() ?? d.lowVolume,
       mediumVolume: (m['mediumVolume'] as num?)?.toDouble() ?? d.mediumVolume,
       chime: m['chime'] as bool? ?? d.chime,
+      easierQuiz: m['easierQuiz'] as bool? ?? d.easierQuiz,
     );
   }
 
@@ -106,6 +107,7 @@ class SqliteStore implements Store {
       'lowVolume': settings.lowVolume,
       'mediumVolume': settings.mediumVolume,
       'chime': settings.chime,
+      'easierQuiz': settings.easierQuiz,
     }),
   );
 

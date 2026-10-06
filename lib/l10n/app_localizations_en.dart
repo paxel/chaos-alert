@@ -46,6 +46,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get ringQuiz => 'Which word did you see last night?';
 
   @override
+  String get ringLetters => 'How does last night\'s word begin?';
+
+  @override
+  String quizLetters(String letters) {
+    return '$letters…';
+  }
+
+  @override
   String get ringDismiss => 'Turn off';
 
   @override
@@ -176,6 +184,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsChimeHint => 'One soft sound with the bedtime popup';
+
+  @override
+  String get settingsEasierQuiz => 'Easier quiz';
+
+  @override
+  String get settingsEasierQuizHint =>
+      'Pick the whole word from four instead of its first letters';
 
   @override
   String get settingsMusic => 'Songs are left out';

@@ -13,6 +13,7 @@ void contract(String name, Store Function() open) {
 
     test('settings start at their defaults and round-trip', () {
       expect(store.loadSettings().sleepLength, const Duration(hours: 8));
+      expect(store.loadSettings().easierQuiz, isFalse);
       store.saveSettings(
         const Settings(
           sleepLength: Duration(hours: 7, minutes: 30),
@@ -22,6 +23,7 @@ void contract(String name, Store Function() open) {
           lowVolume: 0.1,
           mediumVolume: 0.7,
           chime: false,
+          easierQuiz: true,
         ),
       );
       final s = store.loadSettings();
@@ -32,6 +34,7 @@ void contract(String name, Store Function() open) {
       expect(s.lowVolume, 0.1);
       expect(s.mediumVolume, 0.7);
       expect(s.chime, isFalse);
+      expect(s.easierQuiz, isTrue);
     });
 
     test('alarms are created, edited and deleted', () {
@@ -97,6 +100,11 @@ void contract(String name, Store Function() open) {
           lastNag: DateTime(2026, 10, 5, 22, 30),
           nagSnoozedUntil: DateTime(2026, 10, 5, 22, 40),
           options: ['a', 'b', 'c', 'd'],
+          rounds: [
+            ['a', 'b', 'c', 'd'],
+            ['ab', 'ac', 'ad', 'ae'],
+          ],
+          solved: 1,
           wrongPicks: ['b'],
           nagLine: 'Go to bed.',
         ),
@@ -112,6 +120,11 @@ void contract(String name, Store Function() open) {
       expect(s.night!.nagSnoozedUntil, DateTime(2026, 10, 5, 22, 40));
       expect(s.night!.confirmed, isFalse);
       expect(s.night!.options, ['a', 'b', 'c', 'd']);
+      expect(s.night!.rounds, [
+        ['a', 'b', 'c', 'd'],
+        ['ab', 'ac', 'ad', 'ae'],
+      ]);
+      expect(s.night!.solved, 1);
       expect(s.night!.wrongPicks, ['b']);
       expect(s.alarmSnoozes, {3: DateTime(2026, 10, 6, 6, 39)});
       expect(s.lastRing, {3: DateTime(2026, 10, 6, 6, 30)});
@@ -123,6 +136,13 @@ void contract(String name, Store Function() open) {
       expect(s.setupDone, isTrue);
       expect(s.pendingHint, isTrue);
       expect(EngineState().setupDone, isFalse);
+      // A night saved before the letter quiz has no rounds.
+      final old = OpenNight.fromJson({
+        'plannedBedtime': '2026-10-05T22:30:00.000',
+        'options': ['a', 'b', 'c', 'd'],
+      });
+      expect(old.rounds, isNull);
+      expect(old.solved, 0);
     });
   });
 }
@@ -172,6 +192,7 @@ void main() {
     const words = ['verdict', 'venture', 'harbour', 'lantern', 'quarrel'];
 
     var store = SqliteStore.open(path);
+    store.saveSettings(const Settings(easierQuiz: true));
     final alarm = store.saveAlarm(
       const Alarm(id: 0, time: ClockTime(6, 30), weekdays: {DateTime.tuesday}),
     );

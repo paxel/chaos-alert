@@ -18,7 +18,7 @@ void main() {
     now = DateTime(2026, 10, 5, 12);
     platform = FakePlatform();
     c = Controller(
-      store: MemoryStore(),
+      store: MemoryStore()..saveSettings(const Settings(easierQuiz: true)),
       platform: platform,
       words: words,
       clock: () => now,
@@ -106,6 +106,23 @@ void main() {
     expect(platform.rings.first.at, DateTime(2026, 10, 13, 6, 30));
   });
 
+  test('a right letter quiz round leaves the alarm ringing; the last one '
+      'stops it', () async {
+    await c.saveSettings(const Settings());
+    final a = await addAlarm();
+    now = DateTime(2026, 10, 5, 22, 30);
+    final word = (await c.inBed())!;
+    now = DateTime(2026, 10, 6, 6, 30);
+    platform.events.add(RingStarted(a.id, now));
+    await c.refresh();
+    expect(c.screenFor(a.id).letters, isTrue);
+    expect((await c.answer(a.id, word.substring(0, 1)))!.next, isTrue);
+    expect((await c.answer(a.id, word.substring(0, 2)))!.next, isTrue);
+    expect(platform.stops, 0);
+    expect((await c.answer(a.id, word.substring(0, 3)))!.correct, isTrue);
+    expect(platform.stops, 1);
+  });
+
   test('events Android queued are replayed with their own time', () async {
     final a = await addAlarm();
     now = DateTime(2026, 10, 6, 7);
@@ -150,6 +167,19 @@ void main() {
     await c.awakeAnswer(word);
     expect(platform.awakeCleared, 1);
     expect(platform.awake.first.until, DateTime(2026, 10, 13, 6, 30));
+  });
+
+  test("a right letter quiz round on I'm awake keeps the notice", () async {
+    await c.saveSettings(const Settings());
+    await addAlarm();
+    now = DateTime(2026, 10, 5, 22, 30);
+    final word = (await c.inBed())!;
+    now = DateTime(2026, 10, 6, 5, 45);
+    await c.awakeAnswer(word.substring(0, 1));
+    expect(platform.awakeCleared, 0);
+    await c.awakeAnswer(word.substring(0, 2));
+    await c.awakeAnswer(word.substring(0, 3));
+    expect(platform.awakeCleared, 1);
   });
 
   test('missing permissions are listed until granted', () async {

@@ -25,9 +25,11 @@ const words = [
 /// October 2026; the 5th is a Monday.
 DateTime at(int day, int h, [int m = 0]) => DateTime(2026, 10, day, h, m);
 
-/// An engine over a memory store whose clock the test moves.
+/// An engine over a memory store whose clock the test moves; the word quiz
+/// unless [easierQuiz] is off.
 class Night {
-  Night({List<String> nagLines = const []}) {
+  Night({List<String> nagLines = const [], bool easierQuiz = true}) {
+    store.saveSettings(Settings(easierQuiz: easierQuiz));
     engine = Engine(
       store: store,
       words: words,
@@ -409,7 +411,9 @@ void main() {
 
     test('the alarm snooze follows its setting', () {
       final a = n.alarm(6, 30);
-      n.store.saveSettings(const Settings(alarmSnooze: Duration(minutes: 4)));
+      n.store.saveSettings(
+        const Settings(alarmSnooze: Duration(minutes: 4), easierQuiz: true),
+      );
       n.now = at(6, 6, 30);
       n.ring(a.id);
       n.engine.snoozeAlarm(a.id);
@@ -780,6 +784,101 @@ void main() {
         at(13, 6, 30),
         at(14, 6, 30),
       ]);
+    });
+  });
+
+  group('letter quiz', () {
+    setUp(() => n = Night(easierQuiz: false));
+
+    /// Bedtime at 22:30, the 06:30 alarm rings; returns the word.
+    String ringing(Alarm a) {
+      n.now = at(5, 22, 30);
+      final word = n.engine.inBed()!;
+      n.now = at(6, 6, 30);
+      n.engine.ring(a.id);
+      return word;
+    }
+
+    test('is the default: three rounds, each one letter more, then the '
+        'word ends the night as a success', () {
+      final a = n.alarm(6, 30);
+      final word = ringing(a);
+      for (var k = 1; k <= 3; k++) {
+        final screen = n.engine.screenFor(a.id);
+        expect(screen.letters, isTrue);
+        expect(screen.options, hasLength(4));
+        expect(screen.options, contains(word.substring(0, k)));
+        final outcome = n.engine.answer(a.id, word.substring(0, k))!;
+        expect(outcome.correct, isTrue);
+        expect(outcome.next, k < 3);
+      }
+      expect(n.last.result, NightResult.success);
+      expect(n.last.wrongPicks, 0);
+    });
+
+    test('the last round hands back the word', () {
+      final a = n.alarm(6, 30);
+      final word = ringing(a);
+      n.engine.answer(a.id, word.substring(0, 1));
+      n.engine.answer(a.id, word.substring(0, 2));
+      expect(n.engine.answer(a.id, word.substring(0, 3))!.word, word);
+    });
+
+    test('a wrong pick snoozes; the next ring goes on in the same round '
+        'without it, and the night is a failure', () {
+      final a = n.alarm(6, 30);
+      final word = ringing(a);
+      n.engine.answer(a.id, word.substring(0, 1));
+      final second = n.engine.screenFor(a.id);
+      final wrong = second.options.firstWhere((o) => o != word.substring(0, 2));
+      final outcome = n.engine.answer(a.id, wrong)!;
+      expect(outcome.correct, isFalse);
+      expect(outcome.snooze, const Duration(minutes: 9));
+      n.now = at(6, 6, 39);
+      final again = n.ring(a.id);
+      expect(again.options, hasLength(3));
+      expect(again.options, isNot(contains(wrong)));
+      expect(again.options, contains(word.substring(0, 2)));
+      n.engine.answer(a.id, word.substring(0, 2));
+      final last = n.engine.answer(a.id, word.substring(0, 3))!;
+      expect(last.wrongPicks, 1);
+      expect(n.last.result, NightResult.failure);
+    });
+
+    test('the form stays once the quiz showed, even when the switch flips', () {
+      final a = n.alarm(6, 30);
+      ringing(a);
+      n.engine.screenFor(a.id);
+      n.store.saveSettings(const Settings(easierQuiz: true));
+      expect(n.engine.screenFor(a.id).letters, isTrue);
+    });
+
+    test('the switch flipped before the quiz showed gives the word quiz', () {
+      final a = n.alarm(6, 30);
+      final word = ringing(a);
+      n.store.saveSettings(const Settings(easierQuiz: true));
+      final screen = n.engine.screenFor(a.id);
+      expect(screen.letters, isFalse);
+      expect(screen.options, contains(word));
+    });
+
+    test("on \"I'm awake\" the alarms stay until the last round is right", () {
+      final a = n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      final word = n.engine.inBed()!;
+      n.now = at(6, 6, 5);
+      expect(n.engine.awakeAnswer(word.substring(0, 1))!.next, isTrue);
+      expect(n.engine.awakeAnswer(word.substring(0, 2))!.next, isTrue);
+      expect(n.engine.plan().rings.first.at, at(6, 6, 30));
+      expect(n.store.loadRecords(), isEmpty);
+      final outcome = n.engine.awakeAnswer(word.substring(0, 3))!;
+      expect(outcome.next, isFalse);
+      expect(outcome.word, word);
+      expect(n.last.result, NightResult.success);
+      expect(
+        n.engine.plan().rings.where((r) => r.alarmId == a.id).first.at,
+        at(7, 6, 30),
+      );
     });
   });
 

@@ -12,9 +12,11 @@ import 'fake_platform.dart';
 
 const words = ['verdict', 'venture', 'harbour', 'lantern', 'quarrel'];
 
-/// A daily 06:30 wake-up alarm, the clock at Monday 22:30.
+/// A daily 06:30 wake-up alarm, the clock at Monday 22:30; the word quiz
+/// unless [easierQuiz] is off.
 class Setup {
-  Setup() {
+  Setup({bool easierQuiz = true}) {
+    store.saveSettings(Settings(easierQuiz: easierQuiz));
     controller = Controller(
       store: store,
       platform: platform,
@@ -329,6 +331,75 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('home'), findsOneWidget);
       expect(s.store.loadRecords().single.result, NightResult.missed);
+    });
+  });
+
+  group('letter quiz', () {
+    /// In bed Monday 22:30; returns the word.
+    Future<String> sayInBed(Setup s) async => (await s.controller.inBed())!;
+
+    /// Marks the option showing [letters] and confirms it with OK.
+    Future<void> pick(WidgetTester tester, String letters) async {
+      await tester.tap(find.text('$letters…'));
+      await tester.pump();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('three rounds while the alarm rings, then the word shows '
+        'until closed', (tester) async {
+      final s = Setup(easierQuiz: false);
+      final word = await sayInBed(s);
+      s.now = DateTime(2026, 10, 6, 6, 30);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      expect(find.text("How does last night's word begin?"), findsOneWidget);
+      await pick(tester, word.substring(0, 1));
+      await pick(tester, word.substring(0, 2));
+      expect(s.platform.stops, 0);
+      await pick(tester, word.substring(0, 3));
+      expect(s.platform.stops, 1);
+      expect(find.text('The word was'), findsOneWidget);
+      expect(find.text(word), findsOneWidget);
+      expect(s.store.loadRecords().single.result, NightResult.success);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+      expect(find.text('home'), findsOneWidget);
+    });
+
+    testWidgets('the timeout counts from the ring, not from the last '
+        'round', (tester) async {
+      final s = Setup(easierQuiz: false);
+      final word = await sayInBed(s);
+      s.now = DateTime(2026, 10, 6, 6, 30);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      await tester.pump(const Duration(minutes: 5));
+      await pick(tester, word.substring(0, 1));
+      await tester.pump(const Duration(minutes: 5));
+      await tester.pumpAndSettle();
+      expect(find.text('home'), findsOneWidget);
+      expect(s.store.loadRecords().single.result, NightResult.missed);
+    });
+
+    testWidgets("on I'm awake the word shows after the last round", (
+      tester,
+    ) async {
+      final s = Setup(easierQuiz: false);
+      final word = await sayInBed(s);
+      s.now = DateTime(2026, 10, 6, 5, 50);
+      await s.open(tester, AwakeScreen(controller: s.controller));
+      await pick(tester, word.substring(0, 1));
+      await pick(tester, word.substring(0, 2));
+      expect(s.platform.awakeCleared, 0);
+      await pick(tester, word.substring(0, 3));
+      expect(s.platform.awakeCleared, 1);
+      expect(find.text(word), findsOneWidget);
+      expect(s.store.loadRecords().single.result, NightResult.success);
     });
   });
 

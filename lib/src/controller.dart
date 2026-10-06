@@ -223,6 +223,7 @@ class Controller extends ChangeNotifier {
 
   Future<QuizOutcome?> awakeAnswer(String picked) async {
     final outcome = engine.awakeAnswer(picked);
+    if (outcome != null && outcome.next) return outcome;
     if (outcome != null && outcome.correct) await platform.clearAwakeNotice();
     await reschedule();
     return outcome;
@@ -246,8 +247,10 @@ class Controller extends ChangeNotifier {
     await reschedule();
   }
 
+  /// A right letter quiz round leaves the alarm ringing for the next one.
   Future<QuizOutcome?> answer(int alarmId, String picked) async {
     final outcome = engine.answer(alarmId, picked);
+    if (outcome != null && outcome.next) return outcome;
     log(
       'alarm $alarmId answered ${outcome?.correct == true ? 'right' : 'wrong'}',
     );

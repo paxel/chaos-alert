@@ -99,6 +99,7 @@ class Settings {
     this.lowVolume = 0.2,
     this.mediumVolume = 0.5,
     this.chime = true,
+    this.easierQuiz = false,
   });
 
   final Duration sleepLength;
@@ -113,6 +114,10 @@ class Settings {
   /// Whether the bedtime nag plays its short chime.
   final bool chime;
 
+  /// Whether the quiz asks for the whole word among four (the word quiz)
+  /// instead of its first letters round by round (the letter quiz).
+  final bool easierQuiz;
+
   Settings copyWith({
     Duration? sleepLength,
     Duration? nagSnooze,
@@ -121,6 +126,7 @@ class Settings {
     double? lowVolume,
     double? mediumVolume,
     bool? chime,
+    bool? easierQuiz,
   }) => Settings(
     sleepLength: sleepLength ?? this.sleepLength,
     nagSnooze: nagSnooze ?? this.nagSnooze,
@@ -129,5 +135,6 @@ class Settings {
     lowVolume: lowVolume ?? this.lowVolume,
     mediumVolume: mediumVolume ?? this.mediumVolume,
     chime: chime ?? this.chime,
+    easierQuiz: easierQuiz ?? this.easierQuiz,
   );
 }

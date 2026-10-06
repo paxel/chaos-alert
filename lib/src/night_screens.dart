@@ -195,6 +195,8 @@ class _AlarmScreenState extends State<AlarmScreen> {
   }
 
   Future<void> _timedOut() async {
+    // An answer is under way; the ring's own timeout keeps running natively.
+    if (_acted) return;
     await _c.timeout(widget.alarmId);
     if (!mounted) return;
     Navigator.of(context).pop();
@@ -218,9 +220,16 @@ class _AlarmScreenState extends State<AlarmScreen> {
 
   Future<void> _answer(String picked) async {
     _acted = true;
-    _timeout?.cancel();
+    final letters = _screen?.letters ?? false;
     final outcome = await _c.answer(widget.alarmId, picked);
     if (!mounted) return;
+    if (outcome != null && outcome.next) {
+      // The next letter quiz round; the alarm and its timeout go on.
+      _acted = false;
+      setState(() => _screen = _c.screenFor(widget.alarmId));
+      return;
+    }
+    _timeout?.cancel();
     if (outcome != null && !outcome.correct) {
       // Wrong: the alarm is snoozed; say so for a moment, then close.
       setState(() => _wrong = outcome.snooze);
@@ -229,14 +238,8 @@ class _AlarmScreenState extends State<AlarmScreen> {
       });
       return;
     }
-    if (outcome != null && outcome.failed) {
-      await Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => SummaryScreen(outcome: outcome),
-        ),
-      );
-      return;
-    }
+    if (await showOutcome(context, outcome, letters: letters)) return;
+    if (!mounted) return;
     Navigator.of(context).pop();
   }
 
@@ -303,6 +306,8 @@ class _QuizPanelState extends State<QuizPanel> {
     final screen = widget.screen;
     const tall = Size.fromHeight(64);
     final picked = _picked;
+    String label(String option) =>
+        screen.letters ? t.quizLetters(option) : option;
     return NightFrame(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -315,7 +320,7 @@ class _QuizPanelState extends State<QuizPanel> {
           const Spacer(),
           if (screen.quiz) ...[
             Text(
-              t.ringQuiz,
+              screen.letters ? t.ringLetters : t.ringQuiz,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge
                   ?.copyWith(color: Colors.white70),
@@ -330,12 +335,12 @@ class _QuizPanelState extends State<QuizPanel> {
                         style: FilledButton.styleFrom(minimumSize: tall),
                         onPressed: () => setState(() => _picked = option),
                         icon: const Icon(Icons.check),
-                        label: Text(option),
+                        label: Text(label(option)),
                       )
                     : FilledButton.tonal(
                         style: FilledButton.styleFrom(minimumSize: tall),
                         onPressed: () => setState(() => _picked = option),
-                        child: Text(option),
+                        child: Text(label(option)),
                       ),
               ),
             const Spacer(),
@@ -378,8 +383,13 @@ class _AwakeScreenState extends State<AwakeScreen> {
   Controller get _c => widget.controller;
 
   Future<void> _answer(String picked) async {
+    final letters = _screen.letters;
     final outcome = await _c.awakeAnswer(picked);
     if (!mounted) return;
+    if (outcome != null && outcome.next) {
+      setState(() => _screen = _c.awakeScreen());
+      return;
+    }
     if (outcome != null && !outcome.correct) {
       setState(() {
         _wrong = true;
@@ -390,14 +400,8 @@ class _AwakeScreenState extends State<AwakeScreen> {
       });
       return;
     }
-    if (outcome != null && outcome.failed) {
-      await Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => SummaryScreen(outcome: outcome),
-        ),
-      );
-      return;
-    }
+    if (await showOutcome(context, outcome, letters: letters)) return;
+    if (!mounted) return;
     Navigator.of(context).pop();
   }
 
@@ -448,6 +452,61 @@ class WrongNotice extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineSmall
               ?.copyWith(color: Colors.white70),
         ),
+      ),
+    );
+  }
+}
+
+/// After the right answer: the summary on a night with wrong picks, else
+/// on the letter quiz the word, which was never shown whole. Returns
+/// whether a page replaced the quiz.
+Future<bool> showOutcome(
+  BuildContext context,
+  QuizOutcome? outcome, {
+  required bool letters,
+}) async {
+  if (outcome == null || !outcome.correct) return false;
+  final Widget page;
+  if (outcome.failed) {
+    page = SummaryScreen(outcome: outcome);
+  } else if (letters) {
+    page = RevealScreen(word: outcome.word!);
+  } else {
+    return false;
+  }
+  await Navigator.of(context)
+      .pushReplacement(MaterialPageRoute<void>(builder: (_) => page));
+  return true;
+}
+
+/// The page after a letter quiz without wrong picks: the whole word.
+class RevealScreen extends StatelessWidget {
+  const RevealScreen({super.key, required this.word});
+
+  final String word;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    return NightFrame(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(t.failureWord, textAlign: TextAlign.center),
+          const SizedBox(height: 24),
+          Text(
+            word,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.displayMedium
+                ?.copyWith(color: Colors.white),
+          ),
+          const SizedBox(height: 48),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(t.failureClose),
+          ),
+        ],
       ),
     );
   }

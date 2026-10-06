@@ -57,3 +57,38 @@ List<String> quizOptions(String word, List<String> words, Random random) {
   final second = pick(others);
   return [word, similar, first, second]..shuffle(random);
 }
+
+/// How many rounds the letter quiz has; each adds one letter.
+const letterQuizRounds = 3;
+
+/// The letter quiz for [word]: [letterQuizRounds] rounds of four shuffled
+/// options. Round k offers the word's first k letters and three
+/// distractors that share its first k - 1 letters and differ in the last.
+///
+/// Distractors are the beginnings of other words in [words]; when fewer
+/// than three of those exist, random letters fill in.
+List<List<String>> letterRounds(
+  String word,
+  List<String> words,
+  Random random,
+) => [
+  for (var k = 1; k <= letterQuizRounds; k++)
+    _letterRound(word.substring(0, k), words, random),
+];
+
+List<String> _letterRound(String right, List<String> words, Random random) {
+  final found = right.substring(0, right.length - 1);
+  final candidates = {
+    for (final w in words)
+      if (w.length >= right.length && w.startsWith(found))
+        w.substring(0, right.length),
+  }..remove(right);
+  final distractors = (candidates.toList()..shuffle(random)).take(3).toList();
+  const letters = 'abcdefghijklmnopqrstuvwxyz';
+  final spare = [
+    for (final l in letters.split(''))
+      if (!distractors.contains('$found$l') && '$found$l' != right) '$found$l',
+  ]..shuffle(random);
+  distractors.addAll(spare.take(3 - distractors.length));
+  return [right, ...distractors]..shuffle(random);
+}

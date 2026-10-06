@@ -86,17 +86,25 @@ The less common English word shown once at bedtime, to be recalled at the mornin
 _Avoid_: night word, secret word
 
 **Quiz**:
-Picking the night's word from four options to turn off a wake-up alarm.
+Recalling the night's word to turn off a wake-up alarm, as a letter quiz or a word quiz.
 _Avoid_: test, challenge
 
+**Letter quiz**:
+The default quiz: three rounds of four options, each adding one letter to the word's beginning found so far; the whole word shows after the last round.
+_Avoid_: hard quiz, prefix quiz
+
+**Word quiz**:
+The quiz picked with the "Easier quiz" setting: the night's word among four whole words.
+_Avoid_: easy quiz, simple quiz
+
 **Distractor**:
-A wrong option in the quiz; one looks like the word, the other two are random.
+A wrong option in the quiz. In the word quiz, one looks like the word and the other two are random; in the letter quiz, each is the beginning of another word that shares the letters found so far, or random letters when too few such words exist.
 _Avoid_: decoy, wrong answer
 
 ### Quiz results
 
 **Wrong pick**:
-One wrong word chosen in the quiz.
+One wrong option chosen in the quiz, a word or letters.
 _Avoid_: miss, mistake
 
 **Failure**:

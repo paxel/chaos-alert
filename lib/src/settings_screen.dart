@@ -138,6 +138,12 @@ class SettingsScreen extends StatelessWidget {
                 value: s.chime,
                 onChanged: (on) => save(s.copyWith(chime: on)),
               ),
+              SwitchListTile(
+                title: Text(t.settingsEasierQuiz),
+                subtitle: Text(t.settingsEasierQuizHint),
+                value: s.easierQuiz,
+                onChanged: (on) => save(s.copyWith(easierQuiz: on)),
+              ),
             ],
           );
         },
