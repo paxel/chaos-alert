@@ -269,7 +269,8 @@ class _AlarmScreenState extends State<AlarmScreen> {
 
 /// The two-step quiz for half-asleep fingers: tall buttons with room
 /// between them, a tap only marks a word, and OK sits far below, away from
-/// the button on top (Snooze or Back). Without a word: a plain turn-off.
+/// the button on top (Snooze or Back). First letters come as big tiles two
+/// by two that answer on the tap itself. Without a word: a plain turn-off.
 class QuizPanel extends StatefulWidget {
   const QuizPanel({
     super.key,
@@ -327,8 +328,8 @@ class _QuizPanelState extends State<QuizPanel> {
             ),
             const SizedBox(height: 16),
             if (screen.letters)
-              // A few letters each: big tiles two by two, the pick shown by
-              // its fill alone.
+              // A few letters each: big tiles two by two, safe enough to
+              // answer with the tap itself.
               for (var i = 0; i < screen.options.length; i += 2)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -338,7 +339,7 @@ class _QuizPanelState extends State<QuizPanel> {
                         Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: _letterTile(option, label(option), picked),
+                            child: _letterTile(option, label(option)),
                           ),
                         ),
                     ],
@@ -363,11 +364,14 @@ class _QuizPanelState extends State<QuizPanel> {
                         ),
                 ),
             const Spacer(),
-            FilledButton(
-              style: FilledButton.styleFrom(minimumSize: tall),
-              onPressed: picked == null ? null : () => widget.onConfirm(picked),
-              child: Text(t.ringConfirm),
-            ),
+            if (!screen.letters)
+              FilledButton(
+                style: FilledButton.styleFrom(minimumSize: tall),
+                onPressed: picked == null
+                    ? null
+                    : () => widget.onConfirm(picked),
+                child: Text(t.ringConfirm),
+              ),
           ] else ...[
             FilledButton(
               style: FilledButton.styleFrom(minimumSize: tall),
@@ -381,23 +385,18 @@ class _QuizPanelState extends State<QuizPanel> {
     );
   }
 
-  Widget _letterTile(String option, String text, String? picked) {
+  Widget _letterTile(String option, String text) {
     final style = FilledButton.styleFrom(
       minimumSize: const Size.fromHeight(120),
       padding: const EdgeInsets.symmetric(horizontal: 8),
       textStyle: const TextStyle(fontSize: 56),
     );
     // Shrinks only when the letters would not fit a narrow tile.
-    final child = FittedBox(fit: BoxFit.scaleDown, child: Text(text));
-    void mark() => setState(() => _picked = option);
-    return option == picked
-        ? FilledButton(
-            key: ValueKey('picked-$option'),
-            style: style,
-            onPressed: mark,
-            child: child,
-          )
-        : FilledButton.tonal(style: style, onPressed: mark, child: child);
+    return FilledButton.tonal(
+      style: style,
+      onPressed: () => widget.onConfirm(option),
+      child: FittedBox(fit: BoxFit.scaleDown, child: Text(text)),
+    );
   }
 }
 

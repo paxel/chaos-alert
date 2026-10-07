@@ -338,11 +338,9 @@ void main() {
     /// In bed Monday 22:30; returns the word.
     Future<String> sayInBed(Setup s) async => (await s.controller.inBed())!;
 
-    /// Marks the option showing [letters] and confirms it with OK.
+    /// Answers with the tile showing [letters]; the tap alone does it.
     Future<void> pick(WidgetTester tester, String letters) async {
       await tester.tap(find.text('$letters…'));
-      await tester.pump();
-      await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
     }
 
@@ -369,10 +367,10 @@ void main() {
       expect(find.text('home'), findsOneWidget);
     });
 
-    testWidgets('the letters sit two by two in big tiles, the pick marked '
-        'by its fill alone', (tester) async {
+    testWidgets('the letters sit two by two in big tiles, with no OK '
+        'below', (tester) async {
       final s = Setup(easierQuiz: false);
-      final word = await sayInBed(s);
+      await sayInBed(s);
       s.now = DateTime(2026, 10, 6, 6, 30);
       await s.open(
         tester,
@@ -395,12 +393,7 @@ void main() {
             .fontSize,
         56,
       );
-
-      final first = word.substring(0, 1);
-      await tester.tap(find.text('$first…'));
-      await tester.pump();
-      expect(find.byKey(ValueKey('picked-$first')), findsOneWidget);
-      expect(find.byIcon(Icons.check), findsNothing);
+      expect(find.text('OK'), findsNothing);
     });
 
     testWidgets('the timeout counts from the ring, not from the last '
