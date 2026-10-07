@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:chaos_core/chaos_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -10,14 +11,16 @@ import 'controller.dart';
 import 'results.dart';
 import 'settings_screen.dart';
 
-/// The time window a period's bars are drawn across: from the earliest
-/// bedtime to the latest end of a night in the period, in whole hours and at
-/// most a day, so day and afternoon sleepers fit as well as night owls.
+/// The time window a period's bars are drawn across: exactly from the
+/// earliest bedtime, real or planned, to the latest end of a night in the
+/// period, at most a day, so day and afternoon sleepers fit as well as night
+/// owls. Two reference lines mark the latest real bedtime and the earliest
+/// end, for the other nights to be held against.
 class TimeAxis {
-  const TimeAxis(this.startMinute, this.hours, this.step);
+  const TimeAxis(this.startMinute, this.minutes, {this.references = const []});
 
   /// The window of a period without nights: 20:00 to noon.
-  static const fallback = TimeAxis(-240, 16, 4);
+  static const fallback = TimeAxis(-240, 16 * 60);
 
   factory TimeAxis.fit(Iterable<NightRecord> records) {
     final list = records.toList();
@@ -27,44 +30,47 @@ class TimeAxis {
         .map((r) => min(offset(r, r.bedtime), offset(r, r.plannedBedtime)))
         .reduce(min);
     final latest = list.map((r) => offset(r, r.end)).reduce(max);
-    final start = (earliest / 60).floor() * 60;
-    final end = (latest / 60).ceil() * 60;
-    final hours = ((end - start) ~/ 60).clamp(1, 24);
-    // Four steps between five labels; the window grows to fit them.
-    final step = (hours / 4).ceil();
-    return TimeAxis(start, min(step * 4, 24), step);
+    return TimeAxis(
+      earliest,
+      (latest - earliest).clamp(1, 24 * 60),
+      references: [
+        list.map((r) => offset(r, r.bedtime)).reduce(max),
+        list.map((r) => offset(r, r.end)).reduce(min),
+      ],
+    );
   }
 
   /// Minutes from midnight of the morning a night ends in; negative is the
   /// evening before.
   final int startMinute;
-  final int hours;
+  final int minutes;
 
-  /// Hours between two labels.
-  final int step;
+  /// Where the reference lines sit, in the same minutes as [startMinute].
+  final List<int> references;
 
   /// Where [t] sits on the axis of the night ending on [morning], 0 to 1.
   double position(DateTime morning, DateTime t) =>
-      ((t.difference(morning).inMinutes - startMinute) / (hours * 60)).clamp(
-        0.0,
-        1.0,
-      );
+      at(t.difference(morning).inMinutes);
 
-  /// The clock times along the axis, from start to end.
+  /// Where [minute], counted like [startMinute], sits on the axis, 0 to 1.
+  double at(int minute) => ((minute - startMinute) / minutes).clamp(0.0, 1.0);
+
+  /// The clock times at the start and the end of the axis.
   List<ClockTime> get labels => [
-    for (var m = startMinute; m <= startMinute + hours * 60; m += step * 60)
-      ClockTime((m ~/ 60) % 24, 0),
+    for (final m in [startMinute, startMinute + minutes])
+      ClockTime(m % (24 * 60) ~/ 60, m % 60),
   ];
 
   @override
   bool operator ==(Object other) =>
       other is TimeAxis &&
       other.startMinute == startMinute &&
-      other.hours == hours &&
-      other.step == step;
+      other.minutes == minutes &&
+      listEquals(other.references, references);
 
   @override
-  int get hashCode => Object.hash(startMinute, hours, step);
+  int get hashCode =>
+      Object.hash(startMinute, minutes, Object.hashAll(references));
 }
 
 /// The mornings of the week or month around [anchor].
@@ -222,8 +228,9 @@ class _AxisLabels extends StatelessWidget {
   }
 }
 
-/// The bar of one night: coloured by its result, hatched at the start when
-/// the bedtime was assumed, with a tick at the planned bedtime.
+/// The bar of one night on a black row: coloured by its result, hatched at
+/// the start when the bedtime was assumed, with a tick at the planned
+/// bedtime and the period's reference lines across it.
 class NightBar extends StatelessWidget {
   const NightBar({
     super.key,
@@ -238,12 +245,7 @@ class NightBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => CustomPaint(
-    painter: _NightPainter(
-      morning: morning,
-      record: record,
-      axis: axis,
-      track: Theme.of(context).colorScheme.surfaceContainerHighest,
-    ),
+    painter: _NightPainter(morning: morning, record: record, axis: axis),
   );
 }
 
@@ -252,17 +254,15 @@ class _NightPainter extends CustomPainter {
     required this.morning,
     required this.record,
     required this.axis,
-    required this.track,
   });
 
   final DateTime morning;
   final NightRecord? record;
   final TimeAxis axis;
-  final Color track;
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = track);
+    canvas.drawRect(Offset.zero & size, Paint()..color = Colors.black);
     final r = record;
     if (r == null) return;
     final left = axis.position(morning, r.bedtime) * size.width;
@@ -298,12 +298,20 @@ class _NightPainter extends CustomPainter {
         ..color = Colors.white
         ..strokeWidth = 2,
     );
+    // Black on the black track: a reference line shows only across a bar.
+    for (final minute in axis.references) {
+      final x = axis.at(minute) * size.width;
+      canvas.drawLine(
+        Offset(x, 0),
+        Offset(x, size.height),
+        Paint()
+          ..color = Colors.black
+          ..strokeWidth = 2,
+      );
+    }
   }
 
   @override
   bool shouldRepaint(_NightPainter old) =>
-      old.record != record ||
-      old.morning != morning ||
-      old.axis != axis ||
-      old.track != track;
+      old.record != record || old.morning != morning || old.axis != axis;
 }

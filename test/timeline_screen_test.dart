@@ -76,22 +76,34 @@ void main() {
       expect(axis.labels.last, const ClockTime(12, 0));
     });
 
-    test('fits the earliest bedtime and the latest wake-up in whole hours', () {
+    test('runs exactly from the earliest bedtime to the latest end', () {
       final axis = TimeAxis.fit([
         sleep(DateTime(2026, 10, 5, 23, 10), DateTime(2026, 10, 6, 6, 40)),
-        sleep(DateTime(2026, 10, 7, 0, 20), DateTime(2026, 10, 7, 7, 5)),
+        sleep(DateTime(2026, 10, 7, 0, 20), DateTime(2026, 10, 7, 7, 10)),
       ]);
-      // 23:00 to 08:00 is 9 hours, widened to four 3-hour steps.
-      expect(axis.labels, const [
-        ClockTime(23, 0),
-        ClockTime(2, 0),
-        ClockTime(5, 0),
-        ClockTime(8, 0),
-        ClockTime(11, 0),
-      ]);
+      expect(axis.labels, const [ClockTime(23, 10), ClockTime(7, 10)]);
       final morning = DateTime(2026, 10, 6);
-      expect(axis.position(morning, DateTime(2026, 10, 5, 23)), 0);
-      expect(axis.position(morning, DateTime(2026, 10, 6, 5)), 0.5);
+      expect(axis.position(morning, DateTime(2026, 10, 5, 23, 10)), 0);
+      expect(axis.position(morning, DateTime(2026, 10, 6, 3, 10)), 0.5);
+      expect(axis.position(morning, DateTime(2026, 10, 6, 7, 10)), 1);
+    });
+
+    test('a single night fills the whole width', () {
+      final axis = TimeAxis.fit([
+        sleep(DateTime(2026, 10, 5, 22, 45), DateTime(2026, 10, 6, 6, 15)),
+      ]);
+      expect(axis.labels, const [ClockTime(22, 45), ClockTime(6, 15)]);
+    });
+
+    test('the reference lines mark the latest bedtime and the earliest '
+        'end', () {
+      final axis = TimeAxis.fit([
+        sleep(DateTime(2026, 10, 5, 23, 10), DateTime(2026, 10, 6, 6, 40)),
+        sleep(DateTime(2026, 10, 7, 0, 20), DateTime(2026, 10, 7, 7, 10)),
+      ]);
+      // 00:20 and 06:40, counted from the morning's midnight.
+      expect(axis.references, const [20, 400]);
+      expect(TimeAxis.fit(const []).references, isEmpty);
     });
 
     test('an earlier planned bedtime widens the window', () {
@@ -102,7 +114,9 @@ void main() {
           planned: DateTime(2026, 10, 5, 22, 30),
         ),
       ]);
-      expect(axis.labels.first, const ClockTime(22, 0));
+      expect(axis.labels.first, const ClockTime(22, 30));
+      // The reference stays at the real bedtime.
+      expect(axis.references.first, 60);
     });
 
     test('day sleepers get a daytime window', () {
@@ -110,8 +124,7 @@ void main() {
         sleep(DateTime(2026, 10, 6, 8), DateTime(2026, 10, 6, 16)),
         sleep(DateTime(2026, 10, 7, 9), DateTime(2026, 10, 7, 15, 30)),
       ]);
-      expect(axis.labels.first, const ClockTime(8, 0));
-      expect(axis.labels.last, const ClockTime(16, 0));
+      expect(axis.labels, const [ClockTime(8, 0), ClockTime(16, 0)]);
       final morning = DateTime(2026, 10, 6);
       expect(axis.position(morning, DateTime(2026, 10, 6, 12)), 0.5);
     });
@@ -121,29 +134,27 @@ void main() {
         sleep(DateTime(2026, 10, 5, 14), DateTime(2026, 10, 6, 7)),
         sleep(DateTime(2026, 10, 7, 2), DateTime(2026, 10, 7, 21)),
       ]);
-      expect(axis.hours, 24);
-      expect(axis.labels.first, const ClockTime(14, 0));
+      expect(axis.minutes, 24 * 60);
+      expect(axis.labels, const [ClockTime(14, 0), ClockTime(14, 0)]);
       final morning = DateTime(2026, 10, 7);
       expect(axis.position(morning, DateTime(2026, 10, 7, 21)), 1);
     });
   });
 
-  testWidgets('the axis labels follow the nights of the period', (
-    tester,
-  ) async {
+  testWidgets('the top line shows only the start and the end', (tester) async {
     store.addRecord(
       NightRecord(
-        plannedBedtime: DateTime(2026, 10, 6, 8),
-        bedtime: DateTime(2026, 10, 6, 8),
+        plannedBedtime: DateTime(2026, 10, 5, 22, 50),
+        bedtime: DateTime(2026, 10, 5, 22, 50),
         bedtimeAssumed: false,
-        end: DateTime(2026, 10, 6, 16),
+        end: DateTime(2026, 10, 6, 6, 35),
         result: NightResult.success,
       ),
     );
     await pumpApp(tester);
-    expect(find.text('8:00 AM'), findsOneWidget);
-    expect(find.text('4:00 PM'), findsOneWidget);
-    expect(find.text('8:00 PM'), findsNothing);
+    expect(find.text('10:50 PM'), findsOneWidget);
+    expect(find.text('6:35 AM'), findsOneWidget);
+    expect(find.textContaining(':00 '), findsNothing);
   });
 
   testWidgets('the week shows seven rows with this week\'s nights', (
