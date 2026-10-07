@@ -369,6 +369,40 @@ void main() {
       expect(find.text('home'), findsOneWidget);
     });
 
+    testWidgets('the letters sit two by two in big tiles, the pick marked '
+        'by its fill alone', (tester) async {
+      final s = Setup(easierQuiz: false);
+      final word = await sayInBed(s);
+      s.now = DateTime(2026, 10, 6, 6, 30);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      final tiles = find.descendant(
+        of: find.byType(FilledButton),
+        matching: find.textContaining('…'),
+      );
+      expect(tiles, findsNWidgets(4));
+      final tops = [
+        for (final e in tiles.evaluate())
+          tester.getCenter(find.byWidget(e.widget)).dy,
+      ];
+      expect(tops.toSet(), hasLength(2));
+      final text = tester.widget<Text>(tiles.first);
+      expect(
+        DefaultTextStyle.of(tester.element(tiles.first)).style
+            .merge(text.style)
+            .fontSize,
+        56,
+      );
+
+      final first = word.substring(0, 1);
+      await tester.tap(find.text('$first…'));
+      await tester.pump();
+      expect(find.byKey(ValueKey('picked-$first')), findsOneWidget);
+      expect(find.byIcon(Icons.check), findsNothing);
+    });
+
     testWidgets('the timeout counts from the ring, not from the last '
         'round', (tester) async {
       final s = Setup(easierQuiz: false);

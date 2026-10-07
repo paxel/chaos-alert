@@ -326,23 +326,42 @@ class _QuizPanelState extends State<QuizPanel> {
                   ?.copyWith(color: Colors.white70),
             ),
             const SizedBox(height: 16),
-            for (final option in screen.options)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: option == picked
-                    ? FilledButton.icon(
-                        key: ValueKey('picked-$option'),
-                        style: FilledButton.styleFrom(minimumSize: tall),
-                        onPressed: () => setState(() => _picked = option),
-                        icon: const Icon(Icons.check),
-                        label: Text(label(option)),
-                      )
-                    : FilledButton.tonal(
-                        style: FilledButton.styleFrom(minimumSize: tall),
-                        onPressed: () => setState(() => _picked = option),
-                        child: Text(label(option)),
-                      ),
-              ),
+            if (screen.letters)
+              // A few letters each: big tiles two by two, the pick shown by
+              // its fill alone.
+              for (var i = 0; i < screen.options.length; i += 2)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      for (final option in screen.options.skip(i).take(2))
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: _letterTile(option, label(option), picked),
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+            else
+              for (final option in screen.options)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: option == picked
+                      ? FilledButton.icon(
+                          key: ValueKey('picked-$option'),
+                          style: FilledButton.styleFrom(minimumSize: tall),
+                          onPressed: () => setState(() => _picked = option),
+                          icon: const Icon(Icons.check),
+                          label: Text(label(option)),
+                        )
+                      : FilledButton.tonal(
+                          style: FilledButton.styleFrom(minimumSize: tall),
+                          onPressed: () => setState(() => _picked = option),
+                          child: Text(label(option)),
+                        ),
+                ),
             const Spacer(),
             FilledButton(
               style: FilledButton.styleFrom(minimumSize: tall),
@@ -360,6 +379,25 @@ class _QuizPanelState extends State<QuizPanel> {
         ],
       ),
     );
+  }
+
+  Widget _letterTile(String option, String text, String? picked) {
+    final style = FilledButton.styleFrom(
+      minimumSize: const Size.fromHeight(120),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      textStyle: const TextStyle(fontSize: 56),
+    );
+    // Shrinks only when the letters would not fit a narrow tile.
+    final child = FittedBox(fit: BoxFit.scaleDown, child: Text(text));
+    void mark() => setState(() => _picked = option);
+    return option == picked
+        ? FilledButton(
+            key: ValueKey('picked-$option'),
+            style: style,
+            onPressed: mark,
+            child: child,
+          )
+        : FilledButton.tonal(style: style, onPressed: mark, child: child);
   }
 }
 
