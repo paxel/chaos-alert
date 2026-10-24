@@ -26,6 +26,9 @@ object Device {
             Manifest.permission.READ_EXTERNAL_STORAGE
         }
 
+    /** The longest song a ring plays; longer ones are mostly audiobooks. */
+    private const val MAX_SONG_MS = 20 * 60 * 1000
+
     /** Every alarm and notification sound, and the songs when allowed. */
     fun sounds(context: Context): List<Map<String, Any>> {
         val sounds = mutableListOf<Map<String, Any>>()
@@ -46,7 +49,7 @@ object Device {
             context.contentResolver.query(
                 MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
                 arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.DURATION),
-                "${MediaStore.Audio.Media.IS_MUSIC} != 0",
+                songSelection(),
                 null,
                 null,
             )?.use { cursor ->
@@ -65,6 +68,19 @@ object Device {
             }
         }
         return sounds
+    }
+
+    /** Music, without audiobooks, podcasts and anything over 20 minutes. */
+    private fun songSelection(): String {
+        val parts = mutableListOf(
+            "${MediaStore.Audio.Media.IS_MUSIC} != 0",
+            "${MediaStore.Audio.Media.IS_PODCAST} = 0",
+            "IFNULL(${MediaStore.Audio.Media.DURATION}, 0) <= $MAX_SONG_MS",
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            parts.add("${MediaStore.Audio.Media.IS_AUDIOBOOK} = 0")
+        }
+        return parts.joinToString(" AND ")
     }
 
     fun permissions(context: Context): Map<String, Boolean> {
