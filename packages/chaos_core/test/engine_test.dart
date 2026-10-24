@@ -249,6 +249,27 @@ void main() {
       expect(n.engine.canSayInBed, isTrue);
     });
 
+    test('a nag belongs to bedtime from the window until the morning', () {
+      n.alarm(6, 30);
+      n.now = at(5, 19, 29);
+      expect(n.engine.isBedtime, isFalse);
+      n.now = at(5, 22, 30);
+      n.engine.nagShown();
+      expect(n.engine.isBedtime, isTrue);
+      n.engine.inBed();
+      expect(n.engine.isBedtime, isTrue);
+      n.now = at(6, 6, 31);
+      expect(n.engine.isBedtime, isFalse);
+    });
+
+    test('an unanswered nag is stale once the morning started', () {
+      n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      n.engine.nagShown();
+      n.now = at(6, 6, 31);
+      expect(n.engine.isBedtime, isFalse);
+    });
+
     test('early in bed cancels the evening nag', () {
       n.alarm(6, 30);
       n.now = at(5, 21, 45);

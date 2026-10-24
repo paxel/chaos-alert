@@ -115,6 +115,9 @@ abstract interface class AlarmPlatform {
   /// Removes the "I'm awake" notice that is showing, once it is done.
   Future<void> clearAwakeNotice();
 
+  /// Removes the nag's notification, once its night is over.
+  Future<void> clearNagNotice();
+
   /// Schedules exactly [rings], replacing every ring scheduled before.
   Future<void> scheduleRings(List<ScheduledRing> rings);
 
@@ -191,6 +194,9 @@ class ChannelAlarmPlatform implements AlarmPlatform {
 
   @override
   Future<void> clearAwakeNotice() => _channel.invokeMethod('clearAwakeNotice');
+
+  @override
+  Future<void> clearNagNotice() => _channel.invokeMethod('clearNagNotice');
 
   @override
   Future<List<PlatformEvent>> drainEvents() async {

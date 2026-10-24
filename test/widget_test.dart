@@ -166,6 +166,59 @@ void main() {
     expect(find.text("I'm in bed"), findsNothing);
   });
 
+  testWidgets("the evening's unanswered nag is gone under the morning alarm", (
+    tester,
+  ) async {
+    setupDone();
+    platform.initial = const NagLaunch();
+    now = DateTime(2026, 10, 5, 22, 30);
+    platform.events.add(NagFired(now));
+    await tester.pumpWidget(ChaosAlertApp(controller: controller()));
+    await tester.pumpAndSettle();
+    expect(find.text('Are you in bed?'), findsOneWidget);
+    expect(platform.nagCleared, 0);
+    // Android fires the ring a moment after its time.
+    now = DateTime(2026, 10, 6, 6, 30, 1);
+    platform.events.add(RingStarted(1, now));
+    platform.launch(const RingLaunch(1));
+    await tester.pumpAndSettle();
+    expect(find.text('Are you in bed?', skipOffstage: false), findsNothing);
+    expect(platform.nagCleared, greaterThan(0));
+    await tester.tap(find.text('Turn off'));
+    await tester.pumpAndSettle();
+    expect(find.text('Are you in bed?'), findsNothing);
+  });
+
+  testWidgets('a second nag takes the place of the open one', (tester) async {
+    setupDone();
+    platform.initial = const NagLaunch();
+    now = DateTime(2026, 10, 5, 22, 30);
+    platform.events.add(NagFired(now));
+    await tester.pumpWidget(ChaosAlertApp(controller: controller()));
+    await tester.pumpAndSettle();
+    now = DateTime(2026, 10, 5, 22, 40);
+    platform.events.add(NagFired(now));
+    platform.launch(const NagLaunch());
+    await tester.pumpAndSettle();
+    expect(find.text('Are you in bed?', skipOffstage: false), findsOneWidget);
+    await tester.tap(find.text('Snooze 10 min'));
+    await tester.pumpAndSettle();
+    expect(find.text('Are you in bed?', skipOffstage: false), findsNothing);
+  });
+
+  testWidgets('Yes on the nag still shows the word', (tester) async {
+    setupDone();
+    platform.initial = const NagLaunch();
+    now = DateTime(2026, 10, 5, 22, 30);
+    platform.events.add(NagFired(now));
+    await tester.pumpWidget(ChaosAlertApp(controller: controller()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Yes'));
+    await tester.pumpAndSettle();
+    expect(find.text('Are you in bed?', skipOffstage: false), findsNothing);
+    expect(find.text('Remember this word:'), findsOneWidget);
+  });
+
   testWidgets('a snooze from the notification closes the alarm screen', (
     tester,
   ) async {

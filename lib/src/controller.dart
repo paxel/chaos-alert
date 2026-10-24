@@ -52,6 +52,7 @@ class Controller extends ChangeNotifier {
   late List<Vacation> _vacations;
   late List<NightRecord> _nights;
   late bool _canSayInBed;
+  late bool _isBedtime;
   late bool _canSayAwake;
   late bool _setupDone;
   late bool _pendingHint;
@@ -64,6 +65,9 @@ class Controller extends ChangeNotifier {
   List<Vacation> get vacations => List.of(_vacations);
   List<NightRecord> get nights => _nights;
   bool get canSayInBed => _canSayInBed;
+
+  /// Whether a nag still belongs to a night; outside, an open nag is stale.
+  bool get isBedtime => _isBedtime;
   bool get canSayAwake => _canSayAwake;
   bool get setupDone => _setupDone;
 
@@ -85,6 +89,7 @@ class Controller extends ChangeNotifier {
     _vacations = store.loadVacations();
     _nights = store.loadRecords();
     _canSayInBed = engine.canSayInBed;
+    _isBedtime = engine.isBedtime;
     _canSayAwake = engine.canSayAwake;
     _setupDone = store.loadState().setupDone;
     _pendingHint = engine.pendingHint;
@@ -106,9 +111,15 @@ class Controller extends ChangeNotifier {
   /// window. Called once a minute while the main screen is shown.
   void tick() {
     final inBed = engine.canSayInBed;
+    final bedtime = engine.isBedtime;
     final awake = engine.canSayAwake;
-    if (inBed == _canSayInBed && awake == _canSayAwake) return;
+    if (inBed == _canSayInBed &&
+        bedtime == _isBedtime &&
+        awake == _canSayAwake) {
+      return;
+    }
     _canSayInBed = inBed;
+    _isBedtime = bedtime;
     _canSayAwake = awake;
     notifyListeners();
   }
@@ -170,6 +181,8 @@ class Controller extends ChangeNotifier {
         ),
     ]);
     _reload();
+    // A nag left in the shade from a night that is over opens nothing.
+    if (!_isBedtime) await platform.clearNagNotice();
     notifyListeners();
   }
 

@@ -11,6 +11,7 @@ class FakePlatform implements AlarmPlatform {
   List<ScheduledRing> rings = [];
   List<AwakeNotice> awake = [];
   int awakeCleared = 0;
+  int nagCleared = 0;
   int stops = 0;
 
   /// What the store held when [stopRinging] was called, newest last.
@@ -63,6 +64,9 @@ class FakePlatform implements AlarmPlatform {
 
   @override
   Future<void> clearAwakeNotice() async => awakeCleared++;
+
+  @override
+  Future<void> clearNagNotice() async => nagCleared++;
 
   @override
   Future<void> scheduleRings(List<ScheduledRing> rings) async =>

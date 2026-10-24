@@ -55,6 +55,10 @@ class MainActivity : FlutterActivity() {
                         AlarmReceiver.clearAwake(this@MainActivity)
                         result.success(null)
                     }
+                    "clearNagNotice" -> {
+                        AlarmReceiver.clearNag(this@MainActivity)
+                        result.success(null)
+                    }
                     "drainEvents" -> result.success(EventQueue.drain(this@MainActivity))
                     "stopRinging" -> {
                         RingService.stop(this@MainActivity)

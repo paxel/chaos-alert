@@ -47,6 +47,11 @@ void main() {
     ]);
   });
 
+  test('the nag notice is cleared on Android', () async {
+    await ChannelAlarmPlatform().clearNagNotice();
+    expect(calls.single.method, 'clearNagNotice');
+  });
+
   test('rings carry everything Android needs to ring alone', () async {
     await ChannelAlarmPlatform().scheduleRings([
       ScheduledRing(

@@ -85,6 +85,10 @@ class AlarmReceiver : BroadcastReceiver() {
         fun clearAwake(context: Context) =
             context.getSystemService(NotificationManager::class.java).cancel(AWAKE_NOTIFICATION)
 
+        /** Removes the nag's notification once its night is over. */
+        fun clearNag(context: Context) =
+            context.getSystemService(NotificationManager::class.java).cancel(NAG_NOTIFICATION)
+
         /** The bedtime popup: full screen over the lock screen. */
         fun showNag(context: Context, chime: Boolean) {
             val manager = context.getSystemService(NotificationManager::class.java)

@@ -34,6 +34,9 @@ class _ChaosAlertAppState extends State<ChaosAlertApp>
   StreamSubscription<Launch>? _launches;
   StreamSubscription<void>? _events;
 
+  /// The nag on screen; there is never more than one.
+  Route<void>? _nag;
+
   Controller get _c => widget.controller;
 
   @override
@@ -42,6 +45,7 @@ class _ChaosAlertAppState extends State<ChaosAlertApp>
     WidgetsBinding.instance.addObserver(this);
     _launches = _c.platform.launches.listen(_open);
     _events = _c.platform.eventsArrived.listen((_) => _c.refresh());
+    _c.addListener(_closeStaleNag);
     _start();
   }
 
@@ -72,6 +76,8 @@ class _ChaosAlertAppState extends State<ChaosAlertApp>
     _c.log('opened for $launch');
     // A nag that fired outside bedtime was dropped; it shows nothing.
     if (launch is NagLaunch && !_c.canSayInBed) return;
+    // A new nag takes the place of the one still open.
+    if (launch is NagLaunch) _removeNag();
     final screen = switch (launch) {
       NagLaunch() => NagScreen(controller: _c),
       AwakeLaunch() => AwakeScreen(controller: _c),
@@ -80,16 +86,28 @@ class _ChaosAlertAppState extends State<ChaosAlertApp>
         alarmId: alarmId,
       ),
     };
-    unawaited(
-      _navigator.currentState?.push(
-        MaterialPageRoute<void>(builder: (_) => screen),
-      ),
-    );
+    final route = MaterialPageRoute<void>(builder: (_) => screen);
+    if (launch is NagLaunch) _nag = route;
+    unawaited(_navigator.currentState?.push(route));
+  }
+
+  /// A nag still open when its night is over closes, wherever it sits,
+  /// e.g. under the morning's alarm.
+  void _closeStaleNag() {
+    if (!_c.isBedtime) _removeNag();
+  }
+
+  void _removeNag() {
+    final nag = _nag;
+    _nag = null;
+    // Answered nags are gone already.
+    if (nag != null && nag.isActive) _navigator.currentState?.removeRoute(nag);
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _c.removeListener(_closeStaleNag);
     _launches?.cancel();
     _events?.cancel();
     super.dispose();

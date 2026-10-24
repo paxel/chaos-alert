@@ -288,6 +288,17 @@ class Engine {
     return !now.isBefore(morning.bedtime.subtract(inBedWindow));
   }
 
+  /// Whether a nag still belongs to a night: from the "I'm in bed" window
+  /// on until that night's morning. Outside it, a nag left open is stale.
+  bool get isBedtime {
+    final now = _now;
+    final state = _load(now);
+    if (_current(state, now) != null) return true;
+    final morning = _nextMorning(state, now);
+    return morning != null &&
+        !now.isBefore(morning.bedtime.subtract(inBedWindow));
+  }
+
   /// The nag popped up. Outside bedtime, a nag that fired late is dropped.
   void nagShown({DateTime? at}) {
     final t = at ?? _now;
