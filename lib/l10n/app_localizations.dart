@@ -412,17 +412,47 @@ abstract class AppLocalizations {
   /// **'One soft sound with the bedtime popup'**
   String get settingsChimeHint;
 
-  /// No description provided for @settingsEasierQuiz.
+  /// No description provided for @settingsQuiz.
   ///
   /// In en, this message translates to:
-  /// **'Easier quiz'**
-  String get settingsEasierQuiz;
+  /// **'Quiz'**
+  String get settingsQuiz;
 
-  /// No description provided for @settingsEasierQuizHint.
+  /// No description provided for @settingsQuizWord.
   ///
   /// In en, this message translates to:
-  /// **'Pick the whole word from four instead of its first letters'**
-  String get settingsEasierQuizHint;
+  /// **'Whole word'**
+  String get settingsQuizWord;
+
+  /// No description provided for @settingsQuizWordHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the word from four. The easiest.'**
+  String get settingsQuizWordHint;
+
+  /// No description provided for @settingsQuizLetters.
+  ///
+  /// In en, this message translates to:
+  /// **'First letters'**
+  String get settingsQuizLetters;
+
+  /// No description provided for @settingsQuizLettersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick how the word begins, one letter more each round.'**
+  String get settingsQuizLettersHint;
+
+  /// No description provided for @settingsQuizBrokenTeeth.
+  ///
+  /// In en, this message translates to:
+  /// **'Broken teeth'**
+  String get settingsQuizBrokenTeeth;
+
+  /// No description provided for @settingsQuizBrokenTeethHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Four words with the same letters missing. The hardest.'**
+  String get settingsQuizBrokenTeethHint;
 
   /// No description provided for @settingsMusic.
   ///

@@ -18,7 +18,7 @@ void main() {
     now = DateTime(2026, 10, 5, 12);
     platform = FakePlatform();
     c = Controller(
-      store: MemoryStore()..saveSettings(const Settings(easierQuiz: true)),
+      store: MemoryStore()..saveSettings(const Settings(quiz: QuizForm.word)),
       platform: platform,
       words: words,
       clock: () => now,

@@ -13,10 +13,10 @@ import 'fake_platform.dart';
 const words = ['verdict', 'venture', 'harbour', 'lantern', 'quarrel'];
 
 /// A daily 06:30 wake-up alarm, the clock at Monday 22:30; the word quiz
-/// unless [easierQuiz] is off.
+/// unless [quiz] says otherwise.
 class Setup {
-  Setup({bool easierQuiz = true}) {
-    store.saveSettings(Settings(easierQuiz: easierQuiz));
+  Setup({QuizForm quiz = QuizForm.word}) {
+    store.saveSettings(Settings(quiz: quiz));
     controller = Controller(
       store: store,
       platform: platform,
@@ -346,7 +346,7 @@ void main() {
 
     testWidgets('three rounds while the alarm rings, then the word shows '
         'until closed', (tester) async {
-      final s = Setup(easierQuiz: false);
+      final s = Setup(quiz: QuizForm.letters);
       final word = await sayInBed(s);
       s.now = DateTime(2026, 10, 6, 6, 30);
       await s.open(
@@ -369,7 +369,7 @@ void main() {
 
     testWidgets('the letters sit two by two in big tiles, with no OK '
         'below', (tester) async {
-      final s = Setup(easierQuiz: false);
+      final s = Setup(quiz: QuizForm.letters);
       await sayInBed(s);
       s.now = DateTime(2026, 10, 6, 6, 30);
       await s.open(
@@ -398,7 +398,7 @@ void main() {
 
     testWidgets('the timeout counts from the ring, not from the last '
         'round', (tester) async {
-      final s = Setup(easierQuiz: false);
+      final s = Setup(quiz: QuizForm.letters);
       final word = await sayInBed(s);
       s.now = DateTime(2026, 10, 6, 6, 30);
       await s.open(
@@ -416,7 +416,7 @@ void main() {
     testWidgets("on I'm awake the word shows after the last round", (
       tester,
     ) async {
-      final s = Setup(easierQuiz: false);
+      final s = Setup(quiz: QuizForm.letters);
       final word = await sayInBed(s);
       s.now = DateTime(2026, 10, 6, 5, 50);
       await s.open(tester, AwakeScreen(controller: s.controller));
@@ -427,6 +427,61 @@ void main() {
       expect(s.platform.awakeCleared, 1);
       expect(find.text(word), findsOneWidget);
       expect(s.store.loadRecords().single.result, NightResult.success);
+    });
+  });
+
+  group('broken teeth quiz', () {
+    /// The row of tiles showing [word].
+    Finder row(String word) =>
+        find.byWidgetPredicate((w) => w is BrokenTeeth && w.word == word);
+
+    testWidgets('four rows of tiles with the same gaps, never a whole '
+        'word; a row is marked, OK answers, then the word shows', (
+      tester,
+    ) async {
+      final s = Setup(quiz: QuizForm.brokenTeeth);
+      final word = (await s.controller.inBed())!;
+      s.now = DateTime(2026, 10, 6, 6, 30);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      final rows = tester.widgetList<BrokenTeeth>(find.byType(BrokenTeeth));
+      expect(rows, hasLength(4));
+      expect(rows.map((r) => r.shown.join()).toSet(), hasLength(1));
+      expect(find.text(word), findsNothing);
+      final shown = rows.first.shown;
+      expect(find.text(word[shown.first]), findsWidgets);
+      await tester.tap(row(word));
+      await tester.pumpAndSettle();
+      expect(s.platform.stops, 0);
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      expect(s.platform.stops, 1);
+      expect(find.text('The word was'), findsOneWidget);
+      expect(find.text(word), findsOneWidget);
+      expect(s.store.loadRecords().single.result, NightResult.success);
+    });
+
+    testWidgets('a ten-letter word fits the row without overflow', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: FilledButton(
+              onPressed: () {},
+              child: const BrokenTeeth(
+                word: 'lighthouse',
+                shown: [0, 2, 4, 6, 8],
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.text('l'), findsOneWidget);
+      expect(find.text('i'), findsNothing);
     });
   });
 

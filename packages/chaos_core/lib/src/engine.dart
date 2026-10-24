@@ -51,10 +51,12 @@ class PlannedRing {
 
 /// What a ringing alarm shows.
 class RingScreen {
-  const RingScreen.quiz(this.options, {this.letters = false}) : quiz = true;
+  const RingScreen.quiz(this.options, {this.letters = false, this.shown})
+    : quiz = true;
   const RingScreen.dismiss()
     : quiz = false,
       letters = false,
+      shown = null,
       options = const [];
 
   /// Whether turning it off takes the quiz; else a plain dismiss button.
@@ -63,7 +65,15 @@ class RingScreen {
   /// Whether the options are the word's first letters (the letter quiz)
   /// rather than whole words.
   final bool letters;
+
+  /// On the broken teeth quiz, the letter positions shown of every option;
+  /// the others are gaps.
+  final List<int>? shown;
   final List<String> options;
+
+  /// Whether the quiz never shows the word whole, so it is revealed after
+  /// the right answer.
+  bool get hidesWord => letters || shown != null;
 }
 
 /// How a quiz answer went.
@@ -371,8 +381,8 @@ class Engine {
   /// The quiz for the night's word: the same options all night, minus the
   /// ones already picked wrongly; a plain dismiss without a word.
   ///
-  /// The form, letter quiz or word quiz, follows the settings when the quiz
-  /// first shows and stays for the night.
+  /// The form, letter quiz, word quiz or broken teeth quiz, follows the
+  /// settings when the quiz first shows and stays for the night.
   RingScreen _quiz() {
     final state = _load(_now);
     final night = state.night;
@@ -382,20 +392,28 @@ class Engine {
     _save(state);
     final rounds = night.rounds;
     final options = rounds == null ? night.options! : rounds[night.solved];
-    return RingScreen.quiz([
-      for (final o in options)
-        if (!night.wrongPicks.contains(o)) o,
-    ], letters: rounds != null);
+    return RingScreen.quiz(
+      [
+        for (final o in options)
+          if (!night.wrongPicks.contains(o)) o,
+      ],
+      letters: rounds != null,
+      shown: night.shown,
+    );
   }
 
   /// Settles the night's quiz form and options the first time they are
   /// needed.
   void _fixForm(OpenNight night, String word) {
     if (night.options != null || night.rounds != null) return;
-    if (store.loadSettings().easierQuiz) {
-      night.options = quizOptions(word, words, _random);
-    } else {
-      night.rounds = letterRounds(word, words, _random);
+    switch (store.loadSettings().quiz) {
+      case QuizForm.word:
+        night.options = quizOptions(word, words, _random);
+      case QuizForm.letters:
+        night.rounds = letterRounds(word, words, _random);
+      case QuizForm.brokenTeeth:
+        final shown = night.shown = brokenTeethShown(word.length, _random);
+        night.options = brokenTeethOptions(word, shown, words, _random);
     }
   }
 

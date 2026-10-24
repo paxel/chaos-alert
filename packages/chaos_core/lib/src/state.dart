@@ -12,6 +12,7 @@ class OpenNight {
     this.nagSnoozedUntil,
     this.options,
     this.rounds,
+    this.shown,
     this.solved = 0,
     List<String>? wrongPicks,
     this.nagLine,
@@ -28,6 +29,7 @@ class OpenNight {
     rounds: (json['rounds'] as List?)
         ?.map((r) => (r as List).cast<String>().toList())
         .toList(),
+    shown: (json['shown'] as List?)?.cast<int>().toList(),
     solved: json['solved'] as int? ?? 0,
     wrongPicks: (json['wrongPicks'] as List?)?.cast<String>().toList(),
     nagLine: json['nagLine'] as String?,
@@ -50,12 +52,17 @@ class OpenNight {
   /// When the snoozed nag comes back.
   DateTime? nagSnoozedUntil;
 
-  /// The night's four word quiz options, fixed once first shown.
+  /// The night's four word quiz or broken teeth quiz options, fixed once
+  /// first shown.
   List<String>? options;
 
   /// The night's letter quiz rounds, fixed once first shown; null on a
   /// word quiz night.
   List<List<String>>? rounds;
+
+  /// The letter positions the broken teeth quiz shows, fixed once first
+  /// shown; null on other nights.
+  List<int>? shown;
 
   /// How many letter quiz rounds were answered right.
   int solved;
@@ -80,6 +87,7 @@ class OpenNight {
     'nagSnoozedUntil': nagSnoozedUntil?.toIso8601String(),
     'options': options,
     'rounds': rounds,
+    'shown': shown,
     'solved': solved,
     'wrongPicks': wrongPicks,
     'nagLine': nagLine,

@@ -220,7 +220,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
 
   Future<void> _answer(String picked) async {
     _acted = true;
-    final letters = _screen?.letters ?? false;
+    final hidden = _screen?.hidesWord ?? false;
     final outcome = await _c.answer(widget.alarmId, picked);
     if (!mounted) return;
     if (outcome != null && outcome.next) {
@@ -238,7 +238,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
       });
       return;
     }
-    if (await showOutcome(context, outcome, letters: letters)) return;
+    if (await showOutcome(context, outcome, wordHidden: hidden)) return;
     if (!mounted) return;
     Navigator.of(context).pop();
   }
@@ -270,7 +270,8 @@ class _AlarmScreenState extends State<AlarmScreen> {
 /// The two-step quiz for half-asleep fingers: tall buttons with room
 /// between them, a tap only marks a word, and OK sits far below, away from
 /// the button on top (Snooze or Back). First letters come as big tiles two
-/// by two that answer on the tap itself. Without a word: a plain turn-off.
+/// by two that answer on the tap itself; broken teeth words as a row of
+/// letter tiles each. Without a word: a plain turn-off.
 class QuizPanel extends StatefulWidget {
   const QuizPanel({
     super.key,
@@ -309,6 +310,10 @@ class _QuizPanelState extends State<QuizPanel> {
     final picked = _picked;
     String label(String option) =>
         screen.letters ? t.quizLetters(option) : option;
+    Widget content(String option) => switch (screen.shown) {
+      final shown? => BrokenTeeth(word: option, shown: shown),
+      null => Text(label(option)),
+    };
     return NightFrame(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -355,12 +360,12 @@ class _QuizPanelState extends State<QuizPanel> {
                           style: FilledButton.styleFrom(minimumSize: tall),
                           onPressed: () => setState(() => _picked = option),
                           icon: const Icon(Icons.check),
-                          label: Text(label(option)),
+                          label: content(option),
                         )
                       : FilledButton.tonal(
                           style: FilledButton.styleFrom(minimumSize: tall),
                           onPressed: () => setState(() => _picked = option),
-                          child: Text(label(option)),
+                          child: content(option),
                         ),
                 ),
             const Spacer(),
@@ -400,6 +405,44 @@ class _QuizPanelState extends State<QuizPanel> {
   }
 }
 
+/// One broken teeth quiz option: a tile per letter, the [shown] ones with
+/// their letter, the others empty, so the gaps line up across the options.
+class BrokenTeeth extends StatelessWidget {
+  const BrokenTeeth({super.key, required this.word, required this.shown});
+
+  final String word;
+  final List<int> shown;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = DefaultTextStyle.of(context).style.color ?? Colors.white;
+    // Shrinks only when a long word would not fit the button.
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < word.length; i++)
+            Container(
+              width: 28,
+              height: 40,
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: shown.contains(i) ? color.withValues(alpha: 0.15) : null,
+                border: Border.all(color: color.withValues(alpha: 0.4)),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: shown.contains(i)
+                  ? Text(word[i], style: const TextStyle(fontSize: 22))
+                  : null,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 /// "I'm awake": the night's quiz before the alarm, with Back instead of
 /// Snooze. A wrong word says so and the quiz goes on without it; the right
 /// one, or the plain turn-off, cancels the morning's wake-up alarms.
@@ -420,7 +463,7 @@ class _AwakeScreenState extends State<AwakeScreen> {
   Controller get _c => widget.controller;
 
   Future<void> _answer(String picked) async {
-    final letters = _screen.letters;
+    final hidden = _screen.hidesWord;
     final outcome = await _c.awakeAnswer(picked);
     if (!mounted) return;
     if (outcome != null && outcome.next) {
@@ -437,7 +480,7 @@ class _AwakeScreenState extends State<AwakeScreen> {
       });
       return;
     }
-    if (await showOutcome(context, outcome, letters: letters)) return;
+    if (await showOutcome(context, outcome, wordHidden: hidden)) return;
     if (!mounted) return;
     Navigator.of(context).pop();
   }
@@ -495,18 +538,18 @@ class WrongNotice extends StatelessWidget {
 }
 
 /// After the right answer: the summary on a night with wrong picks, else
-/// on the letter quiz the word, which was never shown whole. Returns
-/// whether a page replaced the quiz.
+/// on the letter quiz and the broken teeth quiz the word, which was never
+/// shown whole. Returns whether a page replaced the quiz.
 Future<bool> showOutcome(
   BuildContext context,
   QuizOutcome? outcome, {
-  required bool letters,
+  required bool wordHidden,
 }) async {
   if (outcome == null || !outcome.correct) return false;
   final Widget page;
   if (outcome.failed) {
     page = SummaryScreen(outcome: outcome);
-  } else if (letters) {
+  } else if (wordHidden) {
     page = RevealScreen(word: outcome.word!);
   } else {
     return false;
@@ -516,7 +559,8 @@ Future<bool> showOutcome(
   return true;
 }
 
-/// The page after a letter quiz without wrong picks: the whole word.
+/// The page after a quiz that hid the word, without wrong picks: the whole
+/// word.
 class RevealScreen extends StatelessWidget {
   const RevealScreen({super.key, required this.word});
 

@@ -186,11 +186,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsChimeHint => 'One soft sound with the bedtime popup';
 
   @override
-  String get settingsEasierQuiz => 'Easier quiz';
+  String get settingsQuiz => 'Quiz';
 
   @override
-  String get settingsEasierQuizHint =>
-      'Pick the whole word from four instead of its first letters';
+  String get settingsQuizWord => 'Whole word';
+
+  @override
+  String get settingsQuizWordHint => 'Pick the word from four. The easiest.';
+
+  @override
+  String get settingsQuizLetters => 'First letters';
+
+  @override
+  String get settingsQuizLettersHint =>
+      'Pick how the word begins, one letter more each round.';
+
+  @override
+  String get settingsQuizBrokenTeeth => 'Broken teeth';
+
+  @override
+  String get settingsQuizBrokenTeethHint =>
+      'Four words with the same letters missing. The hardest.';
 
   @override
   String get settingsMusic => 'Songs are left out';

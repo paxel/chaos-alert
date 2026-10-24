@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.7.0]
 
+### Added
+- A "Broken teeth" quiz: four words of the same length with the same letters missing.
+
+### Changed
+- The "Easier quiz" switch in Settings is now a "Quiz" setting with three choices; the earlier choice is kept.
+
 ### Fixed
 - An unanswered bedtime nag no longer shows up again after the morning alarm, and a second nag no longer piles up on the first.
 

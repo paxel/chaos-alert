@@ -67,6 +67,10 @@ void main() {
     expect(s.nagSnooze, const Duration(minutes: 5));
     expect(s.alarmSnooze, const Duration(minutes: 10));
     expect(s.alarmTimeout, const Duration(minutes: 11));
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('nagSnooze-less')),
+      -200,
+    );
     expect(
       tester
           .widget<IconButton>(find.byKey(const ValueKey('nagSnooze-less')))
@@ -106,13 +110,20 @@ void main() {
     expect(platform.chime, isFalse);
   });
 
-  testWidgets('the easier quiz is off until switched on', (tester) async {
+  testWidgets('the quiz is the letter quiz until another is picked', (
+    tester,
+  ) async {
     await tester.pumpWidget(app());
-    await tester.scrollUntilVisible(find.text('Easier quiz'), 200);
-    expect(store.loadSettings().easierQuiz, isFalse);
-    await tester.tap(find.text('Easier quiz'));
+    await tester.scrollUntilVisible(find.text('Broken teeth'), 200);
+    await tester.ensureVisible(find.text('Broken teeth'));
     await tester.pumpAndSettle();
-    expect(store.loadSettings().easierQuiz, isTrue);
+    expect(store.loadSettings().quiz, QuizForm.letters);
+    await tester.tap(find.text('Broken teeth'));
+    await tester.pumpAndSettle();
+    expect(store.loadSettings().quiz, QuizForm.brokenTeeth);
+    await tester.tap(find.text('Whole word'));
+    await tester.pumpAndSettle();
+    expect(store.loadSettings().quiz, QuizForm.word);
   });
 
   testWidgets('without music access a hint offers to allow it', (tester) async {

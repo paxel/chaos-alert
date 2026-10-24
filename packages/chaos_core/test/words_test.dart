@@ -118,4 +118,53 @@ void main() {
       expect(rounds[2], containsAll(['ver', 'ven']));
     });
   });
+
+  group('broken teeth', () {
+    test('half the letters show, rounded up, each position once, in '
+        'order', () {
+      for (var length = 5; length <= 10; length++) {
+        final shown = brokenTeethShown(length, Random(length));
+        expect(shown, hasLength((length + 1) ~/ 2));
+        expect(shown.toSet(), hasLength(shown.length));
+        expect(shown, orderedEquals([...shown]..sort()));
+        expect(shown.every((i) => i >= 0 && i < length), isTrue);
+      }
+    });
+
+    test('the positions differ from quiz to quiz', () {
+      final seen = {
+        for (var i = 0; i < 20; i++) brokenTeethShown(8, Random(i)).join(),
+      };
+      expect(seen.length, greaterThan(1));
+    });
+
+    test('a word that looks the same at the shown positions is never '
+        'offered', () {
+      // "verdant" matches "verdict" at 0, 1, 2 and 3.
+      const list = ['verdict', 'verdant', 'harbour', 'lantern', 'quarrel'];
+      for (var i = 0; i < 20; i++) {
+        final options = brokenTeethOptions(
+          'verdict',
+          const [0, 1, 2, 3],
+          list,
+          Random(i),
+        );
+        expect(options, hasLength(4));
+        expect(options, contains('verdict'));
+        expect(options, isNot(contains('verdant')));
+      }
+    });
+
+    test('words of the same length come first; others only fill in', () {
+      const list = ['verdict', 'harbour', 'lantern', 'ember', 'nimbus'];
+      final options = brokenTeethOptions(
+        'verdict',
+        const [0, 2, 4, 6],
+        list,
+        Random(1),
+      );
+      expect(options, containsAll(['verdict', 'harbour', 'lantern']));
+      expect(options, hasLength(4));
+    });
+  });
 }

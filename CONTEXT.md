@@ -86,7 +86,7 @@ The less common English word shown once at bedtime, to be recalled at the mornin
 _Avoid_: night word, secret word
 
 **Quiz**:
-Recalling the night's word to turn off a wake-up alarm, as a letter quiz or a word quiz.
+Recalling the night's word to turn off a wake-up alarm, as a letter quiz, a word quiz or a broken teeth quiz, chosen in the "Quiz" setting.
 _Avoid_: test, challenge
 
 **Letter quiz**:
@@ -94,11 +94,15 @@ The default quiz: three rounds of four options, each adding one letter to the wo
 _Avoid_: hard quiz, prefix quiz
 
 **Word quiz**:
-The quiz picked with the "Easier quiz" setting: the night's word among four whole words.
+The easiest quiz: the night's word among four whole words.
 _Avoid_: easy quiz, simple quiz
 
+**Broken teeth quiz**:
+The hardest quiz: the night's word among four words of its length, each shown as a row of letter tiles with the same random half of the letters (rounded up) missing; the gaps stay for the whole morning, and the whole word shows after the right pick.
+_Avoid_: gap quiz, masked quiz, hard quiz
+
 **Distractor**:
-A wrong option in the quiz. In the word quiz, one looks like the word and the other two are random; in the letter quiz, each is the beginning of another word that shares the letters found so far, or random letters when too few such words exist.
+A wrong option in the quiz. In the word quiz, one looks like the word and the other two are random; in the letter quiz, each is the beginning of another word that shares the letters found so far, or random letters when too few such words exist; in the broken teeth quiz, all three are random words of the same length that differ from the word in at least one shown letter.
 _Avoid_: decoy, wrong answer
 
 ### Quiz results

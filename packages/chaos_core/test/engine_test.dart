@@ -26,10 +26,10 @@ const words = [
 DateTime at(int day, int h, [int m = 0]) => DateTime(2026, 10, day, h, m);
 
 /// An engine over a memory store whose clock the test moves; the word quiz
-/// unless [easierQuiz] is off.
+/// unless [quiz] says otherwise.
 class Night {
-  Night({List<String> nagLines = const [], bool easierQuiz = true}) {
-    store.saveSettings(Settings(easierQuiz: easierQuiz));
+  Night({List<String> nagLines = const [], QuizForm quiz = QuizForm.word}) {
+    store.saveSettings(Settings(quiz: quiz));
     engine = Engine(
       store: store,
       words: words,
@@ -433,7 +433,7 @@ void main() {
     test('the alarm snooze follows its setting', () {
       final a = n.alarm(6, 30);
       n.store.saveSettings(
-        const Settings(alarmSnooze: Duration(minutes: 4), easierQuiz: true),
+        const Settings(alarmSnooze: Duration(minutes: 4), quiz: QuizForm.word),
       );
       n.now = at(6, 6, 30);
       n.ring(a.id);
@@ -809,7 +809,7 @@ void main() {
   });
 
   group('letter quiz', () {
-    setUp(() => n = Night(easierQuiz: false));
+    setUp(() => n = Night(quiz: QuizForm.letters));
 
     /// Bedtime at 22:30, the 06:30 alarm rings; returns the word.
     String ringing(Alarm a) {
@@ -866,18 +866,20 @@ void main() {
       expect(n.last.result, NightResult.failure);
     });
 
-    test('the form stays once the quiz showed, even when the switch flips', () {
+    test('the form stays once the quiz showed, even when the setting '
+        'changes', () {
       final a = n.alarm(6, 30);
       ringing(a);
       n.engine.screenFor(a.id);
-      n.store.saveSettings(const Settings(easierQuiz: true));
+      n.store.saveSettings(const Settings(quiz: QuizForm.word));
       expect(n.engine.screenFor(a.id).letters, isTrue);
     });
 
-    test('the switch flipped before the quiz showed gives the word quiz', () {
+    test('the setting changed before the quiz showed gives the word '
+        'quiz', () {
       final a = n.alarm(6, 30);
       final word = ringing(a);
-      n.store.saveSettings(const Settings(easierQuiz: true));
+      n.store.saveSettings(const Settings(quiz: QuizForm.word));
       final screen = n.engine.screenFor(a.id);
       expect(screen.letters, isFalse);
       expect(screen.options, contains(word));
@@ -900,6 +902,74 @@ void main() {
         n.engine.plan().rings.where((r) => r.alarmId == a.id).first.at,
         at(7, 6, 30),
       );
+    });
+  });
+
+  group('broken teeth quiz', () {
+    setUp(() => n = Night(quiz: QuizForm.brokenTeeth));
+
+    /// Bedtime at 22:30, the 06:30 alarm rings; returns the word.
+    String ringing(Alarm a) {
+      n.now = at(5, 22, 30);
+      final word = n.engine.inBed()!;
+      n.now = at(6, 6, 30);
+      n.engine.ring(a.id);
+      return word;
+    }
+
+    test('shows four words of the same length with half the letters, '
+        'rounded up, at the same positions', () {
+      final a = n.alarm(6, 30);
+      final word = ringing(a);
+      final screen = n.engine.screenFor(a.id);
+      expect(screen.letters, isFalse);
+      expect(screen.hidesWord, isTrue);
+      expect(screen.options, hasLength(4));
+      expect(screen.options, contains(word));
+      expect(screen.options.map((o) => o.length).toSet(), {word.length});
+      expect(screen.shown, hasLength((word.length + 1) ~/ 2));
+      for (final o in screen.options.where((o) => o != word)) {
+        expect(screen.shown!.any((i) => o[i] != word[i]), isTrue);
+      }
+    });
+
+    test('a wrong pick snoozes; the next ring keeps the gaps and leaves the '
+        'wrong word out', () {
+      final a = n.alarm(6, 30);
+      final word = ringing(a);
+      final first = n.engine.screenFor(a.id);
+      final wrong = n.wrong(first, word);
+      expect(n.engine.answer(a.id, wrong)!.correct, isFalse);
+      n.now = at(6, 6, 39);
+      final again = n.ring(a.id);
+      expect(again.shown, first.shown);
+      expect(again.options, hasLength(3));
+      expect(again.options, isNot(contains(wrong)));
+      final outcome = n.engine.answer(a.id, word)!;
+      expect(outcome.word, word);
+      expect(n.last.result, NightResult.failure);
+    });
+
+    test('the right word ends the night as a success', () {
+      final a = n.alarm(6, 30);
+      final word = ringing(a);
+      n.engine.screenFor(a.id);
+      expect(n.engine.answer(a.id, word)!.correct, isTrue);
+      expect(n.last.result, NightResult.success);
+    });
+
+    test('the gaps survive a restart of the app', () {
+      final a = n.alarm(6, 30);
+      ringing(a);
+      final before = n.engine.screenFor(a.id);
+      final restarted = Engine(
+        store: n.store,
+        words: words,
+        clock: () => at(6, 6, 31),
+      );
+      final after = restarted.screenFor(a.id);
+      expect(after.shown, before.shown);
+      expect(after.options, before.options);
     });
   });
 

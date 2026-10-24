@@ -92,9 +92,20 @@ class SqliteStore implements Store {
       lowVolume: (m['lowVolume'] as num?)?.toDouble() ?? d.lowVolume,
       mediumVolume: (m['mediumVolume'] as num?)?.toDouble() ?? d.mediumVolume,
       chime: m['chime'] as bool? ?? d.chime,
-      easierQuiz: m['easierQuiz'] as bool? ?? d.easierQuiz,
+      quiz: _quiz(m) ?? d.quiz,
     );
   }
+
+  /// Before the broken teeth quiz, the "Easier quiz" switch chose between
+  /// the word quiz and the letter quiz.
+  static QuizForm? _quiz(Map<String, Object?> m) => switch (m['quiz']) {
+    final String name => QuizForm.values.asNameMap()[name],
+    _ => switch (m['easierQuiz']) {
+      true => QuizForm.word,
+      false => QuizForm.letters,
+      _ => null,
+    },
+  };
 
   @override
   void saveSettings(Settings settings) => _put(
@@ -107,7 +118,7 @@ class SqliteStore implements Store {
       'lowVolume': settings.lowVolume,
       'mediumVolume': settings.mediumVolume,
       'chime': settings.chime,
-      'easierQuiz': settings.easierQuiz,
+      'quiz': settings.quiz.name,
     }),
   );
 

@@ -92,3 +92,41 @@ List<String> _letterRound(String right, List<String> words, Random random) {
   distractors.addAll(spare.take(3 - distractors.length));
   return [right, ...distractors]..shuffle(random);
 }
+
+/// The positions the broken teeth quiz shows of a word of [length]
+/// letters: half of them, rounded up, picked at random, in order.
+List<int> brokenTeethShown(int length, Random random) => (List.generate(
+  length,
+  (i) => i,
+)..shuffle(random)).take((length + 1) ~/ 2).toList()..sort();
+
+/// The four broken teeth quiz options for [word], shuffled: the word and
+/// three random words of the same length, each different from the word in
+/// at least one [shown] position, so remembering the word is enough to
+/// tell them apart.
+///
+/// When fewer than three such words exist, other words fill in; their
+/// length tells them apart.
+List<String> brokenTeethOptions(
+  String word,
+  List<int> shown,
+  List<String> words,
+  Random random,
+) {
+  final others = words.toSet()..remove(word);
+  if (others.length < 3) {
+    throw StateError('the word list needs at least four words');
+  }
+  bool looksDifferent(String w) =>
+      w.length != word.length || shown.any((i) => w[i] != word[i]);
+  final alike = [
+    for (final w in others)
+      if (w.length == word.length && looksDifferent(w)) w,
+  ]..shuffle(random);
+  final rest = [
+    for (final w in others)
+      if (w.length != word.length) w,
+  ]..shuffle(random);
+  final distractors = [...alike, ...rest].take(3);
+  return [word, ...distractors]..shuffle(random);
+}

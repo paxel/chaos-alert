@@ -13,7 +13,7 @@ void contract(String name, Store Function() open) {
 
     test('settings start at their defaults and round-trip', () {
       expect(store.loadSettings().sleepLength, const Duration(hours: 8));
-      expect(store.loadSettings().easierQuiz, isFalse);
+      expect(store.loadSettings().quiz, QuizForm.letters);
       store.saveSettings(
         const Settings(
           sleepLength: Duration(hours: 7, minutes: 30),
@@ -23,7 +23,7 @@ void contract(String name, Store Function() open) {
           lowVolume: 0.1,
           mediumVolume: 0.7,
           chime: false,
-          easierQuiz: true,
+          quiz: QuizForm.brokenTeeth,
         ),
       );
       final s = store.loadSettings();
@@ -34,7 +34,7 @@ void contract(String name, Store Function() open) {
       expect(s.lowVolume, 0.1);
       expect(s.mediumVolume, 0.7);
       expect(s.chime, isFalse);
-      expect(s.easierQuiz, isTrue);
+      expect(s.quiz, QuizForm.brokenTeeth);
     });
 
     test('alarms are created, edited and deleted', () {
@@ -184,6 +184,28 @@ void main() {
     expect(night.wrongPicks, 0);
   });
 
+  test('the old "Easier quiz" switch carries over to the quiz form', () {
+    final dir = Directory.systemTemp.createTempSync('chaos_quiz');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final path = '${dir.path}/chaos.db';
+    SqliteStore.open(path).close();
+    QuizForm quizAfter(String settings) {
+      sqlite3.open(path)
+        ..execute("insert or replace into kv values ('settings', ?)", [
+          settings,
+        ])
+        ..close();
+      final store = SqliteStore.open(path);
+      final quiz = store.loadSettings().quiz;
+      store.close();
+      return quiz;
+    }
+
+    expect(quizAfter('{"easierQuiz": true}'), QuizForm.word);
+    expect(quizAfter('{"easierQuiz": false}'), QuizForm.letters);
+    expect(quizAfter('{}'), QuizForm.letters);
+  });
+
   test('a night survives closing and reopening the database file', () {
     final dir = Directory.systemTemp.createTempSync('chaos_store');
     addTearDown(() => dir.deleteSync(recursive: true));
@@ -192,7 +214,7 @@ void main() {
     const words = ['verdict', 'venture', 'harbour', 'lantern', 'quarrel'];
 
     var store = SqliteStore.open(path);
-    store.saveSettings(const Settings(easierQuiz: true));
+    store.saveSettings(const Settings(quiz: QuizForm.word));
     final alarm = store.saveAlarm(
       const Alarm(id: 0, time: ClockTime(6, 30), weekdays: {DateTime.tuesday}),
     );

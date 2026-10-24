@@ -138,11 +138,36 @@ class SettingsScreen extends StatelessWidget {
                 value: s.chime,
                 onChanged: (on) => save(s.copyWith(chime: on)),
               ),
-              SwitchListTile(
-                title: Text(t.settingsEasierQuiz),
-                subtitle: Text(t.settingsEasierQuizHint),
-                value: s.easierQuiz,
-                onChanged: (on) => save(s.copyWith(easierQuiz: on)),
+              ListTile(title: Text(t.settingsQuiz)),
+              RadioGroup<QuizForm>(
+                groupValue: s.quiz,
+                onChanged: (quiz) => save(s.copyWith(quiz: quiz)),
+                child: Column(
+                  children: [
+                    for (final (quiz, title, hint) in [
+                      (
+                        QuizForm.word,
+                        t.settingsQuizWord,
+                        t.settingsQuizWordHint,
+                      ),
+                      (
+                        QuizForm.letters,
+                        t.settingsQuizLetters,
+                        t.settingsQuizLettersHint,
+                      ),
+                      (
+                        QuizForm.brokenTeeth,
+                        t.settingsQuizBrokenTeeth,
+                        t.settingsQuizBrokenTeethHint,
+                      ),
+                    ])
+                      RadioListTile<QuizForm>(
+                        value: quiz,
+                        title: Text(title),
+                        subtitle: Text(hint),
+                      ),
+                  ],
+                ),
               ),
             ],
           );
