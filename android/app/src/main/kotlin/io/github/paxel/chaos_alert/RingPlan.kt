@@ -6,8 +6,15 @@ const val LOW_PHASE_MS = 10_000L
 /** How many picked sounds are tried before the phone's default alarm sound. */
 const val SOUND_ATTEMPTS = 3
 
-/** One sound to try: its uri and where in it to start. */
-data class SoundCandidate(val uri: String, val startMs: Int)
+/**
+ * One sound to try: its uri and where in it to start, either at [startMs]
+ * or, for a sound of unknown length, at [startShare] of its length.
+ */
+data class SoundCandidate(val uri: String, val startMs: Int, val startShare: Double = 0.0) {
+    /** Where to start once the player knows the length, [durationMs]. */
+    fun startAt(durationMs: Int): Int =
+        if (startShare > 0 && durationMs > 0) (durationMs * startShare).toInt() else startMs
+}
 
 /**
  * The pure part of a ring, free of Android: which sound comes next after a

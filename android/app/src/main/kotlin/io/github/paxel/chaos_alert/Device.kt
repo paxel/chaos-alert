@@ -12,6 +12,7 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.Settings
 import androidx.core.app.NotificationManagerCompat
@@ -81,6 +82,61 @@ object Device {
             parts.add("${MediaStore.Audio.Media.IS_AUDIOBOOK} = 0")
         }
         return parts.joinToString(" AND ")
+    }
+
+    /**
+     * The audio files in the picked folder [tree] and its subfolders, or
+     * null once the phone no longer gives access to it.
+     */
+    fun folderSounds(context: Context, tree: Uri): List<String>? {
+        val granted = context.contentResolver.persistedUriPermissions
+            .any { it.uri == tree && it.isReadPermission }
+        if (!granted) return null
+        return try {
+            val files = mutableListOf<String>()
+            val pending = ArrayDeque(listOf(DocumentsContract.getTreeDocumentId(tree)))
+            while (pending.isNotEmpty()) {
+                val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, pending.removeFirst())
+                context.contentResolver.query(
+                    children,
+                    arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID, DocumentsContract.Document.COLUMN_MIME_TYPE),
+                    null,
+                    null,
+                    null,
+                )?.use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val id = cursor.getString(0)
+                        val mime = cursor.getString(1) ?: ""
+                        when {
+                            mime == DocumentsContract.Document.MIME_TYPE_DIR -> pending.add(id)
+                            mime.startsWith("audio/") ->
+                                files.add(DocumentsContract.buildDocumentUriUsingTree(tree, id).toString())
+                        }
+                    }
+                }
+            }
+            files
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /** Keeps access to a folder the user picked; returns its uri and name. */
+    fun keepFolder(context: Context, tree: Uri): Map<String, String> {
+        context.contentResolver.takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        val document = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
+        val name = runCatching {
+            context.contentResolver.query(
+                document, arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null,
+            )?.use { if (it.moveToFirst()) it.getString(0) else null }
+        }.getOrNull() ?: tree.lastPathSegment ?: tree.toString()
+        return mapOf("uri" to tree.toString(), "name" to name)
+    }
+
+    fun releaseFolder(context: Context, tree: Uri) {
+        runCatching {
+            context.contentResolver.releasePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
     }
 
     fun permissions(context: Context): Map<String, Boolean> {

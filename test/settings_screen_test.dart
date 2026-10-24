@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:chaos_alert/l10n/app_localizations.dart';
 import 'package:chaos_alert/src/controller.dart';
-import 'package:chaos_alert/src/platform.dart';
 import 'package:chaos_alert/src/settings_screen.dart';
 import 'package:chaos_core/chaos_core.dart';
 import 'package:flutter/material.dart';
@@ -126,14 +125,29 @@ void main() {
     expect(store.loadSettings().quiz, QuizForm.word);
   });
 
-  testWidgets('without music access a hint offers to allow it', (tester) async {
-    platform.granted[Permission.music] = false;
-    await controller.refresh();
+  testWidgets('the sounds row opens the sounds and warns when all are off', (
+    tester,
+  ) async {
     await tester.pumpWidget(app());
-    expect(find.text('Songs are left out'), findsOneWidget);
-    await tester.tap(find.text('Allow'));
+    expect(find.text('Where the alarm sounds come from'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('sounds')));
     await tester.pumpAndSettle();
-    expect(platform.requested, [Permission.music]);
-    expect(find.text('Songs are left out'), findsNothing);
+    expect(find.text('Generated sounds'), findsOneWidget);
+    await controller.saveSettings(
+      const Settings(
+        alarmSounds: false,
+        notificationSounds: false,
+        songs: false,
+        generated: false,
+      ),
+    );
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(
+      find.text(
+        "Every source is off. Only the phone's default alarm sound will ring.",
+      ),
+      findsOneWidget,
+    );
   });
 }

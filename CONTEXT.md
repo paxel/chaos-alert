@@ -59,6 +59,14 @@ _Avoid_: ring (for the entry)
 One sounding of an alarm with its own random sound, from start until answered, snoozed or timed out; every snooze leads to a new ring.
 _Avoid_: alarm (for one sounding)
 
+**Sound source**:
+Where a ring's sound comes from, each switchable: the alarm sounds, the notification sounds, the songs, every picked folder on its own, and the generated sounds. Every switched-on source with a sound in it is as likely as any other.
+_Avoid_: sound group (for a source)
+
+**Generated sound**:
+A one-minute clip the app makes itself from two random instrument styles laid over each other, made new at every scheduling.
+_Avoid_: synth, ringtone
+
 **Wake-up alarm**:
 An alarm with the wake-up switch on; it sets the planned bedtime, carries the quiz and can end the night.
 _Avoid_: main alarm, real alarm

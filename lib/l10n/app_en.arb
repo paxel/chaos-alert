@@ -92,6 +92,29 @@
   "settingsMusic": "Songs are left out",
   "settingsMusicHint": "Allow access to music so alarms can play songs too.",
   "settingsMusicGrant": "Allow",
+  "settingsSounds": "Sounds",
+  "settingsSoundsHint": "Where the alarm sounds come from",
+  "soundsAllOff": "Every source is off. Only the phone's default alarm sound will ring.",
+  "soundsAlarms": "Alarm sounds",
+  "soundsNotifications": "Notification sounds",
+  "soundsSongs": "Songs",
+  "soundsSongsHint": "Music on the phone, without audiobooks, podcasts and anything over 20 minutes",
+  "soundsGenerated": "Generated sounds",
+  "soundsGeneratedHint": "Random mixes of instruments, new for every alarm",
+  "soundsFolders": "Folders",
+  "soundsAddFolder": "Add folder",
+  "soundsFolderCount": "{count, plural, =1{1 sound} other{{count} sounds}}",
+  "@soundsFolderCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "soundsFolderEmpty": "No sounds found",
+  "soundsFolderLost": "Access lost",
+  "soundsFolderRepick": "Pick again",
+  "soundsFolderRemove": "Remove folder",
   "less": "Less",
   "more": "More",
   "durationHm": "{hours} h {minutes} min",

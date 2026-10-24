@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:chaos_core/chaos_core.dart';
 import 'package:flutter/foundation.dart';
 
+import 'generated_sounds.dart';
 import 'platform.dart';
 
 /// The app's single source of truth: wraps the engine and the store, and
@@ -12,6 +13,7 @@ class Controller extends ChangeNotifier {
   Controller({
     required this.store,
     required this.platform,
+    this.clips,
     required List<String> words,
     List<String> nagLines = const [],
     DateTime Function()? clock,
@@ -30,11 +32,15 @@ class Controller extends ChangeNotifier {
 
   final Store store;
   final AlarmPlatform platform;
+
+  /// Makes the generated sounds; without it there are none.
+  final ClipMaker? clips;
   final DateTime Function() clock;
   final Random _random;
   late final Engine engine;
 
   List<Sound>? _sounds;
+  final _folderSounds = <String, List<Sound>?>{};
   Map<Permission, bool> _permissions = const {};
 
   /// Permissions Android has not granted.
@@ -44,6 +50,12 @@ class Controller extends ChangeNotifier {
   ];
 
   bool get hasPermissionInfo => _permissions.isNotEmpty;
+
+  /// How many sounds each picked folder holds: 0 for none, null once the
+  /// phone took the access away; a folder not read yet is missing.
+  Map<String, int?> get folderCounts => {
+    for (final e in _folderSounds.entries) e.key: e.value?.length,
+  };
 
   // What the screens show, read once per change so build() never touches
   // the store.
@@ -152,17 +164,46 @@ class Controller extends ChangeNotifier {
       }
     }
     await reschedule();
+    // A big folder takes long to read, and a ring screen waits for this.
+    _foldersRead = _readFolders();
   }
 
-  /// Hands the engine's plan to Android.
-  Future<void> reschedule() async {
+  Future<void>? _foldersRead;
+
+  /// The folder reading the last [refresh] started, for tests.
+  @visibleForTesting
+  Future<void> get foldersRead => _foldersRead ?? Future.value();
+
+  Future<void> _readFolders() async {
+    final folders = store.loadSettings().folders;
+    if (folders.isEmpty) return;
+    for (final f in folders) {
+      await _readFolder(f.uri);
+    }
+    await reschedule(renewClips: false);
+  }
+
+  Future<void> _readFolder(String uri) async =>
+      _folderSounds[uri] = await platform.folderSounds(uri);
+
+  /// Hands the engine's plan to Android. With the generated sounds on, it
+  /// makes new clips for the next scheduling; the first clips ever made
+  /// get a scheduling of their own.
+  Future<void> reschedule({bool renewClips = true}) async {
     final plan = _plan = engine.plan();
     final settings = store.loadSettings();
     log(
       'plan: nags ${plan.nags.take(1).join()}, rings '
       '${[for (final r in plan.rings.take(3)) '${r.alarmId}@${r.at}'].join(', ')}',
     );
-    final sounds = _sounds ??= await platform.sounds();
+    final system = _sounds ??= await platform.sounds();
+    final clips = this.clips;
+    final made = clips == null ? const <Sound>[] : clips.sounds;
+    final sounds = availableSounds([
+      ...system,
+      for (final f in settings.folders) ...?_folderSounds[f.uri],
+      ...made,
+    ], settings);
     await platform.scheduleNags(plan.nags, chime: settings.chime);
     await platform.scheduleAwake([
       for (final ring in plan.awake)
@@ -180,10 +221,71 @@ class Controller extends ChangeNotifier {
           snooze: settings.alarmSnooze,
         ),
     ]);
+    if (clips != null && settings.generated && renewClips) {
+      unawaited(_renew(clips, firstClips: made.isEmpty));
+    }
     _reload();
     // A nag left in the shade from a night that is over opens nothing.
     if (!_isBedtime) await platform.clearNagNotice();
     notifyListeners();
+  }
+
+  Future<void> _renew(ClipMaker clips, {required bool firstClips}) async {
+    try {
+      await clips.renew(_random.nextInt(1 << 32));
+      if (firstClips) await reschedule(renewClips: false);
+    } catch (e) {
+      log('generated sounds failed: $e');
+    }
+  }
+
+  /// Lets the user pick a folder and adds it as a sound source.
+  Future<void> addFolder() async {
+    final folder = await platform.pickFolder();
+    if (folder == null) return;
+    final settings = store.loadSettings();
+    if (settings.folders.any((f) => f.uri == folder.uri)) return;
+    await _readFolder(folder.uri);
+    await saveSettings(
+      settings.copyWith(folders: [...settings.folders, folder]),
+    );
+  }
+
+  /// Picks a folder anew in place of [uri], e.g. after its access was lost.
+  Future<void> repickFolder(String uri) async {
+    final folder = await platform.pickFolder();
+    if (folder == null) return;
+    final settings = store.loadSettings();
+    if (folder.uri != uri) {
+      await platform.releaseFolder(uri);
+      _folderSounds.remove(uri);
+    }
+    await _readFolder(folder.uri);
+    await saveSettings(
+      settings.copyWith(
+        folders: [
+          for (final f in settings.folders)
+            if (f.uri == uri)
+              folder.copyWith(on: f.on)
+            else if (f.uri != folder.uri)
+              f,
+        ],
+      ),
+    );
+  }
+
+  Future<void> removeFolder(String uri) async {
+    await platform.releaseFolder(uri);
+    _folderSounds.remove(uri);
+    final settings = store.loadSettings();
+    await saveSettings(
+      settings.copyWith(
+        folders: [
+          for (final f in settings.folders)
+            if (f.uri != uri) f,
+        ],
+      ),
+    );
   }
 
   Future<void> saveSettings(Settings settings) {

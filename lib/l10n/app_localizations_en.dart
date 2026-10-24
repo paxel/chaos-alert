@@ -219,6 +219,65 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMusicGrant => 'Allow';
 
   @override
+  String get settingsSounds => 'Sounds';
+
+  @override
+  String get settingsSoundsHint => 'Where the alarm sounds come from';
+
+  @override
+  String get soundsAllOff =>
+      'Every source is off. Only the phone\'s default alarm sound will ring.';
+
+  @override
+  String get soundsAlarms => 'Alarm sounds';
+
+  @override
+  String get soundsNotifications => 'Notification sounds';
+
+  @override
+  String get soundsSongs => 'Songs';
+
+  @override
+  String get soundsSongsHint =>
+      'Music on the phone, without audiobooks, podcasts and anything over 20 minutes';
+
+  @override
+  String get soundsGenerated => 'Generated sounds';
+
+  @override
+  String get soundsGeneratedHint =>
+      'Random mixes of instruments, new for every alarm';
+
+  @override
+  String get soundsFolders => 'Folders';
+
+  @override
+  String get soundsAddFolder => 'Add folder';
+
+  @override
+  String soundsFolderCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sounds',
+      one: '1 sound',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get soundsFolderEmpty => 'No sounds found';
+
+  @override
+  String get soundsFolderLost => 'Access lost';
+
+  @override
+  String get soundsFolderRepick => 'Pick again';
+
+  @override
+  String get soundsFolderRemove => 'Remove folder';
+
+  @override
   String get less => 'Less';
 
   @override

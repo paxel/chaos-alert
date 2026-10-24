@@ -1,6 +1,7 @@
 package io.github.paxel.chaos_alert
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -13,6 +14,9 @@ import org.json.JSONObject
 class MainActivity : FlutterActivity() {
     private var channel: MethodChannel? = null
     private var initialLaunch: Map<String, Any>? = null
+
+    /** The answer to "pickFolder", until the folder picker comes back. */
+    private var folderPick: MethodChannel.Result? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         initialLaunch = launchOf(intent)
@@ -75,6 +79,26 @@ class MainActivity : FlutterActivity() {
                         val sounds = runCatching { Device.sounds(this@MainActivity) }.getOrDefault(emptyList())
                         runOnUiThread { result.success(sounds) }
                     }.start()
+                    "folderSounds" -> Thread {
+                        val files = runCatching {
+                            Device.folderSounds(this@MainActivity, Uri.parse(call.arguments as String))
+                        }.getOrNull()
+                        runOnUiThread { result.success(files) }
+                    }.start()
+                    "pickFolder" -> {
+                        folderPick?.success(null)
+                        folderPick = result
+                        try {
+                            startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE), PICK_FOLDER)
+                        } catch (e: Exception) {
+                            folderPick = null
+                            result.success(null)
+                        }
+                    }
+                    "releaseFolder" -> {
+                        Device.releaseFolder(this@MainActivity, Uri.parse(call.arguments as String))
+                        result.success(null)
+                    }
                     "permissions" -> result.success(Device.permissions(this@MainActivity))
                     "request" -> {
                         Device.request(this@MainActivity, call.arguments as String)
@@ -88,6 +112,21 @@ class MainActivity : FlutterActivity() {
                 }
             }
         }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != PICK_FOLDER) return
+        val result = folderPick ?: return
+        folderPick = null
+        val tree = data?.data
+        result.success(
+            if (resultCode == RESULT_OK && tree != null) {
+                runCatching { Device.keepFolder(this, tree) }.getOrNull()
+            } else {
+                null
+            },
+        )
     }
 
     override fun onDestroy() {
@@ -129,6 +168,7 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         private const val CHANNEL = "io.github.paxel.chaos_alert/alarm"
+        private const val PICK_FOLDER = 3
         private var active: MainActivity? = null
 
         /** Tells a running app that Android queued an event, so it reads the queue now. */

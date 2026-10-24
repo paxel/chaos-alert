@@ -31,6 +31,13 @@ class FakePlatform implements AlarmPlatform {
         length: const Duration(minutes: 3),
       ),
   ];
+
+  /// The audio files of each picked folder; a missing one has lost access.
+  Map<String, List<Sound>> folders = {};
+
+  /// What the folder picker hands back next.
+  SoundFolder? nextFolder;
+  final released = <String>[];
   Launch? initial;
   final _launches = StreamController<Launch>.broadcast();
   final _events = StreamController<void>.broadcast();
@@ -80,6 +87,21 @@ class FakePlatform implements AlarmPlatform {
 
   @override
   Future<List<Sound>> sounds() async => inventory;
+
+  /// While set, reading a folder waits for it.
+  Completer<void>? folderHold;
+
+  @override
+  Future<List<Sound>?> folderSounds(String uri) async {
+    await folderHold?.future;
+    return folders[uri];
+  }
+
+  @override
+  Future<SoundFolder?> pickFolder() async => nextFolder;
+
+  @override
+  Future<void> releaseFolder(String uri) async => released.add(uri);
 
   @override
   Future<Map<Permission, bool>> permissions() async => Map.of(granted);

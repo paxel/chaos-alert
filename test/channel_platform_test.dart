@@ -62,6 +62,11 @@ void main() {
             Sound(uri: 'content://song/1', group: SoundGroup.song),
             Duration(seconds: 42),
           ),
+          const SoundChoice(
+            Sound(uri: 'content://tree/x/1', group: SoundGroup.folder),
+            Duration.zero,
+            startShare: 0.25,
+          ),
         ],
         lowVolume: 0.2,
         mediumVolume: 0.5,
@@ -74,7 +79,8 @@ void main() {
         'alarmId': 3,
         'local': [2026, 10, 6, 6, 30, 0],
         'sounds': [
-          {'uri': 'content://song/1', 'startMs': 42000},
+          {'uri': 'content://song/1', 'startMs': 42000, 'startShare': 0.0},
+          {'uri': 'content://tree/x/1', 'startMs': 0, 'startShare': 0.25},
         ],
         'low': 0.2,
         'medium': 0.5,
@@ -123,18 +129,47 @@ void main() {
       'sounds' => [
         {'uri': 'content://a', 'group': 'alarm'},
         {'uri': 'content://s', 'group': 'song', 'lengthMs': 180000},
+        {'uri': 'content://x', 'group': 'from-a-newer-app'},
       ],
       'permissions' => {'exactAlarms': true, 'music': false},
       _ => null,
     };
     final p = ChannelAlarmPlatform();
     final sounds = await p.sounds();
+    expect(sounds, hasLength(2));
     expect(sounds.last.group, SoundGroup.song);
     expect(sounds.last.length, const Duration(minutes: 3));
     final perms = await p.permissions();
     expect(perms[Permission.exactAlarms], isTrue);
     expect(perms[Permission.music], isFalse);
     expect(perms[Permission.battery], isFalse);
+  });
+
+  test('folders are picked, listed and given up on Android', () async {
+    answer = (call) => switch (call.method) {
+      'pickFolder' => {'uri': 'content://tree/rock', 'name': 'Rock'},
+      'folderSounds' when call.arguments == 'content://tree/rock' => [
+        'content://tree/rock/1',
+        'content://tree/rock/2',
+      ],
+      _ => null,
+    };
+    final p = ChannelAlarmPlatform();
+    final folder = await p.pickFolder();
+    expect((folder?.uri, folder?.name), ('content://tree/rock', 'Rock'));
+    final sounds = await p.folderSounds('content://tree/rock');
+    expect(sounds?.map((s) => s.uri), [
+      'content://tree/rock/1',
+      'content://tree/rock/2',
+    ]);
+    expect(sounds?.first.group, SoundGroup.folder);
+    expect(sounds?.first.source, 'content://tree/rock');
+    expect(await p.folderSounds('content://tree/gone'), isNull);
+    await p.releaseFolder('content://tree/rock');
+    expect(calls.last.method, 'releaseFolder');
+    expect(calls.last.arguments, 'content://tree/rock');
+    answer = (_) => null;
+    expect(await p.pickFolder(), isNull);
   });
 
   test('a launch from the awake notice opens I am awake', () async {

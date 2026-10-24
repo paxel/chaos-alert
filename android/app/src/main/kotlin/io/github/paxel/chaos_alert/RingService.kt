@@ -81,7 +81,7 @@ class RingService : Service() {
         val sounds = ring.optJSONArray("sounds")
         val candidates = (0 until (sounds?.length() ?: 0)).map { i ->
             val s = sounds!!.getJSONObject(i)
-            SoundCandidate(s.getString("uri"), s.optInt("startMs"))
+            SoundCandidate(s.getString("uri"), s.optInt("startMs"), s.optDouble("startShare", 0.0))
         }
         plan = RingPlan(candidates).also { play(it.current()) }
     }
@@ -123,7 +123,8 @@ class RingService : Service() {
             p.setDataSource(this, uri)
             p.isLooping = true
             p.setOnPreparedListener {
-                if ((sound?.startMs ?: 0) > 0) it.seekTo(sound!!.startMs)
+                val start = sound?.startAt(it.duration) ?: 0
+                if (start > 0) it.seekTo(start)
                 it.start()
             }
             p.setOnErrorListener { _, what, extra ->

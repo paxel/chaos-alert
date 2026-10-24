@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:chaos_alert/src/controller.dart';
+import 'package:chaos_alert/src/generated_sounds.dart';
 import 'package:chaos_alert/src/platform.dart';
 import 'package:chaos_core/chaos_core.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -83,6 +85,160 @@ void main() {
     for (final s in platform.rings.first.sounds) {
       expect(s.sound.group, isNot(SoundGroup.song));
     }
+  });
+
+  group('sound sources', () {
+    late FakeClipMaker clips;
+
+    setUp(() {
+      clips = FakeClipMaker();
+      c = Controller(
+        store: MemoryStore(),
+        platform: platform,
+        clips: clips,
+        words: words,
+        clock: () => now,
+        random: Random(1),
+      );
+    });
+
+    Set<SoundGroup> scheduledGroups() => {
+      for (final r in platform.rings)
+        for (final s in r.sounds) s.sound.group,
+    };
+
+    test('switched-off sources are left out of the rings', () async {
+      await c.refresh();
+      await addAlarm();
+      await c.saveSettings(
+        const Settings(alarmSounds: false, notificationSounds: false),
+      );
+      expect(scheduledGroups(), {SoundGroup.song, SoundGroup.generated});
+    });
+
+    test('with every source off the rings get no sound to try', () async {
+      await addAlarm();
+      await c.saveSettings(
+        const Settings(
+          alarmSounds: false,
+          notificationSounds: false,
+          songs: false,
+          generated: false,
+        ),
+      );
+      expect(platform.rings.first.sounds, isEmpty);
+    });
+
+    test(
+      'every scheduling makes new clips, the first ones schedule again',
+      () async {
+        clips.made = false;
+        await addAlarm();
+        expect(clips.renewed, 1);
+        expect(scheduledGroups(), isNot(contains(SoundGroup.generated)));
+        // The first clips are written: the rings are scheduled with them,
+        // without making new ones for that.
+        clips.made = true;
+        clips.done.complete();
+        await pumpEventQueue();
+        expect(clips.renewed, 1);
+        expect(scheduledGroups(), contains(SoundGroup.generated));
+        clips.done = Completer();
+        await c.saveSettings(const Settings(chime: false));
+        expect(clips.renewed, 2);
+      },
+    );
+
+    test('with generated sounds off no clips are made', () async {
+      await c.saveSettings(const Settings(generated: false));
+      await addAlarm();
+      expect(clips.renewed, 0);
+      expect(scheduledGroups(), isNot(contains(SoundGroup.generated)));
+    });
+
+    test('an added folder is read and rings draw from it', () async {
+      platform.folders['tree/rock'] = [
+        for (var i = 0; i < 5; i++)
+          Sound(uri: 'rock/$i', group: SoundGroup.folder, folder: 'tree/rock'),
+      ];
+      platform.nextFolder = const SoundFolder(uri: 'tree/rock', name: 'Rock');
+      await addAlarm();
+      await c.addFolder();
+      expect(c.settings.folders.single.name, 'Rock');
+      expect(c.folderCounts, {'tree/rock': 5});
+      await c.saveSettings(
+        c.settings.copyWith(
+          alarmSounds: false,
+          notificationSounds: false,
+          songs: false,
+          generated: false,
+        ),
+      );
+      expect(scheduledGroups(), {SoundGroup.folder});
+      // The same folder twice stays one source.
+      await c.addFolder();
+      expect(c.settings.folders, hasLength(1));
+    });
+
+    test('no folder picked changes nothing', () async {
+      await c.addFolder();
+      expect(c.settings.folders, isEmpty);
+    });
+
+    test('a lost folder shows as lost and can be picked again', () async {
+      await c.saveSettings(
+        const Settings(
+          folders: [SoundFolder(uri: 'tree/old', name: 'Old', on: false)],
+        ),
+      );
+      await c.refresh();
+      await c.foldersRead;
+      expect(c.folderCounts, {'tree/old': null});
+      platform.folders['tree/new'] = [
+        const Sound(uri: 'new/1', group: SoundGroup.folder, folder: 'tree/new'),
+      ];
+      platform.nextFolder = const SoundFolder(uri: 'tree/new', name: 'New');
+      await c.repickFolder('tree/old');
+      expect(platform.released, ['tree/old']);
+      final f = c.settings.folders.single;
+      expect((f.uri, f.name, f.on), ('tree/new', 'New', false));
+      expect(c.folderCounts, {'tree/new': 1});
+    });
+
+    test('a refresh does not wait for slow folders', () async {
+      platform.folders['tree/rock'] = const [
+        Sound(uri: 'rock/1', group: SoundGroup.folder, folder: 'tree/rock'),
+      ];
+      await addAlarm();
+      await c.saveSettings(
+        const Settings(
+          alarmSounds: false,
+          notificationSounds: false,
+          songs: false,
+          generated: false,
+          folders: [SoundFolder(uri: 'tree/rock', name: 'Rock')],
+        ),
+      );
+      platform.folderHold = Completer();
+      await c.refresh();
+      expect(c.folderCounts, isEmpty);
+      expect(platform.rings.first.sounds, isEmpty);
+      platform.folderHold!.complete();
+      await c.foldersRead;
+      expect(c.folderCounts, {'tree/rock': 1});
+      expect(scheduledGroups(), {SoundGroup.folder});
+    });
+
+    test('a removed folder gives up its access', () async {
+      platform.folders['tree/rock'] = const [];
+      platform.nextFolder = const SoundFolder(uri: 'tree/rock', name: 'Rock');
+      await c.addFolder();
+      expect(c.folderCounts, {'tree/rock': 0});
+      await c.removeFolder('tree/rock');
+      expect(platform.released, ['tree/rock']);
+      expect(c.settings.folders, isEmpty);
+      expect(c.folderCounts, isEmpty);
+    });
   });
 
   test('turning a ring off stops the sound', () async {
@@ -232,4 +388,24 @@ void main() {
     expect(await c.inBed(), isNull);
     expect(platform.logged, contains('app: in bed ignored'));
   });
+}
+
+/// Clips that are written when the test says so.
+class FakeClipMaker implements ClipMaker {
+  bool made = true;
+  int renewed = 0;
+  Completer<void> done = Completer();
+
+  @override
+  List<Sound> get sounds => [
+    if (made)
+      for (var i = 0; i < generatedClipCount; i++)
+        Sound(uri: 'file:///clip-$i.wav', group: SoundGroup.generated),
+  ];
+
+  @override
+  Future<void> renew(int seed) {
+    renewed++;
+    return done.future;
+  }
 }

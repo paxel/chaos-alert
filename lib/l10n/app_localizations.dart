@@ -472,6 +472,102 @@ abstract class AppLocalizations {
   /// **'Allow'**
   String get settingsMusicGrant;
 
+  /// No description provided for @settingsSounds.
+  ///
+  /// In en, this message translates to:
+  /// **'Sounds'**
+  String get settingsSounds;
+
+  /// No description provided for @settingsSoundsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Where the alarm sounds come from'**
+  String get settingsSoundsHint;
+
+  /// No description provided for @soundsAllOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Every source is off. Only the phone\'s default alarm sound will ring.'**
+  String get soundsAllOff;
+
+  /// No description provided for @soundsAlarms.
+  ///
+  /// In en, this message translates to:
+  /// **'Alarm sounds'**
+  String get soundsAlarms;
+
+  /// No description provided for @soundsNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification sounds'**
+  String get soundsNotifications;
+
+  /// No description provided for @soundsSongs.
+  ///
+  /// In en, this message translates to:
+  /// **'Songs'**
+  String get soundsSongs;
+
+  /// No description provided for @soundsSongsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Music on the phone, without audiobooks, podcasts and anything over 20 minutes'**
+  String get soundsSongsHint;
+
+  /// No description provided for @soundsGenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'Generated sounds'**
+  String get soundsGenerated;
+
+  /// No description provided for @soundsGeneratedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Random mixes of instruments, new for every alarm'**
+  String get soundsGeneratedHint;
+
+  /// No description provided for @soundsFolders.
+  ///
+  /// In en, this message translates to:
+  /// **'Folders'**
+  String get soundsFolders;
+
+  /// No description provided for @soundsAddFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Add folder'**
+  String get soundsAddFolder;
+
+  /// No description provided for @soundsFolderCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 sound} other{{count} sounds}}'**
+  String soundsFolderCount(int count);
+
+  /// No description provided for @soundsFolderEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No sounds found'**
+  String get soundsFolderEmpty;
+
+  /// No description provided for @soundsFolderLost.
+  ///
+  /// In en, this message translates to:
+  /// **'Access lost'**
+  String get soundsFolderLost;
+
+  /// No description provided for @soundsFolderRepick.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick again'**
+  String get soundsFolderRepick;
+
+  /// No description provided for @soundsFolderRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove folder'**
+  String get soundsFolderRemove;
+
   /// No description provided for @less.
   ///
   /// In en, this message translates to:

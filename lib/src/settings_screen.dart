@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../l10n/app_localizations.dart';
 import 'controller.dart';
-import 'platform.dart';
+import 'sounds_screen.dart';
 
 String durationText(AppLocalizations t, Duration d) {
   final h = d.inHours;
@@ -70,16 +70,22 @@ class SettingsScreen extends StatelessWidget {
 
           return ListView(
             children: [
-              if (controller.missingPermissions.contains(Permission.music))
-                ListTile(
-                  leading: const Icon(Icons.music_off),
-                  title: Text(t.settingsMusic),
-                  subtitle: Text(t.settingsMusicHint),
-                  trailing: TextButton(
-                    onPressed: () => controller.request(Permission.music),
-                    child: Text(t.settingsMusicGrant),
+              ListTile(
+                key: const ValueKey('sounds'),
+                leading: Icon(
+                  s.allSoundsOff ? Icons.warning_amber : Icons.music_note,
+                ),
+                title: Text(t.settingsSounds),
+                subtitle: Text(
+                  s.allSoundsOff ? t.soundsAllOff : t.settingsSoundsHint,
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SoundsScreen(controller: controller),
                   ),
                 ),
+              ),
               duration(
                 'sleep',
                 t.settingsSleepLength,

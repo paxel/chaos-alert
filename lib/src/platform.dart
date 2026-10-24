@@ -131,6 +131,17 @@ abstract interface class AlarmPlatform {
   /// The sounds on the phone; songs only while music access is granted.
   Future<List<Sound>> sounds();
 
+  /// The audio files in the picked folder [uri] and its subfolders; null
+  /// once the phone no longer gives access to it.
+  Future<List<Sound>?> folderSounds(String uri);
+
+  /// Lets the user pick a folder and keeps access to it; null when none
+  /// was picked.
+  Future<SoundFolder?> pickFolder();
+
+  /// Gives up the access to the picked folder [uri].
+  Future<void> releaseFolder(String uri);
+
   Future<Map<Permission, bool>> permissions();
 
   /// Asks for [permission], or opens its system settings page.
@@ -228,7 +239,11 @@ class ChannelAlarmPlatform implements AlarmPlatform {
             'local': _local(r.at),
             'sounds': [
               for (final s in r.sounds)
-                {'uri': s.sound.uri, 'startMs': s.start.inMilliseconds},
+                {
+                  'uri': s.sound.uri,
+                  'startMs': s.start.inMilliseconds,
+                  'startShare': s.startShare,
+                },
             ],
             'low': r.lowVolume,
             'medium': r.mediumVolume,
@@ -245,16 +260,44 @@ class ChannelAlarmPlatform implements AlarmPlatform {
     final raw = await _channel.invokeListMethod<Map>('sounds') ?? const [];
     return [
       for (final m in raw)
-        Sound(
-          uri: m['uri'] as String,
-          group: SoundGroup.values.byName(m['group'] as String),
-          length: switch (m['lengthMs']) {
-            final int ms => Duration(milliseconds: ms),
-            _ => null,
-          },
-        ),
+        if (SoundGroup.values.asNameMap()[m['group']] case final group?)
+          Sound(
+            uri: m['uri'] as String,
+            group: group,
+            length: switch (m['lengthMs']) {
+              final int ms => Duration(milliseconds: ms),
+              _ => null,
+            },
+          ),
     ];
   }
+
+  @override
+  Future<List<Sound>?> folderSounds(String uri) async {
+    final raw = await _channel.invokeListMethod<String>('folderSounds', uri);
+    return raw == null
+        ? null
+        : [
+            for (final file in raw)
+              Sound(uri: file, group: SoundGroup.folder, folder: uri),
+          ];
+  }
+
+  @override
+  Future<SoundFolder?> pickFolder() async {
+    final raw = await _channel.invokeMapMethod<String, String>('pickFolder');
+    return switch (raw) {
+      {'uri': final uri, 'name': final name} => SoundFolder(
+        uri: uri,
+        name: name,
+      ),
+      _ => null,
+    };
+  }
+
+  @override
+  Future<void> releaseFolder(String uri) =>
+      _channel.invokeMethod('releaseFolder', uri);
 
   @override
   Future<Map<Permission, bool>> permissions() async {

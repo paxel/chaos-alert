@@ -13,6 +13,14 @@ class RingPlanTest {
     )
 
     @Test
+    fun aShareStartsThatFarIntoTheSound() {
+        assertEquals(30_000, SoundCandidate("f", 0, 0.25).startAt(120_000))
+        assertEquals(1000, SoundCandidate("s", 1000).startAt(120_000))
+        // An unknown length starts at the beginning.
+        assertEquals(0, SoundCandidate("f", 0, 0.25).startAt(-1))
+    }
+
+    @Test
     fun startsWithThePick() {
         assertEquals("a", RingPlan(sounds).current()?.uri)
     }
