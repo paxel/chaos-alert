@@ -28,13 +28,20 @@ void main() {
   });
 
   test('every group comes up about equally, however many songs there are', () {
-    final counts = {for (final g in SoundGroup.values) g: 0};
+    final counts = {
+      for (final g in [
+        SoundGroup.alarm,
+        SoundGroup.notification,
+        SoundGroup.song,
+      ])
+        g: 0,
+    };
     final random = Random(7);
     for (var i = 0; i < 3000; i++) {
       final group = pickSounds(inventory, random).first.sound.group;
       counts[group] = counts[group]! + 1;
     }
-    for (final g in SoundGroup.values) {
+    for (final g in counts.keys) {
       expect(counts[g], inInclusiveRange(800, 1200), reason: '$g');
     }
   });
@@ -73,5 +80,118 @@ void main() {
   test('a phone with few sounds gives fewer candidates', () {
     expect(pickSounds([alarms.first], Random(1)), hasLength(1));
     expect(pickSounds(const [], Random(1)), isEmpty);
+  });
+
+  group('folders and generated sounds', () {
+    List<Sound> folder(String tree, int count) => [
+      for (var i = 0; i < count; i++)
+        Sound(uri: '$tree/$i', group: SoundGroup.folder, folder: tree),
+    ];
+    final rock = folder('tree/rock', 500);
+    final jazz = folder('tree/jazz', 3);
+    final generated = [
+      for (var i = 0; i < 4; i++)
+        Sound(uri: 'clip/$i', group: SoundGroup.generated),
+    ];
+
+    test('each folder is its own source, as likely as any other', () {
+      final counts = <String, int>{};
+      final random = Random(11);
+      for (var i = 0; i < 4000; i++) {
+        final source = pickSounds([
+          ...alarms,
+          ...songs,
+          ...rock,
+          ...jazz,
+        ], random).first.sound.source;
+        counts[source] = (counts[source] ?? 0) + 1;
+      }
+      expect(
+        counts.keys,
+        unorderedEquals(['alarm', 'song', 'tree/rock', 'tree/jazz']),
+      );
+      for (final c in counts.values) {
+        expect(c, inInclusiveRange(800, 1200));
+      }
+    });
+
+    test('folder sounds start somewhere in their first half', () {
+      final random = Random(4);
+      final shares = [
+        for (var i = 0; i < 300; i++) pickSounds(rock, random).first,
+      ];
+      for (final c in shares) {
+        expect(c.start, Duration.zero);
+        expect(c.startShare, inInclusiveRange(0, 0.5));
+      }
+      expect(shares.map((c) => c.startShare).reduce(max), greaterThan(0.4));
+    });
+
+    test('generated clips play from their start', () {
+      for (final c in pickSounds(generated, Random(2))) {
+        expect(c.start, Duration.zero);
+        expect(c.startShare, 0);
+      }
+    });
+
+    test('only switched-on sources are available', () {
+      final everything = [
+        ...alarms,
+        ...notifications,
+        ...songs.take(2),
+        ...rock.take(2),
+        ...jazz,
+        ...generated,
+      ];
+      Set<String> sources(Settings s) => {
+        for (final sound in availableSounds(everything, s)) sound.source,
+      };
+      const folders = [
+        SoundFolder(uri: 'tree/rock', name: 'Rock'),
+        SoundFolder(uri: 'tree/jazz', name: 'Jazz', on: false),
+      ];
+      expect(sources(const Settings(folders: folders)), {
+        'alarm',
+        'notification',
+        'song',
+        'generated',
+        'tree/rock',
+      });
+      expect(
+        sources(
+          const Settings(
+            alarmSounds: false,
+            notificationSounds: false,
+            songs: false,
+            generated: false,
+          ),
+        ),
+        isEmpty,
+      );
+      expect(sources(const Settings(songs: false, generated: false)), {
+        'alarm',
+        'notification',
+      });
+    });
+
+    test('every source off means only the default alarm sound', () {
+      const off = Settings(
+        alarmSounds: false,
+        notificationSounds: false,
+        songs: false,
+        generated: false,
+        folders: [SoundFolder(uri: 'tree/rock', name: 'Rock', on: false)],
+      );
+      expect(off.allSoundsOff, isTrue);
+      expect(const Settings().allSoundsOff, isFalse);
+      expect(
+        off
+            .copyWith(
+              folders: [const SoundFolder(uri: 'r', name: 'R')],
+            )
+            .allSoundsOff,
+        isFalse,
+      );
+    });
   });
 }

@@ -101,6 +101,22 @@ enum QuizForm {
   brokenTeeth,
 }
 
+/// A folder picked as a sound source, with its subfolders.
+class SoundFolder {
+  const SoundFolder({required this.uri, required this.name, this.on = true});
+
+  /// The folder's tree uri, which the phone gave access to.
+  final String uri;
+  final String name;
+  final bool on;
+
+  SoundFolder copyWith({String? uri, String? name, bool? on}) => SoundFolder(
+    uri: uri ?? this.uri,
+    name: name ?? this.name,
+    on: on ?? this.on,
+  );
+}
+
 /// Everything the user can set that is not an alarm or a vacation.
 class Settings {
   const Settings({
@@ -112,6 +128,11 @@ class Settings {
     this.mediumVolume = 0.5,
     this.chime = true,
     this.quiz = QuizForm.letters,
+    this.alarmSounds = true,
+    this.notificationSounds = true,
+    this.songs = true,
+    this.generated = true,
+    this.folders = const [],
   });
 
   final Duration sleepLength;
@@ -129,6 +150,22 @@ class Settings {
   /// How the quiz asks for the night's word.
   final QuizForm quiz;
 
+  // Which sound sources a ring draws from.
+  final bool alarmSounds;
+  final bool notificationSounds;
+  final bool songs;
+  final bool generated;
+  final List<SoundFolder> folders;
+
+  /// Whether every sound source is switched off, so only the phone's
+  /// default alarm sound rings.
+  bool get allSoundsOff =>
+      !alarmSounds &&
+      !notificationSounds &&
+      !songs &&
+      !generated &&
+      folders.every((f) => !f.on);
+
   Settings copyWith({
     Duration? sleepLength,
     Duration? nagSnooze,
@@ -138,6 +175,11 @@ class Settings {
     double? mediumVolume,
     bool? chime,
     QuizForm? quiz,
+    bool? alarmSounds,
+    bool? notificationSounds,
+    bool? songs,
+    bool? generated,
+    List<SoundFolder>? folders,
   }) => Settings(
     sleepLength: sleepLength ?? this.sleepLength,
     nagSnooze: nagSnooze ?? this.nagSnooze,
@@ -147,5 +189,10 @@ class Settings {
     mediumVolume: mediumVolume ?? this.mediumVolume,
     chime: chime ?? this.chime,
     quiz: quiz ?? this.quiz,
+    alarmSounds: alarmSounds ?? this.alarmSounds,
+    notificationSounds: notificationSounds ?? this.notificationSounds,
+    songs: songs ?? this.songs,
+    generated: generated ?? this.generated,
+    folders: folders ?? this.folders,
   );
 }

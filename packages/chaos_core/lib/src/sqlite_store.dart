@@ -93,6 +93,16 @@ class SqliteStore implements Store {
       mediumVolume: (m['mediumVolume'] as num?)?.toDouble() ?? d.mediumVolume,
       chime: m['chime'] as bool? ?? d.chime,
       quiz: _quiz(m) ?? d.quiz,
+      alarmSounds: m['alarmSounds'] as bool? ?? d.alarmSounds,
+      notificationSounds:
+          m['notificationSounds'] as bool? ?? d.notificationSounds,
+      songs: m['songs'] as bool? ?? d.songs,
+      generated: m['generated'] as bool? ?? d.generated,
+      folders: [
+        for (final f in m['folders'] as List? ?? const [])
+          if (f case {'uri': final String uri, 'name': final String name})
+            SoundFolder(uri: uri, name: name, on: f['on'] as bool? ?? true),
+      ],
     );
   }
 
@@ -119,6 +129,14 @@ class SqliteStore implements Store {
       'mediumVolume': settings.mediumVolume,
       'chime': settings.chime,
       'quiz': settings.quiz.name,
+      'alarmSounds': settings.alarmSounds,
+      'notificationSounds': settings.notificationSounds,
+      'songs': settings.songs,
+      'generated': settings.generated,
+      'folders': [
+        for (final f in settings.folders)
+          {'uri': f.uri, 'name': f.name, 'on': f.on},
+      ],
     }),
   );
 

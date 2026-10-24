@@ -24,6 +24,14 @@ void contract(String name, Store Function() open) {
           mediumVolume: 0.7,
           chime: false,
           quiz: QuizForm.brokenTeeth,
+          alarmSounds: false,
+          notificationSounds: false,
+          songs: false,
+          generated: false,
+          folders: [
+            SoundFolder(uri: 'tree/a', name: 'Rock'),
+            SoundFolder(uri: 'tree/b', name: 'Books', on: false),
+          ],
         ),
       );
       final s = store.loadSettings();
@@ -35,6 +43,14 @@ void contract(String name, Store Function() open) {
       expect(s.mediumVolume, 0.7);
       expect(s.chime, isFalse);
       expect(s.quiz, QuizForm.brokenTeeth);
+      expect(s.alarmSounds, isFalse);
+      expect(s.notificationSounds, isFalse);
+      expect(s.songs, isFalse);
+      expect(s.generated, isFalse);
+      expect(
+        [for (final f in s.folders) (f.uri, f.name, f.on)],
+        [('tree/a', 'Rock', true), ('tree/b', 'Books', false)],
+      );
     });
 
     test('alarms are created, edited and deleted', () {
@@ -204,6 +220,27 @@ void main() {
     expect(quizAfter('{"easierQuiz": true}'), QuizForm.word);
     expect(quizAfter('{"easierQuiz": false}'), QuizForm.letters);
     expect(quizAfter('{}'), QuizForm.letters);
+  });
+
+  test('settings saved before the sound sources have every source on', () {
+    final dir = Directory.systemTemp.createTempSync('chaos_sources');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final path = '${dir.path}/chaos.db';
+    SqliteStore.open(path).close();
+    sqlite3.open(path)
+      ..execute("insert or replace into kv values ('settings', ?)", [
+        '{"sleepLength": 450, "quiz": "word"}',
+      ])
+      ..close();
+    final store = SqliteStore.open(path);
+    final s = store.loadSettings();
+    store.close();
+    expect(s.sleepLength, const Duration(hours: 7, minutes: 30));
+    expect(
+      [s.alarmSounds, s.notificationSounds, s.songs, s.generated],
+      [true, true, true, true],
+    );
+    expect(s.folders, isEmpty);
   });
 
   test('a night survives closing and reopening the database file', () {
