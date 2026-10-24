@@ -2,6 +2,12 @@
 
 Versions before the current one.
 
+## [0.6.0] - 2026-10-07
+
+### Changed
+- The letter quiz shows the first letters as big tiles, two by two, that answer on tap.
+- The time-in-bed bars span exactly from the earliest bedtime to the latest wake-up, with lines at the latest bedtime and the earliest wake-up to compare against.
+
 ## [0.5.0] - 2026-10-06
 
 ### Added
