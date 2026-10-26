@@ -5,6 +5,14 @@
 <h1 align="center">chaos-alert</h1>
 
 <p align="center">
+  <a href="https://github.com/paxel/chaos-alert/actions/workflows/ci.yml"><img src="https://github.com/paxel/chaos-alert/actions/workflows/ci.yml/badge.svg?branch=summer" alt="CI"/></a>
+  <a href="https://github.com/paxel/chaos-alert/releases/latest"><img src="https://img.shields.io/github/v/release/paxel/chaos-alert" alt="Release"/></a>
+  <a href="#get-it"><img src="https://img.shields.io/badge/F--Droid-paxel.github.io-1976D2?logo=f-droid" alt="F-Droid repository"/></a>
+  <a href="android/app/build.gradle.kts"><img src="https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android" alt="Android 7.0+"/></a>
+  <a href="LICENSE-MIT"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue" alt="License"/></a>
+</p>
+
+<p align="center">
   <b>Goes to bed with you. Wakes you with chaos.</b><br/>
   Android only. Everything stays on your phone — no account, no internet, no tracking. Free.
 </p>
