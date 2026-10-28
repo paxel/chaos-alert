@@ -205,8 +205,13 @@ class Engine {
     }
     rings.sort((a, b) => a.at.compareTo(b.at));
     final awake = <DateTime>[];
-    // A morning whose quiz was taken already needs no notice.
-    final awakeUntil = night?.awake == null ? null : night?.expectedWake;
+    // No notice for a morning whose quiz was taken already, nor while the
+    // word waits to be fetched, where its turn-off would end the night and
+    // the morning's alarms.
+    final skipNotice =
+        night != null &&
+        (night.awake != null || (night.bedtime != null && night.word == null));
+    final awakeUntil = skipNotice ? night.expectedWake : null;
     var after = now;
     for (var i = 0; awake.length < planAhead && i < planAhead + 1; i++) {
       final next = _firstWakeUpAfter(after, state, days: 8);

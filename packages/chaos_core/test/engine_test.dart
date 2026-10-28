@@ -903,6 +903,16 @@ void main() {
       expect(n.store.loadRecords(), isEmpty);
     });
 
+    test('the silent notice skips the morning while the word waits, and '
+        'comes back once it is fetched', () {
+      n.alarm(6, 30);
+      n.now = at(5, 22);
+      n.engine.inBed();
+      expect(n.engine.plan().awake.first, at(7, 6, 30));
+      n.engine.wordNow();
+      expect(n.engine.plan().awake.first, at(6, 6, 30));
+    });
+
     test('the silent notice skips the morning whose quiz was taken', () {
       n.alarm(6, 30);
       awakeEarly();

@@ -66,7 +66,7 @@ Taking the quiz early, in the 6 hours before the morning's first wake-up alarm, 
 _Avoid_: early wake-up, awake quiz
 
 **I'm awake notice**:
-The silent notification that offers I'm awake, in the hour before the morning's first wake-up alarm.
+The silent notification that offers I'm awake, in the hour before the morning's first wake-up alarm; none while the word still waits to be fetched.
 _Avoid_: awake notification, awake reminder
 
 **I'm up**:
