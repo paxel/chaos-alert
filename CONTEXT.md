@@ -62,7 +62,7 @@ Confirming the bedtime early, in the 6 hours before the planned bedtime, without
 _Avoid_: early bedtime, going to bed early
 
 **I'm awake**:
-Taking the quiz early, in the 6 hours before the morning's first wake-up alarm; the right word marks awake, and the wake-up alarm then rings with a plain dismiss that marks up.
+Taking the quiz early, in the 6 hours before the morning's first wake-up alarm, but not while the word still waits to be fetched; the right word marks awake, and the wake-up alarm then rings with a plain dismiss that marks up.
 _Avoid_: early wake-up, awake quiz
 
 **I'm awake notice**:

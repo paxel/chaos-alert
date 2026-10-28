@@ -24,8 +24,8 @@ Your alarm always sounds the same, so you sleep right through it. And
 
 chaos-alert nags you to bed when it's time, gives you one word to remember,
 and wakes you with a sound you have never heard coming. To turn the alarm
-off, you pick last night's word from four. A wrong pick only snoozes it,
-and the app keeps count of how well you remembered.
+off, you recall last night's word. A wrong pick only snoozes it, and the
+app keeps count of how well you remembered.
 
 ## What it does
 
@@ -37,28 +37,42 @@ and the app keeps count of how well you remembered.
   makes its case first: one of 300 lines about sleep, dreams, puffy eyes,
   the Matrix and fairy tales.
 - **I'm in bed early** — the main screen has a button for that in the
-  three hours before bedtime.
+  six hours before bedtime. Lying awake for a while? The word waits: the
+  nag still comes and asks *Want the word now?*, or tap *Show the word*
+  when you're ready to sleep.
 - **A word for the night** — say *Yes* and you get one less common English
   word. It's shown once. Remember it.
 - **The chaos alarm** — every ring picks something random: an alarm sound,
-  a notification sound or a song from your music, starting somewhere in its
-  first half. Quiet at first, louder after 10 seconds. A new surprise after
-  every snooze.
-- **The quiz** — four words, one of them last night's. Tap one to mark
-  it, then OK. The right word stops the alarm; a wrong one snoozes it and
-  drops out of the next try. A night with wrong picks counts as failed,
-  shaded by how many it took, and shows your streak and your last 30
-  nights. Five failures in a row bring a gentle hint.
-- **I'm awake** — up before the alarm? In the hour before it, a button on
-  the main screen and a silent notification take you to the quiz; the
-  right word turns off that morning's alarms.
+  a notification sound, a song from your music starting somewhere in its
+  first half, a sound from a folder you picked, or a mix of instruments the
+  app makes itself. Switch each source on or off on the Sounds page. Quiet
+  at first, louder after 10 seconds. A new surprise after every snooze.
+- **The quiz** — three kinds, chosen in Settings:
+  - *First letters* (the default): three rounds of four big tiles, each
+    round one letter more of the word's beginning; a tap answers. The
+    whole word shows at the end.
+  - *Whole word*: last night's word among four; tap one to mark it, then
+    OK.
+  - *Broken teeth*: four words of the same length with the same letters
+    missing; tap one to mark it, then OK.
+
+  The right answer stops the alarm; a wrong one snoozes it and drops out
+  of the next try. A night with wrong picks counts as failed, shaded by how
+  many it took, and shows your streak and your last 30 nights. Five
+  failures in a row bring a gentle hint.
+- **I'm awake** — awake before the alarm? In the six hours before it, a
+  button on the main screen takes you to the quiz, and in the last hour a
+  silent notification too. The alarm still rings, with a plain turn-off
+  that marks when you got up; or tap *I'm up* to end the night and turn
+  off that morning's alarms.
 - **Alarms** — repeating on weekdays or once on a date; switch them on and
   off, edit, delete. Reminder alarms that shouldn't move your bedtime get
   their wake-up switch turned off.
 - **Vacations** — enter the dates once; repeating alarms and the nag stay
   quiet, one-time alarms still ring.
-- **Time in bed** — a week or month of bars, coloured by how the quiz went,
-  with your average time in bed and average bedtime.
+- **Time in bed** — a week or month of bars, coloured by how the quiz went
+  and dimmed where you lay awake in bed, with your average time in bed,
+  average time asleep and average bedtime.
 
 ## Get it
 

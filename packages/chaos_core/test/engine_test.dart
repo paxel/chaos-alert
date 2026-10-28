@@ -791,6 +791,17 @@ void main() {
       expect(n.engine.canSayAwake, isTrue);
     });
 
+    test('stays hidden while the word waits to be fetched', () {
+      n.alarm(6, 30);
+      n.now = at(5, 22);
+      n.engine.inBed();
+      n.now = at(6, 1);
+      expect(n.engine.canFetchWord, isTrue);
+      expect(n.engine.canSayAwake, isFalse);
+      n.engine.wordNow();
+      expect(n.engine.canSayAwake, isTrue);
+    });
+
     /// Word at 22:30, the right word on "I'm awake" at 05:10.
     String awakeEarly() {
       n.now = at(5, 22, 30);

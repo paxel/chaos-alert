@@ -238,11 +238,17 @@ class Engine {
   }
 
   /// Whether the main screen offers "I'm awake" now: within [awakeWindow]
-  /// before the next wake-up ring, unless the quiz was taken already.
+  /// before the next wake-up ring, unless the quiz was taken already or the
+  /// word still waits to be fetched, where its plain turn-off would end
+  /// the night and the morning's alarms.
   bool get canSayAwake {
     final now = _now;
     final state = _load(now);
     if (state.night?.awake != null) return false;
+    final current = _current(state, now);
+    if (current != null && current.bedtime != null && current.word == null) {
+      return false;
+    }
     final next = _firstWakeUpAfter(now, state);
     return next != null && !now.isBefore(next.subtract(awakeWindow));
   }
