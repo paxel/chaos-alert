@@ -64,8 +64,10 @@ class Controller extends ChangeNotifier {
   late List<Vacation> _vacations;
   late List<NightRecord> _nights;
   late bool _canSayInBed;
+  late bool _canFetchWord;
   late bool _isBedtime;
   late bool _canSayAwake;
+  late bool _canSayUp;
   late bool _setupDone;
   late bool _pendingHint;
   late Map<int, DateTime> _alarmSnoozes;
@@ -78,9 +80,15 @@ class Controller extends ChangeNotifier {
   List<NightRecord> get nights => _nights;
   bool get canSayInBed => _canSayInBed;
 
+  /// Whether the word can be fetched now: in bed, without it yet.
+  bool get canFetchWord => _canFetchWord;
+
   /// Whether a nag still belongs to a night; outside, an open nag is stale.
   bool get isBedtime => _isBedtime;
   bool get canSayAwake => _canSayAwake;
+
+  /// Whether "I'm up" can end the night: after the "I'm awake" quiz.
+  bool get canSayUp => _canSayUp;
   bool get setupDone => _setupDone;
 
   /// The line on the nag last shown tonight.
@@ -101,8 +109,10 @@ class Controller extends ChangeNotifier {
     _vacations = store.loadVacations();
     _nights = store.loadRecords();
     _canSayInBed = engine.canSayInBed;
+    _canFetchWord = engine.canFetchWord;
     _isBedtime = engine.isBedtime;
     _canSayAwake = engine.canSayAwake;
+    _canSayUp = engine.canSayUp;
     _setupDone = store.loadState().setupDone;
     _pendingHint = engine.pendingHint;
     _nagLine = engine.nagLine;
@@ -123,16 +133,22 @@ class Controller extends ChangeNotifier {
   /// window. Called once a minute while the main screen is shown.
   void tick() {
     final inBed = engine.canSayInBed;
+    final word = engine.canFetchWord;
     final bedtime = engine.isBedtime;
     final awake = engine.canSayAwake;
+    final up = engine.canSayUp;
     if (inBed == _canSayInBed &&
+        word == _canFetchWord &&
         bedtime == _isBedtime &&
-        awake == _canSayAwake) {
+        awake == _canSayAwake &&
+        up == _canSayUp) {
       return;
     }
     _canSayInBed = inBed;
+    _canFetchWord = word;
     _isBedtime = bedtime;
     _canSayAwake = awake;
+    _canSayUp = up;
     notifyListeners();
   }
 
@@ -207,7 +223,7 @@ class Controller extends ChangeNotifier {
     await platform.scheduleNags(plan.nags, chime: settings.chime);
     await platform.scheduleAwake([
       for (final ring in plan.awake)
-        AwakeNotice(at: ring.subtract(awakeWindow), until: ring),
+        AwakeNotice(at: ring.subtract(awakeNoticeLead), until: ring),
     ]);
     await platform.scheduleRings([
       for (final r in plan.rings)
@@ -318,11 +334,19 @@ class Controller extends ChangeNotifier {
     await refresh();
   }
 
-  /// Returns the word to remember; null outside bedtime, when nothing
-  /// changes.
-  Future<String?> inBed() async {
-    final word = engine.inBed();
-    log(word == null ? 'in bed ignored' : 'in bed, word given');
+  /// "I'm in bed" without the word; returns whether it counted.
+  Future<bool> inBed() async {
+    final counted = engine.inBed();
+    log(counted ? 'in bed' : 'in bed ignored');
+    await reschedule();
+    return counted;
+  }
+
+  /// Yes on the nag, or the word button: returns the word to remember;
+  /// null outside bedtime or once it was shown, when nothing changes.
+  Future<String?> wordNow() async {
+    final word = engine.wordNow();
+    log(word == null ? 'word ignored' : 'word given');
     await reschedule();
     return word;
   }
@@ -342,6 +366,13 @@ class Controller extends ChangeNotifier {
     if (outcome != null && outcome.correct) await platform.clearAwakeNotice();
     await reschedule();
     return outcome;
+  }
+
+  /// "I'm up" after the "I'm awake" quiz ends the night.
+  Future<void> up() async {
+    log('up');
+    engine.up();
+    await reschedule();
   }
 
   Future<void> awakeDismiss() async {

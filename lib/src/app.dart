@@ -75,7 +75,7 @@ class _ChaosAlertAppState extends State<ChaosAlertApp>
     if (!mounted) return;
     _c.log('opened for $launch');
     // A nag that fired outside bedtime was dropped; it shows nothing.
-    if (launch is NagLaunch && !_c.canSayInBed) return;
+    if (launch is NagLaunch && !_c.canSayInBed && !_c.canFetchWord) return;
     // A new nag takes the place of the one still open.
     if (launch is NagLaunch) _removeNag();
     final screen = switch (launch) {

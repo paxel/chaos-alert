@@ -8,13 +8,17 @@ import 'store.dart';
 import 'words.dart';
 
 /// How long before bedtime the "I'm in bed" button appears.
-const inBedWindow = Duration(hours: 3);
+const inBedWindow = Duration(hours: 6);
 
 /// How long a shown word waits for a wake-up alarm before it expires.
 const wordLifetime = Duration(hours: 24);
 
 /// How long before the first wake-up alarm "I'm awake" appears.
-const awakeWindow = Duration(hours: 1);
+const awakeWindow = Duration(hours: 6);
+
+/// How long before the first wake-up alarm the silent "I'm awake" notice
+/// appears.
+const awakeNoticeLead = Duration(hours: 1);
 
 /// How many nags and how many rings per alarm the plan looks ahead, so
 /// Android keeps nagging and ringing on days the app never runs.
@@ -158,13 +162,15 @@ class Engine {
 
     final nags = <DateTime>[];
     final night = state.night;
-    final snoozed = night?.nagSnoozedUntil;
     final skipUntil = night?.expectedWake;
-    if (night != null &&
-        !night.confirmed &&
-        snoozed != null &&
-        (skipUntil == null || snoozed.isBefore(skipUntil))) {
-      nags.add(snoozed);
+    // Until the word is shown, the open night still nags: again after a
+    // snooze, or at the planned bedtime when "I'm in bed" came before it.
+    final pending = night == null || night.word != null
+        ? null
+        : night.nagSnoozedUntil ??
+              (night.lastNag == null ? night.plannedBedtime : null);
+    if (pending != null && (skipUntil == null || pending.isBefore(skipUntil))) {
+      nags.add(pending);
     }
     var cursor = now;
     for (var i = 0; nags.length < planAhead && i < planAhead + 1; i++) {
@@ -199,11 +205,13 @@ class Engine {
     }
     rings.sort((a, b) => a.at.compareTo(b.at));
     final awake = <DateTime>[];
+    // A morning whose quiz was taken already needs no notice.
+    final awakeUntil = night?.awake == null ? null : night?.expectedWake;
     var after = now;
-    for (var i = 0; i < planAhead; i++) {
+    for (var i = 0; awake.length < planAhead && i < planAhead + 1; i++) {
       final next = _firstWakeUpAfter(after, state, days: 8);
       if (next == null) break;
-      awake.add(next);
+      if (awakeUntil == null || next.isAfter(awakeUntil)) awake.add(next);
       after = DateTime(next.year, next.month, next.day + 1);
     }
     _save(state);
@@ -229,20 +237,27 @@ class Engine {
     return null;
   }
 
-  /// Whether the main screen offers "I'm awake" now: within an hour before
-  /// the next wake-up ring.
+  /// Whether the main screen offers "I'm awake" now: within [awakeWindow]
+  /// before the next wake-up ring, unless the quiz was taken already.
   bool get canSayAwake {
     final now = _now;
-    final next = _firstWakeUpAfter(now, _load(now));
+    final state = _load(now);
+    if (state.night?.awake != null) return false;
+    final next = _firstWakeUpAfter(now, state);
     return next != null && !now.isBefore(next.subtract(awakeWindow));
   }
+
+  /// Whether the main screen offers "I'm up": after the "I'm awake" quiz,
+  /// until the night ends.
+  bool get canSayUp => _load(_now).night?.awake != null;
 
   /// What "I'm awake" shows: the night's quiz, or a plain turn-off.
   RingScreen awakeScreen() => _quiz();
 
-  /// [picked] was chosen on the "I'm awake" quiz. The right word ends the
-  /// night and cancels the morning's wake-up alarms; a wrong one drops the
-  /// word and makes the night a failure, with nothing to snooze.
+  /// [picked] was chosen on the "I'm awake" quiz. The right word marks
+  /// awake; the night waits for up, and the morning's wake-up alarm still
+  /// rings with a plain dismiss. A wrong one drops the word and makes the
+  /// night a failure, with nothing to snooze.
   QuizOutcome? awakeAnswer(String picked) {
     final t = _now;
     final state = _load(t);
@@ -256,9 +271,52 @@ class Engine {
       return const QuizOutcome.wrong(snooze: null);
     }
     if (_nextRound(state, night)) return const QuizOutcome.next();
-    _cancelMorning(state, t);
-    return _found(state, night, word, t);
+    night.awake = t;
+    _save(state);
+    final wrong = night.wrongPicks.length;
+    return QuizOutcome.right(
+      wrongPicks: wrong,
+      word: word,
+      // Tonight counts already, although up is still to come.
+      stats: QuizStats.of([
+        ...store.loadRecords(),
+        _record(night, _resultOf(night), t),
+      ]),
+    );
   }
+
+  /// "I'm up" after the "I'm awake" quiz: the night ends with the quiz's
+  /// result, and the rest of the morning's wake-up rings are cancelled.
+  void up() {
+    final t = _now;
+    final state = _load(t);
+    final night = state.night;
+    if (night == null || night.awake == null) return;
+    // Only the night's own morning: after a ring was snoozed, the next
+    // wake-up ring after now may already be tomorrow's.
+    final morning = night.expectedWake ?? _firstWakeUpAfter(t, state);
+    if (morning != null) {
+      for (final r in ringsOn(
+        morning,
+        store.loadAlarms(),
+        store.loadVacations(),
+      )) {
+        if (!r.alarm.wakeUp) continue;
+        state.alarmSnoozes.remove(r.alarm.id);
+        final done = state.lastRing[r.alarm.id];
+        if (!r.at.isAfter(t) || (done != null && !done.isBefore(r.at))) {
+          continue;
+        }
+        state.lastRing[r.alarm.id] = r.at;
+        if (r.alarm.oneTime) store.saveAlarm(r.alarm.copyWith(enabled: false));
+      }
+    }
+    _end(state, night, _resultOf(night), t);
+  }
+
+  /// The result of a night whose word was found.
+  NightResult _resultOf(OpenNight night) =>
+      night.wrongPicks.isEmpty ? NightResult.success : NightResult.failure;
 
   /// "I'm awake" without a word: the night ends as "no word", or nothing is
   /// recorded when there was no night; the morning's alarms are cancelled.
@@ -292,10 +350,17 @@ class Engine {
     final now = _now;
     final state = _load(now);
     final night = _current(state, now);
-    if (night != null) return !night.confirmed;
+    if (night != null) return night.bedtime == null;
     final morning = _nextMorning(state, now);
     if (morning == null) return false;
     return !now.isBefore(morning.bedtime.subtract(inBedWindow));
+  }
+
+  /// Whether the main screen offers the word now: in bed, without it yet.
+  bool get canFetchWord {
+    final now = _now;
+    final night = _current(_load(now), now);
+    return night != null && night.bedtime != null && night.word == null;
   }
 
   /// Whether a nag still belongs to a night: from the "I'm in bed" window
@@ -330,17 +395,32 @@ class Engine {
     return _current(_load(now), now)?.nagLine;
   }
 
-  /// The user is in bed, by Yes on the nag or the button on the main
-  /// screen. Returns the word to remember; null outside bedtime or when
-  /// tonight's bedtime was already given, and then nothing changes.
-  String? inBed() {
+  /// "I'm in bed" on the main screen: marks in bed, without the word; the
+  /// nag still comes and asks for it. Returns whether it counted; outside
+  /// bedtime or once in bed nothing changes.
+  bool inBed() {
     final t = _now;
     final state = _load(t);
     final night = _bedtimeNight(state, t);
-    if (night == null || night.confirmed) return null;
+    if (night == null || night.bedtime != null) return false;
+    night.bedtime = t;
+    _save(state);
+    return true;
+  }
+
+  /// Yes on the nag, or the word button once in bed: shows the word and
+  /// marks asleep, and in bed too when it was not given before. Returns the
+  /// word to remember; null outside bedtime or when tonight's word was
+  /// already shown, and then nothing changes.
+  String? wordNow() {
+    final t = _now;
+    final state = _load(t);
+    final night = _bedtimeNight(state, t);
+    if (night == null || night.word != null) return null;
     final word = state.deck.next(words, _random);
     night
-      ..bedtime = t
+      ..bedtime ??= t
+      ..asleep = t
       ..word = word
       ..nagSnoozedUntil = null;
     _save(state);
@@ -363,6 +443,13 @@ class Engine {
     final state = _load(t);
     state.lastRing[alarmId] = t;
     state.alarmSnoozes.remove(alarmId);
+    final night = state.night;
+    if (night != null &&
+        night.awake != null &&
+        night.firstRing == null &&
+        _isWakeUp(alarmId)) {
+      night.firstRing = t;
+    }
     final alarm = _alarm(alarmId);
     if (alarm != null && alarm.oneTime && alarm.enabled) {
       store.saveAlarm(alarm.copyWith(enabled: false));
@@ -371,10 +458,12 @@ class Engine {
   }
 
   /// What the ringing alarm [alarmId] shows: the quiz on a wake-up alarm
-  /// while the night's word waits, else a plain dismiss button.
+  /// while the night's word waits, else a plain dismiss button, also after
+  /// the "I'm awake" quiz.
   RingScreen screenFor(int alarmId) {
     final alarm = _alarm(alarmId);
     if (alarm == null || !alarm.wakeUp) return const RingScreen.dismiss();
+    if (_load(_now).night?.awake != null) return const RingScreen.dismiss();
     return _quiz();
   }
 
@@ -478,12 +567,7 @@ class Engine {
     DateTime t,
   ) {
     final wrong = night.wrongPicks.length;
-    _end(
-      state,
-      night,
-      wrong == 0 ? NightResult.success : NightResult.failure,
-      t,
-    );
+    _end(state, night, _resultOf(night), t);
     return QuizOutcome.right(
       wrongPicks: wrong,
       word: word,
@@ -501,13 +585,16 @@ class Engine {
   }
 
   /// Alarm [alarmId] was turned off with the plain dismiss button. On a
-  /// wake-up alarm after a night without a word, that ends the night.
+  /// wake-up alarm that ends the night: as up after the "I'm awake" quiz,
+  /// or after a night without a word.
   void dismiss(int alarmId) {
     final t = _now;
     final state = _load(t);
     state.alarmSnoozes.remove(alarmId);
     final night = state.night;
-    if (night != null && night.word == null && _isWakeUp(alarmId)) {
+    if (night != null && _isWakeUp(alarmId) && night.awake != null) {
+      _end(state, night, _resultOf(night), t);
+    } else if (night != null && night.word == null && _isWakeUp(alarmId)) {
       _end(state, night, NightResult.noWord, t);
     } else {
       _save(state);
@@ -516,7 +603,8 @@ class Engine {
 
   /// Alarm [alarmId] rang unanswered until its timeout. When no other
   /// wake-up alarm of the morning is left, the night ends: missed, or a
-  /// failure when a wrong word was already picked.
+  /// failure when a wrong word was already picked; after the "I'm awake"
+  /// quiz with its result, up when the first ring started.
   void timeout(int alarmId, {DateTime? at}) {
     final t = at ?? _now;
     final state = _load(t);
@@ -530,6 +618,10 @@ class Engine {
       exceptAlarmId: alarmId,
     );
     if (night != null && _isWakeUp(alarmId) && !otherSnoozed && !laterToday) {
+      // The quiz page showed the result and any hint already.
+      if (night.awake != null) {
+        return _end(state, night, _resultOf(night), night.firstRing ?? t);
+      }
       final failed = night.wrongPicks.isNotEmpty;
       _end(state, night, failed ? NightResult.failure : NightResult.missed, t);
       // No page follows a timeout: a due hint waits for the main screen.
@@ -588,20 +680,25 @@ class Engine {
     NightResult result,
     DateTime t,
   ) {
-    store.addRecord(
+    store.addRecord(_record(night, result, t));
+    state.night = null;
+    _save(state);
+  }
+
+  /// What [night] records when it ends at [t].
+  NightRecord _record(OpenNight night, NightResult result, DateTime t) =>
       NightRecord(
         plannedBedtime: night.plannedBedtime,
         bedtime: night.effectiveBedtime,
-        bedtimeAssumed: !night.confirmed,
+        bedtimeAssumed: night.bedtime == null,
+        asleep: night.effectiveAsleep,
+        asleepAssumed: night.asleep == null,
+        awake: night.awake,
         end: t,
         result: result,
         word: night.word,
         wrongPicks: night.wrongPicks.length,
-      ),
-    );
-    state.night = null;
-    _save(state);
-  }
+      );
 
   Morning? _nextMorning(EngineState state, DateTime t) => nextMorning(
     t,

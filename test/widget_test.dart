@@ -99,30 +99,54 @@ void main() {
     expect(find.text('Step 1 of 5'), findsOneWidget);
   });
 
-  testWidgets('"I\'m in bed" appears three hours before bedtime', (
-    tester,
-  ) async {
+  testWidgets('"I\'m in bed" gives no word; the word comes from its own '
+      'button', (tester) async {
     setupDone();
-    now = DateTime(2026, 10, 5, 19, 30);
+    now = DateTime(2026, 10, 5, 16, 30);
     final c = controller();
     await tester.pumpWidget(ChaosAlertApp(controller: c));
     await tester.pumpAndSettle();
+    expect(find.text('Show the word'), findsNothing);
     await tester.tap(find.text("I'm in bed"));
+    await tester.pumpAndSettle();
+    expect(find.text('Remember this word:'), findsNothing);
+    expect(find.text("I'm in bed"), findsNothing);
+    // The nag still comes at the planned bedtime.
+    expect(find.text('Bedtime Mon 10:30 PM'), findsOneWidget);
+    await tester.tap(find.text('Show the word'));
     await tester.pumpAndSettle();
     expect(find.text('Remember this word:'), findsOneWidget);
     await tester.tap(find.text('Good night'));
     await tester.pumpAndSettle();
-    expect(find.text("I'm in bed"), findsNothing);
+    expect(find.text('Show the word'), findsNothing);
     expect(find.text('Bedtime Tue 10:30 PM'), findsOneWidget);
   });
 
-  testWidgets('"I\'m awake" shows up an hour before the alarm', (tester) async {
+  testWidgets('once in bed, the nag asks for the word', (tester) async {
     setupDone();
-    now = DateTime(2026, 10, 6, 5, 29);
+    now = DateTime(2026, 10, 5, 21);
+    final c = controller();
+    await c.inBed();
+    platform.initial = const NagLaunch();
+    now = DateTime(2026, 10, 5, 22, 30);
+    platform.events.add(NagFired(now));
+    await tester.pumpWidget(ChaosAlertApp(controller: c));
+    await tester.pumpAndSettle();
+    expect(find.text('Want the word now?'), findsOneWidget);
+    await tester.tap(find.text('Yes'));
+    await tester.pumpAndSettle();
+    expect(find.text('Remember this word:'), findsOneWidget);
+  });
+
+  testWidgets('"I\'m awake" shows up six hours before the alarm', (
+    tester,
+  ) async {
+    setupDone();
+    now = DateTime(2026, 10, 6, 0, 29);
     await tester.pumpWidget(ChaosAlertApp(controller: controller()));
     await tester.pumpAndSettle();
     expect(find.text("I'm awake"), findsNothing);
-    now = DateTime(2026, 10, 6, 5, 30);
+    now = DateTime(2026, 10, 6, 0, 30);
     await tester.pump(const Duration(minutes: 1));
     expect(find.text("I'm awake"), findsOneWidget);
     await tester.tap(find.text("I'm awake"));
@@ -132,11 +156,11 @@ void main() {
 
   testWidgets('the button shows up as the window opens', (tester) async {
     setupDone();
-    now = DateTime(2026, 10, 5, 19, 29);
+    now = DateTime(2026, 10, 5, 16, 29);
     await tester.pumpWidget(ChaosAlertApp(controller: controller()));
     await tester.pumpAndSettle();
     expect(find.text("I'm in bed"), findsNothing);
-    now = DateTime(2026, 10, 5, 19, 30);
+    now = DateTime(2026, 10, 5, 16, 30);
     await tester.pump(const Duration(minutes: 1));
     expect(find.text("I'm in bed"), findsOneWidget);
   });

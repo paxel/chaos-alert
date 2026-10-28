@@ -7,7 +7,15 @@ An Android app that nags its user to bed, gives them a word to remember for the 
 ### Nights
 
 **Night**:
-The time from bedtime to the end of the night; it belongs to exactly one morning.
+The time from bedtime (in bed) to up; it belongs to exactly one morning.
+
+**Time in bed**:
+The part of a night from bedtime to up.
+_Avoid_: night length
+
+**Supposed sleep**:
+The part of a night from asleep to awake; the time in bed minus the time lying awake at either end.
+_Avoid_: sleep time, actual sleep
 _Avoid_: sleep, session
 
 **Morning**:
@@ -15,15 +23,27 @@ The calendar day a night ends in, whatever the clock time of its wake-up alarm.
 _Avoid_: wake day, day
 
 **Bedtime**:
-The moment a night started, either confirmed or assumed.
-_Avoid_: actual bedtime, time to bed
+The moment a night started, the user in bed, either confirmed or assumed.
+_Avoid_: actual bedtime, time to bed, in bed time
+
+**Asleep**:
+The moment the word was shown, the start of the supposed sleep; assumed from the last unanswered nag, never before the bedtime, when the word was never fetched.
+_Avoid_: sleep start, word time
+
+**Awake**:
+The moment the quiz was answered, the end of the supposed sleep.
+_Avoid_: wake time
+
+**Up**:
+The moment a night ended: the wake-up alarm turned off, "I'm up", or after an early quiz the first ring of an alarm that timed out.
+_Avoid_: end of night, getting up time
 
 **Planned bedtime**:
 The morning's earliest wake-up alarm minus the sleep length; when the nag first appears.
 _Avoid_: bedtime (for the plan), target bedtime
 
 **Nag**:
-One full-screen popup asking whether the user is in bed, answered with Yes or a snooze; every snooze leads to a new nag.
+One full-screen popup asking whether the user is in bed, or once in bed whether they want the word now, answered with Yes or a snooze; every snooze leads to a new nag.
 _Avoid_: popup, bedtime reminder, nag (for the whole evening)
 
 **Nag line**:
@@ -31,23 +51,27 @@ One message on a nag that argues, threatens or jokes the user into going to bed.
 _Avoid_: nag (for the message), quote, tip
 
 **Confirmed bedtime**:
-A bedtime the user gave by answering Yes to the nag or tapping "I'm in bed".
+A bedtime the user gave by tapping "I'm in bed" or answering Yes to the nag.
 
 **Assumed bedtime**:
 A bedtime taken from the last nag nobody answered.
 _Avoid_: estimated bedtime, guessed bedtime
 
 **I'm in bed**:
-Confirming the bedtime early, in the 3 hours before the planned bedtime; it cancels that evening's nags.
+Confirming the bedtime early, in the 6 hours before the planned bedtime, without the word; the nag still comes and asks for the word, which the main screen also offers.
 _Avoid_: early bedtime, going to bed early
 
 **I'm awake**:
-Taking the quiz early, in the hour before the morning's first wake-up alarm; the right word turns off that morning's wake-up alarms.
+Taking the quiz early, in the 6 hours before the morning's first wake-up alarm; the right word marks awake, and the wake-up alarm then rings with a plain dismiss that marks up.
 _Avoid_: early wake-up, awake quiz
 
 **I'm awake notice**:
-The silent notification that offers I'm awake.
+The silent notification that offers I'm awake, in the hour before the morning's first wake-up alarm.
 _Avoid_: awake notification, awake reminder
+
+**I'm up**:
+Ending the night after the I'm awake quiz; it marks up and turns off the rest of that morning's wake-up alarms.
+_Avoid_: getting up, out of bed
 
 ### Alarms
 
@@ -76,7 +100,7 @@ An alarm with the wake-up switch off; it rings with a plain dismiss and never to
 _Avoid_: plain alarm, daytime alarm, non-wake-up alarm
 
 **Plain dismiss**:
-Turning off a ring with one button and no quiz, whenever no quiz is due: reminder alarms, vacation mornings, nights without a word, and later alarms of an already answered morning.
+Turning off a ring with one button and no quiz, whenever no quiz is due: reminder alarms, vacation mornings, nights without a word, mornings whose quiz was taken with I'm awake, and later alarms of an already answered morning.
 _Avoid_: simple stop
 
 **Vacation**:
@@ -124,7 +148,7 @@ A night whose quiz had at least one wrong pick.
 _Avoid_: miss, failed night
 
 **Missed**:
-A night on which every wake-up alarm of the morning timed out unanswered.
+A night on which every wake-up alarm of the morning timed out unanswered, without the quiz taken with I'm awake before.
 _Avoid_: failure, no answer
 
 **Success**:

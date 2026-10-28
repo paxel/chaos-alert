@@ -109,11 +109,34 @@ void contract(String name, Store Function() open) {
       expect(back.result, NightResult.failure);
       expect(back.wrongPicks, 2);
       expect(back.word, 'lantern');
+      expect(back.asleep, isNull);
+      expect(back.awake, isNull);
+
+      store.addRecord(
+        NightRecord(
+          plannedBedtime: DateTime(2026, 10, 5, 22, 30),
+          bedtime: DateTime(2026, 10, 5, 21),
+          bedtimeAssumed: false,
+          asleep: DateTime(2026, 10, 5, 22, 40),
+          asleepAssumed: true,
+          awake: DateTime(2026, 10, 6, 5, 10),
+          end: DateTime(2026, 10, 6, 6, 31),
+          result: NightResult.success,
+        ),
+      );
+      final split = store.loadRecords().last;
+      expect(split.asleep, DateTime(2026, 10, 5, 22, 40));
+      expect(split.asleepAssumed, isTrue);
+      expect(split.awake, DateTime(2026, 10, 6, 5, 10));
 
       final state = EngineState(
         night: OpenNight(
           plannedBedtime: DateTime(2026, 10, 5, 22, 30),
           lastNag: DateTime(2026, 10, 5, 22, 30),
+          bedtime: DateTime(2026, 10, 5, 21),
+          asleep: DateTime(2026, 10, 5, 22, 50),
+          awake: DateTime(2026, 10, 6, 5, 10),
+          firstRing: DateTime(2026, 10, 6, 6, 30),
           nagSnoozedUntil: DateTime(2026, 10, 5, 22, 40),
           options: ['a', 'b', 'c', 'd'],
           rounds: [
@@ -134,7 +157,10 @@ void contract(String name, Store Function() open) {
       store.saveState(state);
       final s = store.loadState();
       expect(s.night!.nagSnoozedUntil, DateTime(2026, 10, 5, 22, 40));
-      expect(s.night!.confirmed, isFalse);
+      expect(s.night!.bedtime, DateTime(2026, 10, 5, 21));
+      expect(s.night!.asleep, DateTime(2026, 10, 5, 22, 50));
+      expect(s.night!.awake, DateTime(2026, 10, 6, 5, 10));
+      expect(s.night!.firstRing, DateTime(2026, 10, 6, 6, 30));
       expect(s.night!.options, ['a', 'b', 'c', 'd']);
       expect(s.night!.rounds, [
         ['a', 'b', 'c', 'd'],
@@ -159,6 +185,21 @@ void contract(String name, Store Function() open) {
       });
       expect(old.rounds, isNull);
       expect(old.solved, 0);
+      // A night saved before asleep was kept apart: the word came with the
+      // bedtime.
+      final worded = OpenNight.fromJson({
+        'plannedBedtime': '2026-10-05T22:30:00.000',
+        'bedtime': '2026-10-05T22:45:00.000',
+        'word': 'lantern',
+      });
+      expect(worded.asleep, DateTime(2026, 10, 5, 22, 45));
+      expect(
+        OpenNight.fromJson({
+          'plannedBedtime': '2026-10-05T22:30:00.000',
+          'bedtime': '2026-10-05T22:45:00.000',
+        }).asleep,
+        isNull,
+      );
     });
   });
 }
@@ -198,6 +239,45 @@ void main() {
     final night = store.loadRecords().single;
     expect(night.word, 'lantern');
     expect(night.wrongPicks, 0);
+  });
+
+  test('a database from 0.7.0 keeps its nights, asleep and awake '
+      'unset', () {
+    final dir = Directory.systemTemp.createTempSync('chaos_migrate3');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final path = '${dir.path}/chaos.db';
+    // The 0.7.0 schema, with one night in it.
+    final old = sqlite3.open(path)
+      ..execute('''
+        create table kv (key text primary key, value text not null);
+        create table alarms (id integer primary key autoincrement,
+          hour integer not null, minute integer not null,
+          weekdays integer not null, date text, enabled integer not null,
+          wake_up integer not null);
+        create table vacations (id integer primary key autoincrement,
+          from_day text not null, to_day text not null);
+        create table nights (id integer primary key autoincrement,
+          planned_bedtime text not null, bedtime text not null,
+          bedtime_assumed integer not null, end_time text not null,
+          result text not null, word text,
+          wrong_picks integer not null default 0);
+        insert into nights (planned_bedtime, bedtime, bedtime_assumed,
+          end_time, result, word, wrong_picks) values
+          ('2026-10-01T22:30:00.000', '2026-10-01T22:40:00.000', 0,
+          '2026-10-02T06:30:00.000', 'failure', 'lantern', 2);
+      ''')
+      ..userVersion = 2;
+    old.close();
+
+    final store = SqliteStore.open(path);
+    addTearDown(store.close);
+    final night = store.loadRecords().single;
+    expect(night.wrongPicks, 2);
+    expect(night.asleep, isNull);
+    expect(night.asleepAssumed, isFalse);
+    expect(night.awake, isNull);
+    expect(night.asleepAt, DateTime(2026, 10, 1, 22, 40));
+    expect(night.awakeAt, DateTime(2026, 10, 2, 6, 30));
   });
 
   test('the old "Easier quiz" switch carries over to the quiz form', () {
@@ -260,7 +340,7 @@ void main() {
       words: words,
       clock: () => now,
       random: Random(1),
-    ).inBed()!;
+    ).wordNow()!;
     store.close();
 
     store = SqliteStore.open(path);

@@ -19,6 +19,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nagYes => 'Yes';
 
   @override
+  String get nagWordQuestion => 'Want the word now?';
+
+  @override
   String nagSnooze(int minutes) {
     return 'Snooze $minutes min';
   }
@@ -319,6 +322,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String timelineAverageAsleep(String value) {
+    return 'Average asleep: $value';
+  }
+
+  @override
   String timelineAverageBedtime(String value) {
     return 'Average bedtime: $value';
   }
@@ -328,6 +336,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeInBed => 'I\'m in bed';
+
+  @override
+  String get homeWordNow => 'Show the word';
 
   @override
   String homeBedtime(String time) {
@@ -500,4 +511,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get homeAwake => 'I\'m awake';
+
+  @override
+  String get homeUp => 'I\'m up';
 }

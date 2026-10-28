@@ -244,7 +244,7 @@ void main() {
   test('turning a ring off stops the sound', () async {
     final a = await addAlarm();
     now = DateTime(2026, 10, 5, 22, 30);
-    final word = (await c.inBed())!;
+    final word = (await c.wordNow())!;
     // Tonight's nag is done; next Monday's comes next.
     expect(platform.nag, DateTime(2026, 10, 12, 22, 30));
     now = DateTime(2026, 10, 6, 6, 30);
@@ -267,7 +267,7 @@ void main() {
     await c.saveSettings(const Settings());
     final a = await addAlarm();
     now = DateTime(2026, 10, 5, 22, 30);
-    final word = (await c.inBed())!;
+    final word = (await c.wordNow())!;
     now = DateTime(2026, 10, 6, 6, 30);
     platform.events.add(RingStarted(a.id, now));
     await c.refresh();
@@ -318,18 +318,50 @@ void main() {
   test("answering I'm awake clears the notice", () async {
     await addAlarm();
     now = DateTime(2026, 10, 5, 22, 30);
-    final word = (await c.inBed())!;
+    final word = (await c.wordNow())!;
     now = DateTime(2026, 10, 6, 5, 45);
     await c.awakeAnswer(word);
     expect(platform.awakeCleared, 1);
     expect(platform.awake.first.until, DateTime(2026, 10, 13, 6, 30));
   });
 
+  test("I'm up after the quiz ends the night and drops the morning's "
+      'alarm', () async {
+    await addAlarm();
+    now = DateTime(2026, 10, 5, 22, 30);
+    final word = (await c.wordNow())!;
+    now = DateTime(2026, 10, 6, 5, 45);
+    expect(c.canSayUp, isFalse);
+    await c.awakeAnswer(word);
+    expect(c.canSayUp, isTrue);
+    expect(c.canSayAwake, isFalse);
+    now = DateTime(2026, 10, 6, 6);
+    await c.up();
+    expect(c.canSayUp, isFalse);
+    expect(c.nights.single.end, DateTime(2026, 10, 6, 6));
+    expect(
+      platform.rings.where((r) => r.at == DateTime(2026, 10, 6, 6, 30)),
+      isEmpty,
+    );
+  });
+
+  test("I'm in bed opens the word button", () async {
+    await addAlarm();
+    now = DateTime(2026, 10, 5, 18);
+    expect(c.canFetchWord, isFalse);
+    expect(await c.inBed(), isTrue);
+    expect(c.canSayInBed, isFalse);
+    expect(c.canFetchWord, isTrue);
+    expect(platform.nags.first, DateTime(2026, 10, 5, 22, 30));
+    await c.wordNow();
+    expect(c.canFetchWord, isFalse);
+  });
+
   test("a right letter quiz round on I'm awake keeps the notice", () async {
     await c.saveSettings(const Settings());
     await addAlarm();
     now = DateTime(2026, 10, 5, 22, 30);
-    final word = (await c.inBed())!;
+    final word = (await c.wordNow())!;
     now = DateTime(2026, 10, 6, 5, 45);
     await c.awakeAnswer(word.substring(0, 1));
     expect(platform.awakeCleared, 0);
@@ -383,10 +415,13 @@ void main() {
     });
   });
 
-  test('"I\'m in bed" outside bedtime gives no word and logs it', () async {
+  test('"I\'m in bed" and the word outside bedtime count for nothing and '
+      'log it', () async {
     await addAlarm();
-    expect(await c.inBed(), isNull);
+    expect(await c.inBed(), isFalse);
     expect(platform.logged, contains('app: in bed ignored'));
+    expect(await c.wordNow(), isNull);
+    expect(platform.logged, contains('app: word ignored'));
   });
 }
 

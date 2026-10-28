@@ -168,6 +168,9 @@ class _TimelineScreenState extends State<TimelineScreen> {
               t.timelineAverageInBed(durationText(t, summary.averageInBed!)),
             ),
             Text(
+              t.timelineAverageAsleep(durationText(t, summary.averageAsleep!)),
+            ),
+            Text(
               t.timelineAverageBedtime(
                 clockText(context, summary.averageBedtime!),
               ),
@@ -228,9 +231,9 @@ class _AxisLabels extends StatelessWidget {
   }
 }
 
-/// The bar of one night on a black row: coloured by its result, hatched at
-/// the start when the bedtime was assumed, with a tick at the planned
-/// bedtime and the period's reference lines across it.
+/// The bar of one night on a black row: coloured by its result, dimmed where
+/// the user lay awake in bed, hatched at an assumed in bed or asleep, with a
+/// tick at the planned bedtime and the period's reference lines across it.
 class NightBar extends StatelessWidget {
   const NightBar({
     super.key,
@@ -249,6 +252,44 @@ class NightBar extends StatelessWidget {
   );
 }
 
+/// One stretch of a night's bar, from [start] to [end] on the axis, 0 to 1:
+/// asleep, or awake in bed when [awake].
+class BarPart {
+  const BarPart(this.start, this.end, {this.awake = false});
+
+  final double start;
+  final double end;
+  final bool awake;
+
+  @override
+  bool operator ==(Object other) =>
+      other is BarPart &&
+      other.start == start &&
+      other.end == end &&
+      other.awake == awake;
+
+  @override
+  int get hashCode => Object.hash(start, end, awake);
+
+  @override
+  String toString() => 'BarPart($start, $end, awake: $awake)';
+}
+
+/// The stretches of [record]'s bar: awake in bed from in bed to asleep,
+/// asleep to awake, awake in bed again until up; empty stretches left out.
+List<BarPart> barParts(TimeAxis axis, DateTime morning, NightRecord record) {
+  double at(DateTime t) => axis.position(morning, t);
+  final bed = at(record.bedtime);
+  final asleep = at(record.asleepAt);
+  final awake = at(record.awakeAt);
+  final up = at(record.end);
+  return [
+    if (asleep > bed) BarPart(bed, asleep, awake: true),
+    BarPart(asleep, awake),
+    if (up > awake) BarPart(awake, up, awake: true),
+  ];
+}
+
 class _NightPainter extends CustomPainter {
   _NightPainter({
     required this.morning,
@@ -265,11 +306,27 @@ class _NightPainter extends CustomPainter {
     canvas.drawRect(Offset.zero & size, Paint()..color = Colors.black);
     final r = record;
     if (r == null) return;
-    final left = axis.position(morning, r.bedtime) * size.width;
+    final color = nightColor(r);
+    for (final part in barParts(axis, morning, r)) {
+      canvas.drawRect(
+        Rect.fromLTRB(
+          part.start * size.width,
+          0,
+          part.end * size.width,
+          size.height,
+        ),
+        Paint()..color = part.awake ? color.withValues(alpha: 1 / 3) : color,
+      );
+    }
     final right = axis.position(morning, r.end) * size.width;
-    final bar = Rect.fromLTRB(left, 0, right, size.height);
-    canvas.drawRect(bar, Paint()..color = nightColor(r));
-    if (r.bedtimeAssumed) {
+    // The hatch marks the first assumed moment: in bed, else asleep.
+    final assumed = r.bedtimeAssumed
+        ? r.bedtime
+        : r.asleepAssumed
+        ? r.asleepAt
+        : null;
+    if (assumed != null) {
+      final left = axis.position(morning, assumed) * size.width;
       final hatch = Rect.fromLTRB(
         left,
         0,

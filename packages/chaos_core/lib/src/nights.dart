@@ -16,7 +16,8 @@ enum NightResult {
   missed,
 }
 
-/// One observed night, from bedtime to the end of the night.
+/// One observed night, from bedtime (in bed) to the end of the night (up),
+/// with the supposed sleep from asleep to awake inside it.
 class NightRecord {
   const NightRecord({
     required this.plannedBedtime,
@@ -26,6 +27,9 @@ class NightRecord {
     required this.result,
     this.word,
     this.wrongPicks = 0,
+    this.asleep,
+    this.asleepAssumed = false,
+    this.awake,
   });
 
   /// The bedtime the nag was planned for.
@@ -37,8 +41,9 @@ class NightRecord {
   /// Whether [bedtime] comes from an unanswered nag rather than a Yes.
   final bool bedtimeAssumed;
 
-  /// When the first answered wake-up alarm was turned off, or the last
-  /// timeout of a missed morning.
+  /// When the night ended (up): the answered or dismissed wake-up alarm,
+  /// "I'm up", the first ring after an early quiz that timed out, or the
+  /// last timeout of a missed morning.
   final DateTime end;
   final NightResult result;
   final String? word;
@@ -46,10 +51,31 @@ class NightRecord {
   /// How many wrong words were picked, 0 to 3; how bad a failure was.
   final int wrongPicks;
 
+  /// When the word was shown, or assumed from the last unanswered nag;
+  /// null on nights recorded before asleep was kept apart from [bedtime].
+  final DateTime? asleep;
+
+  /// Whether [asleep] comes from an unanswered nag rather than the word.
+  final bool asleepAssumed;
+
+  /// When the quiz was taken early with "I'm awake"; null when awake and
+  /// up were the same moment.
+  final DateTime? awake;
+
   /// The morning this night belongs to.
   DateTime get morning => dateOf(end);
 
+  /// When the supposed sleep started.
+  DateTime get asleepAt => asleep ?? bedtime;
+
+  /// When the supposed sleep ended.
+  DateTime get awakeAt => awake ?? end;
+
+  /// The time in bed, from in bed to up.
   Duration get inBed => end.difference(bedtime);
+
+  /// The supposed sleep, from asleep to awake.
+  Duration get asleepFor => awakeAt.difference(asleepAt);
 }
 
 /// How many results the strip on the failure page shows.
@@ -113,13 +139,17 @@ class QuizStats {
 
 /// The averages of a timeline period.
 class TimelineSummary {
-  const TimelineSummary({this.averageInBed, this.averageBedtime});
+  const TimelineSummary({
+    this.averageInBed,
+    this.averageAsleep,
+    this.averageBedtime,
+  });
 
   factory TimelineSummary.of(Iterable<NightRecord> records) {
     final list = records.toList();
     if (list.isEmpty) return const TimelineSummary();
-    final inBed =
-        list.fold(Duration.zero, (sum, r) => sum + r.inBed) ~/ list.length;
+    Duration average(Duration Function(NightRecord) of) =>
+        list.fold(Duration.zero, (sum, r) => sum + of(r)) ~/ list.length;
     // Bedtimes around midnight average on a clock that starts at noon, so
     // 23:00 and 01:00 give midnight, not noon.
     final fromNoon =
@@ -129,11 +159,13 @@ class TimelineSummary {
         list.length;
     final minutes = (fromNoon + 720) % 1440;
     return TimelineSummary(
-      averageInBed: inBed,
+      averageInBed: average((r) => r.inBed),
+      averageAsleep: average((r) => r.asleepFor),
       averageBedtime: ClockTime(minutes ~/ 60, minutes % 60),
     );
   }
 
   final Duration? averageInBed;
+  final Duration? averageAsleep;
   final ClockTime? averageBedtime;
 }

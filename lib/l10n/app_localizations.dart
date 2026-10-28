@@ -112,6 +112,12 @@ abstract class AppLocalizations {
   /// **'Yes'**
   String get nagYes;
 
+  /// No description provided for @nagWordQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Want the word now?'**
+  String get nagWordQuestion;
+
   /// No description provided for @nagSnooze.
   ///
   /// In en, this message translates to:
@@ -634,6 +640,12 @@ abstract class AppLocalizations {
   /// **'Average in bed: {value}'**
   String timelineAverageInBed(String value);
 
+  /// No description provided for @timelineAverageAsleep.
+  ///
+  /// In en, this message translates to:
+  /// **'Average asleep: {value}'**
+  String timelineAverageAsleep(String value);
+
   /// No description provided for @timelineAverageBedtime.
   ///
   /// In en, this message translates to:
@@ -651,6 +663,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'I\'m in bed'**
   String get homeInBed;
+
+  /// No description provided for @homeWordNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the word'**
+  String get homeWordNow;
 
   /// No description provided for @homeBedtime.
   ///
@@ -939,6 +957,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'I\'m awake'**
   String get homeAwake;
+
+  /// No description provided for @homeUp.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m up'**
+  String get homeUp;
 }
 
 class _AppLocalizationsDelegate

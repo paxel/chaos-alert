@@ -8,6 +8,9 @@ class OpenNight {
     this.expectedWake,
     this.lastNag,
     this.bedtime,
+    this.asleep,
+    this.awake,
+    this.firstRing,
     this.word,
     this.nagSnoozedUntil,
     this.options,
@@ -23,6 +26,12 @@ class OpenNight {
     expectedWake: _time(json['expectedWake']),
     lastNag: _time(json['lastNag']),
     bedtime: _time(json['bedtime']),
+    // Before asleep was kept apart, the word came with the bedtime.
+    asleep:
+        _time(json['asleep']) ??
+        (json['word'] == null ? null : _time(json['bedtime'])),
+    awake: _time(json['awake']),
+    firstRing: _time(json['firstRing']),
     word: json['word'] as String?,
     nagSnoozedUntil: _time(json['nagSnoozedUntil']),
     options: (json['options'] as List?)?.cast<String>().toList(),
@@ -46,7 +55,18 @@ class OpenNight {
   /// When the user said they were in bed; null until then.
   DateTime? bedtime;
 
-  /// The word shown at [bedtime].
+  /// When the word was shown; null until then.
+  DateTime? asleep;
+
+  /// When the quiz was answered with "I'm awake"; the night then waits for
+  /// up.
+  DateTime? awake;
+
+  /// After [awake]: when the morning's first wake-up alarm started ringing,
+  /// up for a morning that timed out.
+  DateTime? firstRing;
+
+  /// The word shown at [asleep].
   String? word;
 
   /// When the snoozed nag comes back.
@@ -73,16 +93,27 @@ class OpenNight {
   /// The line on the nag last shown, kept while that nag shows again.
   String? nagLine;
 
-  bool get confirmed => bedtime != null;
-
   /// The bedtime the night records: confirmed, else the last nag.
   DateTime get effectiveBedtime => bedtime ?? lastNag ?? plannedBedtime;
+
+  /// The asleep the night records: the word, else the last nag, but never
+  /// before the bedtime.
+  DateTime get effectiveAsleep {
+    final asleep = this.asleep;
+    if (asleep != null) return asleep;
+    final nag = lastNag;
+    final bed = effectiveBedtime;
+    return nag != null && nag.isAfter(bed) ? nag : bed;
+  }
 
   Map<String, Object?> toJson() => {
     'plannedBedtime': plannedBedtime.toIso8601String(),
     'expectedWake': expectedWake?.toIso8601String(),
     'lastNag': lastNag?.toIso8601String(),
     'bedtime': bedtime?.toIso8601String(),
+    'asleep': asleep?.toIso8601String(),
+    'awake': awake?.toIso8601String(),
+    'firstRing': firstRing?.toIso8601String(),
     'word': word,
     'nagSnoozedUntil': nagSnoozedUntil?.toIso8601String(),
     'options': options,

@@ -3,6 +3,7 @@
   "appTitle": "chaos-alert",
   "nagQuestion": "Are you in bed?",
   "nagYes": "Yes",
+  "nagWordQuestion": "Want the word now?",
   "nagSnooze": "Snooze {minutes} min",
   "@nagSnooze": {
     "placeholders": {
@@ -157,6 +158,14 @@
       }
     }
   },
+  "timelineAverageAsleep": "Average asleep: {value}",
+  "@timelineAverageAsleep": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "timelineAverageBedtime": "Average bedtime: {value}",
   "@timelineAverageBedtime": {
     "placeholders": {
@@ -167,6 +176,7 @@
   },
   "timelineEmpty": "No nights in this period.",
   "homeInBed": "I'm in bed",
+  "homeWordNow": "Show the word",
   "homeBedtime": "Bedtime {time}",
   "@homeBedtime": {
     "placeholders": {
@@ -269,5 +279,6 @@
   "hintDismiss": "OK",
   "notThisOne": "Not this one.",
   "awakeBack": "Back",
-  "homeAwake": "I'm awake"
+  "homeAwake": "I'm awake",
+  "homeUp": "I'm up"
 }

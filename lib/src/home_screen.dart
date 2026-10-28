@@ -13,8 +13,8 @@ import 'settings_screen.dart';
 import 'timeline_screen.dart';
 import 'vacation_screen.dart';
 
-/// The main screen: what comes next, "I'm in bed" when it is time, and the
-/// way to everything else.
+/// The main screen: what comes next, "I'm in bed" and the word, "I'm awake"
+/// and "I'm up" when it is time, and the way to everything else.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.controller});
 
@@ -45,8 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
       Navigator.of(context)
           .push(MaterialPageRoute<void>(builder: (_) => screen()));
 
-  Future<void> _inBed() async {
-    final word = await _c.inBed();
+  Future<void> _wordNow() async {
+    final word = await _c.wordNow();
     if (!mounted || word == null) return;
     _open(() => WordScreen(word: word));
   }
@@ -122,13 +122,31 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: Text(t.homeAwake),
                   ),
                 ),
+              if (_c.canSayUp)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 48),
+                  child: FilledButton.icon(
+                    onPressed: _c.up,
+                    icon: const Icon(Icons.directions_walk),
+                    label: Text(t.homeUp),
+                  ),
+                ),
               if (_c.canSayInBed)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 48),
                   child: FilledButton.icon(
-                    onPressed: _inBed,
+                    onPressed: _c.inBed,
                     icon: const Icon(Icons.bedtime),
                     label: Text(t.homeInBed),
+                  ),
+                ),
+              if (_c.canFetchWord)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 48),
+                  child: FilledButton.icon(
+                    onPressed: _wordNow,
+                    icon: const Icon(Icons.nights_stay),
+                    label: Text(t.homeWordNow),
                   ),
                 ),
               const SizedBox(height: 24),

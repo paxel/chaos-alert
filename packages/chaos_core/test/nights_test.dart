@@ -95,11 +95,38 @@ void main() {
       final summary = TimelineSummary.of(records);
       expect(summary.averageInBed, const Duration(hours: 7));
       expect(summary.averageBedtime, const ClockTime(0, 0));
+      // Older nights: asleep was their bedtime, awake their end.
+      expect(summary.averageAsleep, const Duration(hours: 7));
+    });
+
+    test('averages the supposed sleep apart from the time in bed', () {
+      final summary = TimelineSummary.of([
+        NightRecord(
+          plannedBedtime: DateTime(2026, 10, 4, 22, 30),
+          bedtime: DateTime(2026, 10, 4, 21),
+          bedtimeAssumed: false,
+          asleep: DateTime(2026, 10, 4, 23),
+          awake: DateTime(2026, 10, 5, 5),
+          end: DateTime(2026, 10, 5, 7),
+          result: s,
+        ),
+        NightRecord(
+          plannedBedtime: DateTime(2026, 10, 5, 22, 30),
+          bedtime: DateTime(2026, 10, 5, 23),
+          bedtimeAssumed: false,
+          end: DateTime(2026, 10, 6, 7),
+          result: s,
+        ),
+      ]);
+      expect(summary.averageInBed, const Duration(hours: 9));
+      expect(summary.averageAsleep, const Duration(hours: 7));
+      expect(summary.averageBedtime, const ClockTime(22, 0));
     });
 
     test('is empty without nights', () {
       final summary = TimelineSummary.of(const []);
       expect(summary.averageInBed, isNull);
+      expect(summary.averageAsleep, isNull);
       expect(summary.averageBedtime, isNull);
     });
   });

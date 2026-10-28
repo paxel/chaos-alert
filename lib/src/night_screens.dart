@@ -25,7 +25,8 @@ class NightFrame extends StatelessWidget {
   );
 }
 
-/// The bedtime nag: Yes, or Snooze for the default or a longer time.
+/// The bedtime nag: Yes, or Snooze for the default or a longer time. Once
+/// in bed, it asks for the word instead.
 class NagScreen extends StatefulWidget {
   const NagScreen({super.key, required this.controller});
 
@@ -37,7 +38,7 @@ class NagScreen extends StatefulWidget {
 
 class _NagScreenState extends State<NagScreen> {
   Future<void> _yes() async {
-    final word = await widget.controller.inBed();
+    final word = await widget.controller.wordNow();
     if (!mounted) return;
     // Outside bedtime nothing was recorded; the nag just closes.
     if (word == null) return Navigator.of(context).pop();
@@ -57,6 +58,7 @@ class _NagScreenState extends State<NagScreen> {
     final t = AppLocalizations.of(context);
     final standard = widget.controller.settings.nagSnooze;
     final line = widget.controller.nagLine;
+    final inBed = widget.controller.canFetchWord;
     return NightFrame(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -72,7 +74,7 @@ class _NagScreenState extends State<NagScreen> {
             const SizedBox(height: 32),
           ],
           Text(
-            t.nagQuestion,
+            inBed ? t.nagWordQuestion : t.nagQuestion,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineMedium
                 ?.copyWith(color: Colors.white70),
@@ -445,7 +447,8 @@ class BrokenTeeth extends StatelessWidget {
 
 /// "I'm awake": the night's quiz before the alarm, with Back instead of
 /// Snooze. A wrong word says so and the quiz goes on without it; the right
-/// one, or the plain turn-off, cancels the morning's wake-up alarms.
+/// one marks awake, and the alarm then rings with a plain dismiss. The
+/// plain turn-off without a word cancels the morning's wake-up alarms.
 class AwakeScreen extends StatefulWidget {
   const AwakeScreen({super.key, required this.controller});
 

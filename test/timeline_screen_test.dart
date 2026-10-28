@@ -141,6 +141,68 @@ void main() {
     });
   });
 
+  group('bar parts', () {
+    final morning = DateTime(2026, 10, 6);
+    // 21:00 to 07:00, ten hours.
+    const axis = TimeAxis(-180, 600);
+
+    test('an older night is one asleep stretch', () {
+      final parts = barParts(
+        axis,
+        morning,
+        NightRecord(
+          plannedBedtime: DateTime(2026, 10, 5, 21),
+          bedtime: DateTime(2026, 10, 5, 21),
+          bedtimeAssumed: false,
+          end: DateTime(2026, 10, 6, 7),
+          result: NightResult.success,
+        ),
+      );
+      expect(parts, const [BarPart(0, 1)]);
+    });
+
+    test('awake in bed at both ends is dimmed apart from the sleep', () {
+      final parts = barParts(
+        axis,
+        morning,
+        NightRecord(
+          plannedBedtime: DateTime(2026, 10, 5, 22),
+          bedtime: DateTime(2026, 10, 5, 21),
+          bedtimeAssumed: false,
+          asleep: DateTime(2026, 10, 5, 22),
+          awake: DateTime(2026, 10, 6, 5),
+          end: DateTime(2026, 10, 6, 7),
+          result: NightResult.success,
+        ),
+      );
+      expect(parts, const [
+        BarPart(0, 0.1, awake: true),
+        BarPart(0.1, 0.8),
+        BarPart(0.8, 1, awake: true),
+      ]);
+    });
+  });
+
+  testWidgets('the summary shows the average asleep apart from in bed', (
+    tester,
+  ) async {
+    store.addRecord(
+      NightRecord(
+        plannedBedtime: DateTime(2026, 10, 5, 22),
+        bedtime: DateTime(2026, 10, 5, 21),
+        bedtimeAssumed: false,
+        asleep: DateTime(2026, 10, 5, 22),
+        awake: DateTime(2026, 10, 6, 5),
+        end: DateTime(2026, 10, 6, 7),
+        result: NightResult.success,
+      ),
+    );
+    await pumpApp(tester);
+    expect(find.text('Average in bed: 10 h 0 min'), findsOneWidget);
+    expect(find.text('Average asleep: 7 h 0 min'), findsOneWidget);
+    expect(find.text('Average bedtime: 9:00 PM'), findsOneWidget);
+  });
+
   testWidgets('the top line shows only the start and the end', (tester) async {
     store.addRecord(
       NightRecord(

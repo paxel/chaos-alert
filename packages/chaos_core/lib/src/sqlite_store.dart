@@ -31,6 +31,15 @@ class SqliteStore implements Store {
       );
       _db.userVersion = 2;
     }
+    if (_db.userVersion < 3) {
+      // Older nights keep null: asleep was their bedtime, awake their end.
+      _db.execute('''
+        alter table nights add column asleep text;
+        alter table nights add column asleep_assumed integer not null default 0;
+        alter table nights add column awake text;
+      ''');
+      _db.userVersion = 3;
+    }
   }
 
   void _createTables() {
@@ -236,13 +245,17 @@ class SqliteStore implements Store {
         result: NightResult.values.byName(r['result'] as String),
         word: r['word'] as String?,
         wrongPicks: r['wrong_picks'] as int,
+        asleep: _parse(r['asleep']),
+        asleepAssumed: r['asleep_assumed'] == 1,
+        awake: _parse(r['awake']),
       ),
   ];
 
   @override
   void addRecord(NightRecord record) => _db.execute(
     'insert into nights (planned_bedtime, bedtime, bedtime_assumed, '
-    'end_time, result, word, wrong_picks) values (?, ?, ?, ?, ?, ?, ?)',
+    'end_time, result, word, wrong_picks, asleep, asleep_assumed, awake) '
+    'values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [
       record.plannedBedtime.toIso8601String(),
       record.bedtime.toIso8601String(),
@@ -251,6 +264,9 @@ class SqliteStore implements Store {
       record.result.name,
       record.word,
       record.wrongPicks,
+      record.asleep?.toIso8601String(),
+      record.asleepAssumed ? 1 : 0,
+      record.awake?.toIso8601String(),
     ],
   );
 
@@ -265,6 +281,11 @@ class SqliteStore implements Store {
   void saveState(EngineState state) =>
       _put('state', jsonEncode(state.toJson()));
 }
+
+DateTime? _parse(Object? value) => switch (value) {
+  final String s => DateTime.parse(s),
+  _ => null,
+};
 
 String _day(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-'

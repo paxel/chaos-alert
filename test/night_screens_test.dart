@@ -112,7 +112,7 @@ void main() {
     testWidgets('Yes on a nag left over after the bedtime was given closes '
         'without a new word', (tester) async {
       final s = Setup();
-      final word = (await s.controller.inBed())!;
+      final word = (await s.controller.wordNow())!;
       await s.open(tester, NagScreen(controller: s.controller));
       await tester.tap(find.text('Yes'));
       await tester.pumpAndSettle();
@@ -129,7 +129,7 @@ void main() {
 
   group('alarm', () {
     Future<String> sayInBed(Setup s) async {
-      final word = (await s.controller.inBed())!;
+      final word = (await s.controller.wordNow())!;
       s.now = DateTime(2026, 10, 6, 6, 30);
       return word;
     }
@@ -336,7 +336,7 @@ void main() {
 
   group('letter quiz', () {
     /// In bed Monday 22:30; returns the word.
-    Future<String> sayInBed(Setup s) async => (await s.controller.inBed())!;
+    Future<String> sayInBed(Setup s) async => (await s.controller.wordNow())!;
 
     /// Answers with the tile showing [letters]; the tap alone does it.
     Future<void> pick(WidgetTester tester, String letters) async {
@@ -426,7 +426,9 @@ void main() {
       await pick(tester, word.substring(0, 3));
       expect(s.platform.awakeCleared, 1);
       expect(find.text(word), findsOneWidget);
-      expect(s.store.loadRecords().single.result, NightResult.success);
+      // The night waits for up.
+      expect(s.store.loadRecords(), isEmpty);
+      expect(s.controller.canSayUp, isTrue);
     });
   });
 
@@ -440,7 +442,7 @@ void main() {
       tester,
     ) async {
       final s = Setup(quiz: QuizForm.brokenTeeth);
-      final word = (await s.controller.inBed())!;
+      final word = (await s.controller.wordNow())!;
       s.now = DateTime(2026, 10, 6, 6, 30);
       await s.open(
         tester,
@@ -488,15 +490,14 @@ void main() {
   group("I'm awake", () {
     /// In bed Monday 22:30, awake Tuesday 05:50 — inside the window.
     Future<String> awakeMorning(Setup s) async {
-      final word = (await s.controller.inBed())!;
+      final word = (await s.controller.wordNow())!;
       s.now = DateTime(2026, 10, 6, 5, 50);
       await s.controller.reschedule();
       return word;
     }
 
-    testWidgets('the right word ends the night and cancels the alarm', (
-      tester,
-    ) async {
+    testWidgets('the right word marks awake; the alarm still rings, with a '
+        'plain turn-off that marks up', (tester) async {
       final s = Setup();
       final word = await awakeMorning(s);
       await s.open(tester, AwakeScreen(controller: s.controller));
@@ -507,11 +508,24 @@ void main() {
       await tester.tap(find.text('OK'));
       await tester.pumpAndSettle();
       expect(find.text('home'), findsOneWidget);
-      expect(s.store.loadRecords().single.result, NightResult.success);
+      expect(s.store.loadRecords(), isEmpty);
       expect(
         s.platform.rings.where((r) => r.at == DateTime(2026, 10, 6, 6, 30)),
-        isEmpty,
+        isNotEmpty,
       );
+
+      s.now = DateTime(2026, 10, 6, 6, 30);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      expect(find.text('Which word did you see last night?'), findsNothing);
+      await tester.tap(find.text('Turn off'));
+      await tester.pumpAndSettle();
+      final night = s.store.loadRecords().single;
+      expect(night.result, NightResult.success);
+      expect(night.awake, DateTime(2026, 10, 6, 5, 50));
+      expect(night.end, DateTime(2026, 10, 6, 6, 30));
     });
 
     testWidgets('a wrong word says so and the quiz goes on without it', (

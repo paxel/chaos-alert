@@ -2,6 +2,21 @@
 
 Versions before the current one.
 
+## [0.7.0] - 2026-10-24
+
+### Added
+- A "Broken teeth" quiz: four words of the same length with the same letters missing.
+- A Sounds page in Settings with a switch for every sound source: alarm sounds, notification sounds, songs and generated sounds.
+- Generated sounds: random mixes of instruments, made new for every alarm and on from the start.
+- Folders of your own as sound sources, each with its own switch, subfolders included.
+
+### Changed
+- The "Easier quiz" switch in Settings is now a "Quiz" setting with three choices; the earlier choice is kept.
+- Songs leave out audiobooks, podcasts and anything over 20 minutes.
+
+### Fixed
+- An unanswered bedtime nag no longer shows up again after the morning alarm, and a second nag no longer piles up on the first.
+
 ## [0.6.0] - 2026-10-07
 
 ### Changed
