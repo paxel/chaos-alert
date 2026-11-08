@@ -20,8 +20,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - "I'm awake" stays on the main screen while the alarm is snoozed; the right word there ends the alarm at once.
 - A wrong pick on the ringing alarm no longer snoozes it: the quiz goes on without that option while the alarm keeps ringing.
 
+- The app's data no longer goes into Android's backup or a transfer to a new phone; a new phone or a reinstall starts empty.
+
 ### Fixed
 - Opening the app while an alarm rings, from its notification or its icon, shows the alarm's quiz at once instead of the main page.
+
+### Security
+- Other apps can no longer make the app re-arm its alarms; only the phone's own reboot, update, clock and time-zone broadcasts do.
 
 ---
 
