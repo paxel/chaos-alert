@@ -7,3 +7,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # CodeQL's init and analyze steps must run the same version, or the
+    # analysis fails: they move in one pull request.
+    groups:
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
