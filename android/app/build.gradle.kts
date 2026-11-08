@@ -64,6 +64,12 @@ android {
             }
         }
     }
+
+    // Android's classes in the unit tests return defaults instead of
+    // throwing, so a receiver can be handed an empty Intent.
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 kotlin {
