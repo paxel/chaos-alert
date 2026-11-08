@@ -418,6 +418,36 @@ abstract class AppLocalizations {
   /// **'One soft sound with the bedtime popup'**
   String get settingsChimeHint;
 
+  /// No description provided for @settingsWords.
+  ///
+  /// In en, this message translates to:
+  /// **'Words'**
+  String get settingsWords;
+
+  /// No description provided for @settingsWordsSimple.
+  ///
+  /// In en, this message translates to:
+  /// **'Simple'**
+  String get settingsWordsSimple;
+
+  /// No description provided for @settingsWordsSimpleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Common words, easier to picture and remember.'**
+  String get settingsWordsSimpleHint;
+
+  /// No description provided for @settingsWordsLessCommon.
+  ///
+  /// In en, this message translates to:
+  /// **'Less common'**
+  String get settingsWordsLessCommon;
+
+  /// No description provided for @settingsWordsLessCommonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Rarer words. The harder ones.'**
+  String get settingsWordsLessCommonHint;
+
   /// No description provided for @settingsQuiz.
   ///
   /// In en, this message translates to:
@@ -457,8 +487,56 @@ abstract class AppLocalizations {
   /// No description provided for @settingsQuizBrokenTeethHint.
   ///
   /// In en, this message translates to:
-  /// **'Four words with the same letters missing. The hardest.'**
+  /// **'Four words with the same letters missing.'**
   String get settingsQuizBrokenTeethHint;
+
+  /// No description provided for @settingsQuizTyping.
+  ///
+  /// In en, this message translates to:
+  /// **'Type it'**
+  String get settingsQuizTyping;
+
+  /// No description provided for @settingsQuizTypingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type the word in. Up to two typos pass, no second try. The hardest.'**
+  String get settingsQuizTypingHint;
+
+  /// No description provided for @ringTyping.
+  ///
+  /// In en, this message translates to:
+  /// **'Type last night\'s word'**
+  String get ringTyping;
+
+  /// No description provided for @typedRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get typedRight;
+
+  /// No description provided for @typedClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close enough'**
+  String get typedClose;
+
+  /// No description provided for @typedMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Not quite'**
+  String get typedMissed;
+
+  /// No description provided for @typedYours.
+  ///
+  /// In en, this message translates to:
+  /// **'You typed'**
+  String get typedYours;
+
+  /// No description provided for @resultTypedOff.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{One typo} other{{count} typos}}'**
+  String resultTypedOff(int count);
 
   /// No description provided for @settingsMusic.
   ///
@@ -796,6 +874,18 @@ abstract class AppLocalizations {
   /// **'Lets alarms play songs from your music library. Without it, only the phone\'s own sounds play.'**
   String get permMusicWhy;
 
+  /// No description provided for @permOverlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Display over other apps'**
+  String get permOverlay;
+
+  /// No description provided for @permOverlayWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets the alarm open its quiz by itself while you use the phone. Without it, the alarm still rings and shows as a notification.'**
+  String get permOverlayWhy;
+
   /// No description provided for @aboutAndFeedback.
   ///
   /// In en, this message translates to:
@@ -915,12 +1005,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OK'**
   String get ringConfirm;
-
-  /// No description provided for @ringWrong.
-  ///
-  /// In en, this message translates to:
-  /// **'Not this one.\nThe alarm rings again in {minutes} min.'**
-  String ringWrong(int minutes);
 
   /// No description provided for @summaryTitle.
   ///

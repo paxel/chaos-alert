@@ -139,7 +139,11 @@ void main() {
           wakeUp: false,
         ),
       )
-      ..saveState(store.loadState()..setupDone = true);
+      ..saveState(
+        store.loadState()
+          ..setupDone = true
+          ..overlayAsked = true,
+      );
     for (final r in _nights()) {
       store.addRecord(r);
     }

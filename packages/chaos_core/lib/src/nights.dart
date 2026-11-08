@@ -30,6 +30,7 @@ class NightRecord {
     this.asleep,
     this.asleepAssumed = false,
     this.awake,
+    this.typedOff,
   });
 
   /// The bedtime the nag was planned for.
@@ -50,6 +51,10 @@ class NightRecord {
 
   /// How many wrong words were picked, 0 to 3; how bad a failure was.
   final int wrongPicks;
+
+  /// On the typing quiz: how many typos the typed word had; null on the
+  /// other quizzes.
+  final int? typedOff;
 
   /// When the word was shown, or assumed from the last unanswered nag;
   /// null on nights recorded before asleep was kept apart from [bedtime].

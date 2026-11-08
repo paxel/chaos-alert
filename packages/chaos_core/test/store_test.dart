@@ -14,6 +14,7 @@ void contract(String name, Store Function() open) {
     test('settings start at their defaults and round-trip', () {
       expect(store.loadSettings().sleepLength, const Duration(hours: 8));
       expect(store.loadSettings().quiz, QuizForm.letters);
+      expect(store.loadSettings().words, WordList.lessCommon);
       store.saveSettings(
         const Settings(
           sleepLength: Duration(hours: 7, minutes: 30),
@@ -24,6 +25,7 @@ void contract(String name, Store Function() open) {
           mediumVolume: 0.7,
           chime: false,
           quiz: QuizForm.brokenTeeth,
+          words: WordList.simple,
           alarmSounds: false,
           notificationSounds: false,
           songs: false,
@@ -43,6 +45,7 @@ void contract(String name, Store Function() open) {
       expect(s.mediumVolume, 0.7);
       expect(s.chime, isFalse);
       expect(s.quiz, QuizForm.brokenTeeth);
+      expect(s.words, WordList.simple);
       expect(s.alarmSounds, isFalse);
       expect(s.notificationSounds, isFalse);
       expect(s.songs, isFalse);
@@ -122,12 +125,15 @@ void contract(String name, Store Function() open) {
           awake: DateTime(2026, 10, 6, 5, 10),
           end: DateTime(2026, 10, 6, 6, 31),
           result: NightResult.success,
+          typedOff: 1,
         ),
       );
       final split = store.loadRecords().last;
       expect(split.asleep, DateTime(2026, 10, 5, 22, 40));
       expect(split.asleepAssumed, isTrue);
       expect(split.awake, DateTime(2026, 10, 6, 5, 10));
+      expect(split.typedOff, 1);
+      expect(back.typedOff, isNull);
 
       final state = EngineState(
         night: OpenNight(
@@ -144,14 +150,18 @@ void contract(String name, Store Function() open) {
             ['ab', 'ac', 'ad', 'ae'],
           ],
           solved: 1,
+          typing: true,
+          typedOff: 3,
           wrongPicks: ['b'],
           nagLine: 'Go to bed.',
         ),
         alarmSnoozes: {3: DateTime(2026, 10, 6, 6, 39)},
         lastRing: {3: DateTime(2026, 10, 6, 6, 30)},
         deck: WordDeck(order: [2, 0, 1], cursor: 1),
+        simpleDeck: WordDeck(order: [0, 1], cursor: 1),
         lineDeck: WordDeck(order: [1, 0], cursor: 2),
         setupDone: true,
+        overlayAsked: true,
         pendingHint: true,
       );
       store.saveState(state);
@@ -167,17 +177,23 @@ void contract(String name, Store Function() open) {
         ['ab', 'ac', 'ad', 'ae'],
       ]);
       expect(s.night!.solved, 1);
+      expect(s.night!.typing, isTrue);
+      expect(s.night!.typedOff, 3);
       expect(s.night!.wrongPicks, ['b']);
       expect(s.alarmSnoozes, {3: DateTime(2026, 10, 6, 6, 39)});
       expect(s.lastRing, {3: DateTime(2026, 10, 6, 6, 30)});
       expect(s.deck.order, [2, 0, 1]);
       expect(s.deck.cursor, 1);
+      expect(s.simpleDeck.order, [0, 1]);
+      expect(s.simpleDeck.cursor, 1);
       expect(s.night!.nagLine, 'Go to bed.');
       expect(s.lineDeck.order, [1, 0]);
       expect(s.lineDeck.cursor, 2);
       expect(s.setupDone, isTrue);
+      expect(s.overlayAsked, isTrue);
       expect(s.pendingHint, isTrue);
       expect(EngineState().setupDone, isFalse);
+      expect(EngineState().overlayAsked, isFalse);
       // A night saved before the letter quiz has no rounds.
       final old = OpenNight.fromJson({
         'plannedBedtime': '2026-10-05T22:30:00.000',

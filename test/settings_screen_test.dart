@@ -36,7 +36,16 @@ void main() {
   );
 
   Future<void> tap(WidgetTester tester, String key) async {
-    await tester.ensureVisible(find.byKey(ValueKey(key)));
+    final row = find.byKey(ValueKey(key));
+    // A row scrolled far up is no longer built; drag back to it.
+    if (row.evaluate().isEmpty) {
+      await tester.dragUntilVisible(
+        row,
+        find.byType(ListView),
+        const Offset(0, 100),
+      );
+    }
+    await tester.ensureVisible(row);
     await tester.tap(find.byKey(ValueKey(key)));
     await tester.pumpAndSettle();
   }
@@ -109,6 +118,17 @@ void main() {
     expect(platform.chime, isFalse);
   });
 
+  testWidgets('the words are the less common ones until Simple is '
+      'picked', (tester) async {
+    await tester.pumpWidget(app());
+    await tester.scrollUntilVisible(find.text('Simple'), 200);
+    await tester.pumpAndSettle();
+    expect(store.loadSettings().words, WordList.lessCommon);
+    await tester.tap(find.text('Simple'));
+    await tester.pumpAndSettle();
+    expect(store.loadSettings().words, WordList.simple);
+  });
+
   testWidgets('the quiz is the letter quiz until another is picked', (
     tester,
   ) async {
@@ -123,6 +143,11 @@ void main() {
     await tester.tap(find.text('Whole word'));
     await tester.pumpAndSettle();
     expect(store.loadSettings().quiz, QuizForm.word);
+    await tester.scrollUntilVisible(find.text('Type it'), 200);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Type it'));
+    await tester.pumpAndSettle();
+    expect(store.loadSettings().quiz, QuizForm.typing);
   });
 
   testWidgets('the sounds row opens the sounds and warns when all are off', (

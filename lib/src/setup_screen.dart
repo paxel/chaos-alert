@@ -11,14 +11,21 @@ import 'platform.dart';
       Permission.fullScreen => (t.permFullScreen, t.permFullScreenWhy),
       Permission.battery => (t.permBattery, t.permBatteryWhy),
       Permission.music => (t.permMusic, t.permMusicWhy),
+      Permission.overlay => (t.permOverlay, t.permOverlayWhy),
     };
 
-/// Asks for each permission in turn: at first start, and from the banner
-/// whenever one goes missing.
+/// Asks for each of [steps] in turn: every permission at first start and
+/// from the banner whenever one goes missing, a step added by an update
+/// once on its own.
 class SetupScreen extends StatefulWidget {
-  const SetupScreen({super.key, required this.controller});
+  const SetupScreen({
+    super.key,
+    required this.controller,
+    this.steps = Permission.values,
+  });
 
   final Controller controller;
+  final List<Permission> steps;
 
   @override
   State<SetupScreen> createState() => _SetupScreenState();
@@ -30,7 +37,7 @@ class _SetupScreenState extends State<SetupScreen> {
   Controller get _c => widget.controller;
 
   void _next() {
-    if (_step < Permission.values.length - 1) {
+    if (_step < widget.steps.length - 1) {
       setState(() => _step++);
       return;
     }
@@ -41,9 +48,9 @@ class _SetupScreenState extends State<SetupScreen> {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-    final permission = Permission.values[_step];
+    final permission = widget.steps[_step];
     final (title, why) = permissionText(t, permission);
-    final last = _step == Permission.values.length - 1;
+    final last = _step == widget.steps.length - 1;
     return ListenableBuilder(
       listenable: _c,
       builder: (context, _) {
@@ -55,7 +62,7 @@ class _SetupScreenState extends State<SetupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(t.setupStep(_step + 1, Permission.values.length)),
+                Text(t.setupStep(_step + 1, widget.steps.length)),
                 const SizedBox(height: 16),
                 Text(title, style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 8),

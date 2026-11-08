@@ -67,8 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final plan = _c.plan;
         final nag = plan.nextNag;
         final rings = plan.rings;
-        final missing =
-            _c.hasPermissionInfo && _c.missingPermissions.isNotEmpty;
+        final missing = _c.hasPermissionInfo && _c.missingForAlarms.isNotEmpty;
         return Scaffold(
           appBar: AppBar(title: Text(t.appTitle)),
           body: ListView(

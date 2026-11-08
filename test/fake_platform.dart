@@ -39,6 +39,13 @@ class FakePlatform implements AlarmPlatform {
   SoundFolder? nextFolder;
   final released = <String>[];
   Launch? initial;
+
+  /// The alarm Android rings now.
+  int? ringing;
+
+  /// While set, reading the phone's sounds waits for it, as a big music
+  /// library does.
+  Completer<void>? soundsHold;
   final _launches = StreamController<Launch>.broadcast();
   final _events = StreamController<void>.broadcast();
 
@@ -86,7 +93,10 @@ class FakePlatform implements AlarmPlatform {
   }
 
   @override
-  Future<List<Sound>> sounds() async => inventory;
+  Future<List<Sound>> sounds() async {
+    await soundsHold?.future;
+    return inventory;
+  }
 
   /// While set, reading a folder waits for it.
   Completer<void>? folderHold;
@@ -114,6 +124,9 @@ class FakePlatform implements AlarmPlatform {
 
   @override
   Future<Launch?> initialLaunch() async => initial;
+
+  @override
+  Future<int?> ringingAlarm() async => ringing;
 
   @override
   Stream<Launch> get launches => _launches.stream;

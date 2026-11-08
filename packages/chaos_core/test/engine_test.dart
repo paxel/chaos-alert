@@ -22,6 +22,15 @@ const words = [
   'tundra',
 ];
 
+const simpleWords = [
+  'window',
+  'garden',
+  'letter',
+  'travel',
+  'basket',
+  'candle',
+];
+
 /// October 2026; the 5th is a Monday.
 DateTime at(int day, int h, [int m = 0]) => DateTime(2026, 10, day, h, m);
 
@@ -33,6 +42,7 @@ class Night {
     engine = Engine(
       store: store,
       words: words,
+      simpleWords: simpleWords,
       nagLines: nagLines,
       clock: () => now,
       random: Random(1),
@@ -377,6 +387,39 @@ void main() {
     });
   });
 
+  group('words setting', () {
+    test('the less common words are the default', () {
+      n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      expect(words, contains(n.engine.wordNow()));
+    });
+
+    test('simple words come from the simple list, and so do the wrong '
+        'options', () {
+      n.store.saveSettings(
+        const Settings(quiz: QuizForm.word, words: WordList.simple),
+      );
+      final a = n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      final word = n.engine.wordNow()!;
+      expect(simpleWords, contains(word));
+      n.now = at(6, 6, 30);
+      expect(simpleWords, containsAll(n.ring(a.id).options));
+    });
+
+    test('a night keeps its list when the setting changes before the '
+        'quiz', () {
+      final a = n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      n.engine.wordNow();
+      n.store.saveSettings(
+        const Settings(quiz: QuizForm.word, words: WordList.simple),
+      );
+      n.now = at(6, 6, 30);
+      expect(words, containsAll(n.ring(a.id).options));
+    });
+  });
+
   group('alarm', () {
     test('quizzes on the first wake-up alarm when a word was shown', () {
       final a = n.alarm(6, 30);
@@ -405,7 +448,8 @@ void main() {
       expect(n.last.end, at(6, 6, 31));
     });
 
-    test('a wrong word snoozes the alarm and drops that word', () {
+    test('a wrong word drops that word; the alarm keeps ringing without a '
+        'snooze', () {
       final a = n.alarm(6, 30);
       n.now = at(5, 22, 30);
       final word = n.engine.wordNow()!;
@@ -414,12 +458,14 @@ void main() {
       final wrong = n.wrong(first, word);
       final outcome = n.engine.answer(a.id, wrong)!;
       expect(outcome.correct, isFalse);
-      expect(outcome.snooze, const Duration(minutes: 9));
       expect(n.store.loadRecords(), isEmpty);
-      expect(n.engine.plan().rings.first.at, at(6, 6, 39));
+      expect(n.store.loadState().alarmSnoozes, isEmpty);
+      expect(
+        n.engine.plan().rings.where((r) => r.alarmId == a.id).first.at,
+        at(7, 6, 30),
+      );
 
-      n.now = at(6, 6, 39);
-      final second = n.ring(a.id);
+      final second = n.engine.screenFor(a.id);
       expect(second.options, hasLength(3));
       expect(second.options, isNot(contains(wrong)));
       expect(second.options.toSet(), first.options.toSet()..remove(wrong));
@@ -791,6 +837,63 @@ void main() {
       expect(n.engine.canSayAwake, isTrue);
     });
 
+    group('after a snooze', () {
+      /// Word at 22:30; the 06:30 alarm rings and is snoozed at 06:31.
+      String snoozed(Alarm a) {
+        n.now = at(5, 22, 30);
+        final word = n.engine.wordNow()!;
+        n.now = at(6, 6, 30);
+        n.ring(a.id);
+        n.now = at(6, 6, 31);
+        n.engine.snoozeAlarm(a.id);
+        n.now = at(6, 6, 33);
+        return word;
+      }
+
+      test('stays offered while the alarm waits to ring again', () {
+        final a = n.alarm(6, 30);
+        snoozed(a);
+        expect(n.engine.canSayAwake, isTrue);
+      });
+
+      test('a wrong pick keeps the snooze time', () {
+        final a = n.alarm(6, 30);
+        final word = snoozed(a);
+        final wrong = n.wrong(n.engine.awakeScreen(), word);
+        expect(n.engine.awakeAnswer(wrong)!.correct, isFalse);
+        expect(n.store.loadState().alarmSnoozes[a.id], at(6, 6, 40));
+      });
+
+      test("the right word cancels the snooze and ends the night now, "
+          "tomorrow's alarm untouched", () {
+        final a = n.alarm(6, 30);
+        final word = snoozed(a);
+        final outcome = n.engine.awakeAnswer(word)!;
+        expect(outcome.correct, isTrue);
+        expect(n.last.result, NightResult.success);
+        expect(n.last.end, at(6, 6, 33));
+        expect(n.store.loadState().alarmSnoozes, isEmpty);
+        final rings = n.engine.plan().rings.where((r) => r.alarmId == a.id);
+        expect(rings.first.at, at(7, 6, 30));
+        expect(n.engine.canSayUp, isFalse);
+      });
+
+      test("without a word the plain turn-off drops the snooze and keeps "
+          "tomorrow's alarm", () {
+        final a = n.alarm(6, 30);
+        n.engine.nagShown(at: at(5, 22, 30));
+        n.now = at(6, 6, 30);
+        n.ring(a.id);
+        n.now = at(6, 6, 31);
+        n.engine.snoozeAlarm(a.id);
+        expect(n.engine.canSayAwake, isTrue);
+        n.engine.awakeDismiss();
+        expect(n.last.result, NightResult.noWord);
+        final rings = n.engine.plan().rings.where((r) => r.alarmId == a.id);
+        expect(rings.first.at, at(7, 6, 30));
+      });
+    });
+
     test('stays hidden while the word waits to be fetched', () {
       n.alarm(6, 30);
       n.now = at(5, 22);
@@ -943,7 +1046,6 @@ void main() {
       final wrong = n.wrong(first, word);
       final outcome = n.engine.awakeAnswer(wrong)!;
       expect(outcome.correct, isFalse);
-      expect(outcome.snooze, isNull);
       expect(n.engine.awakeScreen().options, isNot(contains(wrong)));
       expect(n.engine.awakeAnswer(word)!.wrongPicks, 1);
       n.now = at(6, 6, 30);
@@ -1039,8 +1141,8 @@ void main() {
       expect(n.engine.answer(a.id, word.substring(0, 3))!.word, word);
     });
 
-    test('a wrong pick snoozes; the next ring goes on in the same round '
-        'without it, and the night is a failure', () {
+    test('a wrong pick goes on in the same round without it, and the night '
+        'is a failure', () {
       final a = n.alarm(6, 30);
       final word = ringing(a);
       n.engine.answer(a.id, word.substring(0, 1));
@@ -1048,9 +1150,8 @@ void main() {
       final wrong = second.options.firstWhere((o) => o != word.substring(0, 2));
       final outcome = n.engine.answer(a.id, wrong)!;
       expect(outcome.correct, isFalse);
-      expect(outcome.snooze, const Duration(minutes: 9));
-      n.now = at(6, 6, 39);
-      final again = n.ring(a.id);
+      expect(n.store.loadState().alarmSnoozes, isEmpty);
+      final again = n.engine.screenFor(a.id);
       expect(again.options, hasLength(3));
       expect(again.options, isNot(contains(wrong)));
       expect(again.options, contains(word.substring(0, 2)));
@@ -1162,6 +1263,105 @@ void main() {
       expect(after.shown, before.shown);
       expect(after.options, before.options);
     });
+  });
+
+  group('typing quiz', () {
+    setUp(() => n = Night(quiz: QuizForm.typing));
+
+    /// Bedtime at 22:30, the 06:30 alarm rings; returns the word.
+    String ringing(Alarm a) {
+      n.now = at(5, 22, 30);
+      final word = n.engine.wordNow()!;
+      n.now = at(6, 6, 30);
+      n.engine.ring(a.id);
+      return word;
+    }
+
+    test('shows a field to type into, no options', () {
+      final a = n.alarm(6, 30);
+      ringing(a);
+      final screen = n.engine.screenFor(a.id);
+      expect(screen.quiz, isTrue);
+      expect(screen.typing, isTrue);
+      expect(screen.options, isEmpty);
+      expect(screen.hidesWord, isTrue);
+    });
+
+    test('the word typed right ends the night as a success', () {
+      final a = n.alarm(6, 30);
+      final word = ringing(a);
+      final outcome = n.engine.answer(a.id, ' ${word.toUpperCase()} ')!;
+      expect(outcome.correct, isTrue);
+      expect(outcome.over, isTrue);
+      expect(outcome.typedOff, 0);
+      expect(outcome.typed, word.toUpperCase());
+      expect(n.last.result, NightResult.success);
+      expect(n.last.typedOff, 0);
+    });
+
+    test('two typos still pass', () {
+      final a = n.alarm(6, 30);
+      final word = ringing(a);
+      // One letter dropped, one changed.
+      final typed = '${word.substring(1, word.length - 1)}z';
+      final outcome = n.engine.answer(a.id, typed)!;
+      expect(outcome.typedOff, 2);
+      expect(outcome.correct, isTrue);
+      expect(n.last.result, NightResult.success);
+    });
+
+    test('three typos fail with no second try, and the night ends', () {
+      final a = n.alarm(6, 30);
+      final word = ringing(a);
+      final outcome = n.engine.answer(a.id, '${word}xyz')!;
+      expect(outcome.correct, isFalse);
+      expect(outcome.over, isTrue);
+      expect(outcome.word, word);
+      expect(n.last.result, NightResult.failure);
+      expect(n.last.typedOff, 3);
+      expect(n.store.loadState().night, isNull);
+    });
+
+    test('on "I\'m awake" it marks awake and the night waits for up', () {
+      final a = n.alarm(6, 30);
+      n.now = at(5, 22, 30);
+      final word = n.engine.wordNow()!;
+      n.now = at(6, 5, 10);
+      expect(n.engine.awakeScreen().typing, isTrue);
+      final outcome = n.engine.awakeAnswer('${word}xyzw')!;
+      expect(outcome.correct, isFalse);
+      expect(outcome.stats!.failures, 1);
+      expect(n.store.loadRecords(), isEmpty);
+      expect(n.engine.canSayUp, isTrue);
+      n.now = at(6, 6, 30);
+      expect(n.ring(a.id).quiz, isFalse);
+      n.engine.dismiss(a.id);
+      expect(n.last.result, NightResult.failure);
+      expect(n.last.typedOff, 4);
+      expect(n.last.awake, at(6, 5, 10));
+    });
+
+    test('on "I\'m awake" after a snooze it ends the night at once', () {
+      final a = n.alarm(6, 30);
+      final word = ringing(a);
+      n.now = at(6, 6, 31);
+      n.engine.snoozeAlarm(a.id);
+      n.now = at(6, 6, 33);
+      final outcome = n.engine.awakeAnswer(word)!;
+      expect(outcome.correct, isTrue);
+      expect(n.last.end, at(6, 6, 33));
+      expect(n.store.loadState().alarmSnoozes, isEmpty);
+    });
+  });
+
+  test('typos count wrong, missing and extra letters, not case or spaces '
+      'around', () {
+    expect(typos('lantern', 'lantern'), 0);
+    expect(typos(' Lantern ', 'lantern'), 0);
+    expect(typos('lantren', 'lantern'), 2);
+    expect(typos('lantrn', 'lantern'), 1);
+    expect(typos('lanterns', 'lantern'), 1);
+    expect(typos('', 'lantern'), 7);
   });
 
   test('the engine keeps nothing in memory between events', () {

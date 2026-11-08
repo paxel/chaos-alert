@@ -1,13 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-/// The bundled word list, one word per line.
-Future<List<String>> loadWords(AssetBundle bundle) async =>
-    (await bundle.loadString('assets/words.txt'))
-        .split('\n')
-        .map((w) => w.trim())
-        .where((w) => w.isNotEmpty)
-        .toList();
+/// The bundled less common words, or with [simple] the simple ones, one
+/// word per line.
+Future<List<String>> loadWords(
+  AssetBundle bundle, {
+  bool simple = false,
+}) async => (await bundle.loadString(
+  simple ? 'assets/simple_words.txt' : 'assets/words.txt',
+)).split('\n').map((w) => w.trim()).where((w) => w.isNotEmpty).toList();
 
 /// The bundled nag lines, one per line; lines starting with # are notes.
 Future<List<String>> loadNagLines(AssetBundle bundle) async =>

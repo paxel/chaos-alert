@@ -104,6 +104,7 @@ class MainActivity : FlutterActivity() {
                         Device.request(this@MainActivity, call.arguments as String)
                         result.success(null)
                     }
+                    "ringing" -> result.success(RingService.ringing)
                     "initialLaunch" -> {
                         result.success(initialLaunch)
                         initialLaunch = null

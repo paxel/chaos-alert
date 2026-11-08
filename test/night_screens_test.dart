@@ -179,9 +179,9 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('a wrong word says so, snoozes and keeps the word hidden', (
-      tester,
-    ) async {
+    testWidgets('a wrong word says so and the quiz goes on without it while '
+        'the alarm keeps ringing; the right one then shows the tries, the '
+        'streak and the strip', (tester) async {
       final s = Setup();
       final word = await sayInBed(s);
       await s.open(
@@ -192,48 +192,42 @@ void main() {
         (w) => w != word && find.text(w).evaluate().isNotEmpty,
       );
       await pick(tester, wrong);
-      expect(
-        find.text('Not this one.\nThe alarm rings again in 9 min.'),
-        findsOneWidget,
-      );
+      expect(find.text('Not this one.'), findsOneWidget);
       expect(find.text(word), findsNothing);
-      expect(s.platform.stops, 1);
-      expect(s.platform.rings.first.at, DateTime(2026, 10, 6, 6, 39));
+      expect(s.platform.stops, 0);
+      expect(s.controller.alarmSnoozes, isEmpty);
       expect(s.store.loadRecords(), isEmpty);
       await tester.pump(const Duration(seconds: 3));
       await tester.pumpAndSettle();
-      expect(find.text('home'), findsOneWidget);
-    });
-
-    testWidgets('the next ring leaves the wrong word out; the right one '
-        'then shows the tries, the streak and the strip', (tester) async {
-      final s = Setup();
-      final word = await sayInBed(s);
-      await s.open(
-        tester,
-        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
-      );
-      final wrong = words.firstWhere(
-        (w) => w != word && find.text(w).evaluate().isNotEmpty,
-      );
-      await pick(tester, wrong);
-      await tester.pump(const Duration(seconds: 3));
-      await tester.pumpAndSettle();
-
-      s.now = DateTime(2026, 10, 6, 6, 39);
-      await s.open(
-        tester,
-        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
-      );
+      expect(find.text('home'), findsNothing);
       expect(find.text(wrong), findsNothing);
       await pick(tester, word);
       await tester.pumpAndSettle();
+      expect(s.platform.stops, 1);
       expect(find.text('Found on try 2'), findsOneWidget);
       expect(find.text(word), findsOneWidget);
       expect(find.text('1 miss in a row'), findsOneWidget);
       expect(find.text('0 right, 1 wrong in total'), findsOneWidget);
       expect(find.byKey(const ValueKey('strip-failure-1')), findsOneWidget);
       expect(s.store.loadRecords().single.wrongPicks, 1);
+    });
+
+    testWidgets('after a wrong pick the alarm keeps its timeout, and the '
+        'night ends as a failure', (tester) async {
+      final s = Setup();
+      final word = await sayInBed(s);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      final wrong = words.firstWhere(
+        (w) => w != word && find.text(w).evaluate().isNotEmpty,
+      );
+      await pick(tester, wrong);
+      await tester.pump(const Duration(minutes: 10));
+      await tester.pumpAndSettle();
+      expect(find.text('home'), findsOneWidget);
+      expect(s.store.loadRecords().single.result, NightResult.failure);
     });
 
     testWidgets('a tap only marks a word; OK answers, and a misclick can '
@@ -484,6 +478,90 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('l'), findsOneWidget);
       expect(find.text('i'), findsNothing);
+    });
+  });
+
+  group('typing quiz', () {
+    /// Types [text] into the big field and sends it with OK.
+    Future<void> type(WidgetTester tester, String text) async {
+      await tester.enterText(find.byKey(const ValueKey('typing')), text);
+      await tester.pump();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('a big field without suggestions; OK waits for a letter', (
+      tester,
+    ) async {
+      final s = Setup(quiz: QuizForm.typing);
+      await s.controller.wordNow();
+      s.now = DateTime(2026, 10, 6, 6, 30);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      expect(find.text("Type last night's word"), findsOneWidget);
+      final field = tester.widget<TextField>(
+        find.byKey(const ValueKey('typing')),
+      );
+      expect(field.autocorrect, isFalse);
+      expect(field.enableSuggestions, isFalse);
+      expect(field.style!.fontSize, 40);
+      final ok = find.widgetWithText(FilledButton, 'OK');
+      expect(tester.widget<FilledButton>(ok).onPressed, isNull);
+    });
+
+    testWidgets('two typos pass: the alarm stops and the word shows next to '
+        'the spelling', (tester) async {
+      final s = Setup(quiz: QuizForm.typing);
+      final word = (await s.controller.wordNow())!;
+      s.now = DateTime(2026, 10, 6, 6, 30);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      final typed = word.substring(0, word.length - 2);
+      await type(tester, typed);
+      expect(s.platform.stops, 1);
+      expect(find.text('Close enough'), findsOneWidget);
+      expect(find.text(word), findsOneWidget);
+      expect(find.byKey(const ValueKey('typed')), findsOneWidget);
+      expect(s.store.loadRecords().single.result, NightResult.success);
+    });
+
+    testWidgets('three typos fail with no second try: the alarm stops and '
+        'the night is a failure', (tester) async {
+      final s = Setup(quiz: QuizForm.typing);
+      final word = (await s.controller.wordNow())!;
+      s.now = DateTime(2026, 10, 6, 6, 30);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      await type(tester, '${word}xyz');
+      expect(s.platform.stops, 1);
+      expect(find.text('Not quite'), findsOneWidget);
+      expect(find.text(word), findsOneWidget);
+      expect(find.text('${word}xyz'), findsOneWidget);
+      expect(find.text('1 miss in a row'), findsOneWidget);
+      final night = s.store.loadRecords().single;
+      expect(night.result, NightResult.failure);
+      expect(night.typedOff, 3);
+    });
+
+    testWidgets('Enter on the keyboard sends it too', (tester) async {
+      final s = Setup(quiz: QuizForm.typing);
+      final word = (await s.controller.wordNow())!;
+      s.now = DateTime(2026, 10, 6, 6, 30);
+      await s.open(
+        tester,
+        AlarmScreen(controller: s.controller, alarmId: s.alarm.id),
+      );
+      await tester.enterText(find.byKey(const ValueKey('typing')), word);
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pumpAndSettle();
+      expect(find.text('Right'), findsOneWidget);
+      expect(find.byKey(const ValueKey('typed')), findsNothing);
     });
   });
 

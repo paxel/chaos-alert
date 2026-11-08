@@ -62,7 +62,7 @@ Confirming the bedtime early, in the 6 hours before the planned bedtime, without
 _Avoid_: early bedtime, going to bed early
 
 **I'm awake**:
-Taking the quiz early, in the 6 hours before the morning's first wake-up alarm, but not while the word still waits to be fetched; the right word marks awake, and the wake-up alarm then rings with a plain dismiss that marks up.
+Taking the quiz early, in the 6 hours before the morning's first wake-up alarm or while it is snoozed, but not while the word still waits to be fetched; the right word marks awake, and the wake-up alarm then rings with a plain dismiss that marks up. After a snooze, the right word cancels the snooze and marks up at once.
 _Avoid_: early wake-up, awake quiz
 
 **I'm awake notice**:
@@ -114,11 +114,11 @@ _Avoid_: sleep goal, sleep duration
 ### Word and quiz
 
 **Word**:
-The less common English word shown once at bedtime, to be recalled at the morning's quiz.
+The English word shown once at bedtime, to be recalled at the morning's quiz; from the simple or the less common list, as the "Words" setting says.
 _Avoid_: night word, secret word
 
 **Quiz**:
-Recalling the night's word to turn off a wake-up alarm, as a letter quiz, a word quiz or a broken teeth quiz, chosen in the "Quiz" setting.
+Recalling the night's word to turn off a wake-up alarm, as a letter quiz, a word quiz, a broken teeth quiz or a typing quiz, chosen in the "Quiz" setting.
 _Avoid_: test, challenge
 
 **Letter quiz**:
@@ -130,8 +130,12 @@ The easiest quiz: the night's word among four whole words.
 _Avoid_: easy quiz, simple quiz
 
 **Broken teeth quiz**:
-The hardest quiz: the night's word among four words of its length, each shown as a row of letter tiles with the same random half of the letters (rounded up) missing; the gaps stay for the whole morning, and the whole word shows after the right pick.
+The night's word among four words of its length, each shown as a row of letter tiles with the same random half of the letters (rounded up) missing; the gaps stay for the whole morning, and the whole word shows after the right pick.
 _Avoid_: gap quiz, masked quiz, hard quiz
+
+**Typing quiz**:
+The hardest quiz: the night's word typed into a field, one try; up to two typos (wrong, missing or extra letters, case and surrounding spaces ignored) pass as a success, more fail the night, shaded by how many; either way the word shows next to what was typed.
+_Avoid_: spelling quiz, free-text quiz
 
 **Distractor**:
 A wrong option in the quiz. In the word quiz, one looks like the word and the other two are random; in the letter quiz, each is the beginning of another word that shares the letters found so far, or random letters when too few such words exist; in the broken teeth quiz, all three are random words of the same length that differ from the word in at least one shown letter.
@@ -140,11 +144,11 @@ _Avoid_: decoy, wrong answer
 ### Quiz results
 
 **Wrong pick**:
-One wrong option chosen in the quiz, a word or letters.
+One wrong option chosen in the quiz, a word or letters; it drops out of the quiz, which goes on while the alarm keeps ringing.
 _Avoid_: miss, mistake
 
 **Failure**:
-A night whose quiz had at least one wrong pick.
+A night whose quiz had at least one wrong pick, or whose typing quiz had more than two typos.
 _Avoid_: miss, failed night
 
 **Missed**:
@@ -152,7 +156,7 @@ A night on which every wake-up alarm of the morning timed out unanswered, withou
 _Avoid_: failure, no answer
 
 **Success**:
-A night whose quiz was answered with the right word and no wrong pick.
+A night whose quiz was answered with the right word and no wrong pick, or typed with at most two typos.
 
 **No word**:
 A night on which no word was shown, so there is no quiz.

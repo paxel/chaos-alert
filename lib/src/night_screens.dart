@@ -169,8 +169,10 @@ class _AlarmScreenState extends State<AlarmScreen> {
   /// come from the ring's notification.
   var _acted = false;
 
-  /// After a wrong pick: the snooze shown for a moment before closing.
-  Duration? _wrong;
+  /// After a wrong pick: "Not this one." shows for a moment, then the quiz
+  /// goes on.
+  var _wrong = false;
+  Timer? _notice;
 
   Controller get _c => widget.controller;
 
@@ -231,15 +233,20 @@ class _AlarmScreenState extends State<AlarmScreen> {
       setState(() => _screen = _c.screenFor(widget.alarmId));
       return;
     }
-    _timeout?.cancel();
-    if (outcome != null && !outcome.correct) {
-      // Wrong: the alarm is snoozed; say so for a moment, then close.
-      setState(() => _wrong = outcome.snooze);
-      _timeout = Timer(wrongNoticeTime, () {
-        if (mounted) Navigator.of(context).pop();
+    if (outcome != null && !outcome.over) {
+      // Wrong: the alarm and its timeout go on; say so for a moment, then
+      // back to the quiz without that option.
+      _acted = false;
+      setState(() {
+        _wrong = true;
+        _screen = _c.screenFor(widget.alarmId);
+      });
+      _notice = Timer(wrongNoticeTime, () {
+        if (mounted) setState(() => _wrong = false);
       });
       return;
     }
+    _timeout?.cancel();
     if (await showOutcome(context, outcome, wordHidden: hidden)) return;
     if (!mounted) return;
     Navigator.of(context).pop();
@@ -248,6 +255,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
   @override
   void dispose() {
     _timeout?.cancel();
+    _notice?.cancel();
     _c.removeListener(_snoozedElsewhere);
     super.dispose();
   }
@@ -257,8 +265,7 @@ class _AlarmScreenState extends State<AlarmScreen> {
     final t = AppLocalizations.of(context);
     final screen = _screen;
     if (screen == null) return const NightFrame(child: SizedBox.shrink());
-    final wrong = _wrong;
-    if (wrong != null) return WrongNotice(snooze: wrong);
+    if (_wrong) return const WrongNotice();
     return QuizPanel(
       screen: screen,
       topLabel: t.ringSnooze,
@@ -298,6 +305,20 @@ class _QuizPanelState extends State<QuizPanel> {
   /// The word marked so far; nothing counts until OK.
   String? _picked;
 
+  /// What is typed so far on the typing quiz.
+  final _typed = TextEditingController();
+
+  @override
+  void dispose() {
+    _typed.dispose();
+    super.dispose();
+  }
+
+  void _sendTyped() {
+    final typed = _typed.text;
+    if (typed.trim().isNotEmpty) widget.onConfirm(typed);
+  }
+
   @override
   void didUpdateWidget(QuizPanel old) {
     super.didUpdateWidget(old);
@@ -326,7 +347,36 @@ class _QuizPanelState extends State<QuizPanel> {
             child: Text(widget.topLabel),
           ),
           const Spacer(),
-          if (screen.quiz) ...[
+          if (screen.typing) ...[
+            Text(
+              t.ringTyping,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge
+                  ?.copyWith(color: Colors.white70),
+            ),
+            const SizedBox(height: 16),
+            // Big letters for sleepy eyes; no suggestions or autocorrect,
+            // so the keyboard cannot recall the word instead.
+            TextField(
+              key: const ValueKey('typing'),
+              controller: _typed,
+              autofocus: true,
+              autocorrect: false,
+              enableSuggestions: false,
+              keyboardType: TextInputType.visiblePassword,
+              textInputAction: TextInputAction.done,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 40, color: Colors.white),
+              onChanged: (_) => setState(() {}),
+              onSubmitted: (_) => _sendTyped(),
+            ),
+            const Spacer(),
+            FilledButton(
+              style: FilledButton.styleFrom(minimumSize: tall),
+              onPressed: _typed.text.trim().isEmpty ? null : _sendTyped,
+              child: Text(t.ringConfirm),
+            ),
+          ] else if (screen.quiz) ...[
             Text(
               screen.letters ? t.ringLetters : t.ringQuiz,
               textAlign: TextAlign.center,
@@ -473,7 +523,7 @@ class _AwakeScreenState extends State<AwakeScreen> {
       setState(() => _screen = _c.awakeScreen());
       return;
     }
-    if (outcome != null && !outcome.correct) {
+    if (outcome != null && !outcome.over) {
       setState(() {
         _wrong = true;
         _screen = _c.awakeScreen();
@@ -516,21 +566,17 @@ class _AwakeScreenState extends State<AwakeScreen> {
 /// How long "Not this one" stays before it closes by itself.
 const wrongNoticeTime = Duration(seconds: 3);
 
-/// "Not this one": the word stays hidden, the alarm comes back.
+/// "Not this one": the word stays hidden, and the quiz goes on.
 class WrongNotice extends StatelessWidget {
-  const WrongNotice({super.key, this.snooze});
-
-  /// When the alarm rings again; null when nothing rings ("I'm awake").
-  final Duration? snooze;
+  const WrongNotice({super.key});
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-    final snooze = this.snooze;
     return NightFrame(
       child: Center(
         child: Text(
-          snooze == null ? t.notThisOne : t.ringWrong(snooze.inMinutes),
+          t.notThisOne,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineSmall
               ?.copyWith(color: Colors.white70),
@@ -548,9 +594,11 @@ Future<bool> showOutcome(
   QuizOutcome? outcome, {
   required bool wordHidden,
 }) async {
-  if (outcome == null || !outcome.correct) return false;
+  if (outcome == null || !outcome.over) return false;
   final Widget page;
-  if (outcome.failed) {
+  if (outcome.typed != null) {
+    page = TypedScreen(outcome: outcome);
+  } else if (outcome.failed) {
     page = SummaryScreen(outcome: outcome);
   } else if (wordHidden) {
     page = RevealScreen(word: outcome.word!);
@@ -586,6 +634,75 @@ class RevealScreen extends StatelessWidget {
                 ?.copyWith(color: Colors.white),
           ),
           const SizedBox(height: 48),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(t.failureClose),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The page after the typing quiz's one try: the word, and next to it
+/// what was typed when that differs; after a failed try also the streak,
+/// the totals and the strip.
+class TypedScreen extends StatelessWidget {
+  const TypedScreen({super.key, required this.outcome});
+
+  final QuizOutcome outcome;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context);
+    final text = Theme.of(context).textTheme;
+    final word = outcome.word!;
+    final typed = outcome.typed!;
+    final stats = outcome.stats!;
+    final off = outcome.typedOff!;
+    return NightFrame(
+      child: ListView(
+        children: [
+          const SizedBox(height: 24),
+          Text(
+            !outcome.correct
+                ? t.typedMissed
+                : off == 0
+                ? t.typedRight
+                : t.typedClose,
+            style: text.headlineMedium?.copyWith(color: Colors.white70),
+          ),
+          const SizedBox(height: 24),
+          Text(t.failureWord),
+          Text(word, style: text.displaySmall?.copyWith(color: Colors.white)),
+          if (off > 0) ...[
+            const SizedBox(height: 16),
+            Text(t.typedYours),
+            Text(
+              typed,
+              key: const ValueKey('typed'),
+              style: text.displaySmall?.copyWith(color: Colors.white54),
+            ),
+          ],
+          if (!outcome.correct) ...[
+            const SizedBox(height: 24),
+            Text(t.failureStreak(stats.streak)),
+            Text(t.failureTotals(stats.successes, stats.failures)),
+            const SizedBox(height: 24),
+            Text(t.failureStrip),
+            const SizedBox(height: 8),
+            ResultStrip(nights: stats.strip),
+            if (stats.showHint) ...[
+              const SizedBox(height: 24),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(t.failureHint),
+                ),
+              ),
+            ],
+          ],
+          const SizedBox(height: 32),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(t.failureClose),

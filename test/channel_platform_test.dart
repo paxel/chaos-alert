@@ -131,7 +131,8 @@ void main() {
         {'uri': 'content://s', 'group': 'song', 'lengthMs': 180000},
         {'uri': 'content://x', 'group': 'from-a-newer-app'},
       ],
-      'permissions' => {'exactAlarms': true, 'music': false},
+      'permissions' => {'exactAlarms': true, 'music': false, 'overlay': true},
+      'ringing' => 4,
       _ => null,
     };
     final p = ChannelAlarmPlatform();
@@ -143,6 +144,8 @@ void main() {
     expect(perms[Permission.exactAlarms], isTrue);
     expect(perms[Permission.music], isFalse);
     expect(perms[Permission.battery], isFalse);
+    expect(perms[Permission.overlay], isTrue);
+    expect(await p.ringingAlarm(), 4);
   });
 
   test('folders are picked, listed and given up on Android', () async {

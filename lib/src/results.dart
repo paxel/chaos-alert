@@ -9,9 +9,11 @@ import '../l10n/app_localizations.dart';
 Color nightColor(NightRecord night) => switch (night.result) {
   NightResult.success => const Color(0xFF4CAF50),
   // Failures from 0.1.0 carry no count; they were one wrong pick.
-  NightResult.failure => switch (night.wrongPicks) {
-    <= 1 => const Color(0xFFEF9A9A),
-    2 => const Color(0xFFE53935),
+  // On the typing quiz by how far off it was: 3 typos light, 4 medium,
+  // 5 or more dark.
+  NightResult.failure => switch (night.typedOff ?? night.wrongPicks + 2) {
+    <= 3 => const Color(0xFFEF9A9A),
+    4 => const Color(0xFFE53935),
     _ => const Color(0xFFB71C1C),
   },
   NightResult.noWord => const Color(0xFF78909C),
@@ -21,9 +23,10 @@ Color nightColor(NightRecord night) => switch (night.result) {
 String nightLabel(AppLocalizations t, NightRecord night) =>
     switch (night.result) {
       NightResult.success => t.resultSuccess,
-      NightResult.failure => t.resultWrongPicks(
-        night.wrongPicks < 1 ? 1 : night.wrongPicks,
-      ),
+      NightResult.failure => switch (night.typedOff) {
+        final off? => t.resultTypedOff(off),
+        null => t.resultWrongPicks(night.wrongPicks < 1 ? 1 : night.wrongPicks),
+      },
       NightResult.noWord => t.resultNoWord,
       NightResult.missed => t.resultMissed,
     };
