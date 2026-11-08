@@ -5,6 +5,10 @@ on:
     branches: ["**"]
   pull_request:
 
+# Read-only by default; a job that writes asks for more itself.
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Analyze & test
@@ -28,6 +32,29 @@ jobs:
           flutter test
       - name: Tools — test
         run: python3 -m unittest discover -s tool
+
+  # Known vulnerabilities in either pubspec.lock fail every push. A notice
+  # that a package is unmaintained is listed but does not fail;
+  # tool/osv_gate.py decides. Ignores live in an osv-scanner.toml beside
+  # the lockfile. The weekly Security run stays stricter.
+  osv-scanner:
+    name: Vulnerable dependencies (OSV-Scanner)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      # Exits 1 on any finding, unmaintained notices too; the next step
+      # decides from the results, and fails when there are none.
+      - name: osv-scanner
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --format=json
+            --output-file=osv-results.json
+            --recursive
+            ./
+      - name: No known vulnerability (unmaintained notices reported only)
+        run: python3 tool/osv_gate.py osv-results.json
 
   apk:
     name: Debug APK

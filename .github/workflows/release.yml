@@ -3,6 +3,9 @@
 # without publish, is the dry run: everything is built, nothing leaves
 # GitHub.
 #
+# The gate stops a release on a failing test or a known vulnerability in
+# a lockfile (OSV-Scanner).
+#
 # One-time setup (repository secrets):
 #   ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD — chaos-alert's own
 #                 signing keystore (key alias chaos-alert)
@@ -29,12 +32,31 @@ env:
   RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
   PUBLISH: ${{ github.ref_type == 'tag' || github.event.inputs.publish == 'true' }}
 
+# Read-only by default; a job that writes asks for more itself.
+permissions:
+  contents: read
+
 jobs:
   gate:
     name: Gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      # The same scan as CI's: a known vulnerability in a lockfile stops
+      # the release; an unmaintained notice is listed only.
+      # Exits 1 on any finding, unmaintained notices too; the next step
+      # decides from the results, and fails when there are none.
+      - name: osv-scanner
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@b1d267aea5211fa648d9d442fa64b90dbdcbdd36 # v2.7.0
+        with:
+          scan-args: |-
+            --format=json
+            --output-file=osv-results.json
+            --recursive
+            ./
+      - name: No known vulnerability (unmaintained notices reported only)
+        run: python3 tool/osv_gate.py osv-results.json
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           channel: stable
