@@ -10,7 +10,25 @@ import android.content.Intent
  */
 class RearmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        // Exported for the system's broadcasts: another app can still name
+        // this receiver in an explicit intent, which is ignored.
+        if (!RearmActions.rearms(intent.action)) return
         EventLog.add(context, "android: re-arm after ${intent.action}")
         Scheduler.arm(context)
     }
+}
+
+/**
+ * The broadcasts that arm the schedule again, the same as the receiver's
+ * filter in the manifest. Only the system may send them.
+ */
+object RearmActions {
+    val all = setOf(
+        "android.intent.action.BOOT_COMPLETED",
+        "android.intent.action.MY_PACKAGE_REPLACED",
+        "android.intent.action.TIME_SET",
+        "android.intent.action.TIMEZONE_CHANGED",
+    )
+
+    fun rearms(action: String?): Boolean = action in all
 }
