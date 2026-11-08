@@ -4,8 +4,8 @@
 # GitHub.
 #
 # The gate stops a release on a failing test, a known vulnerability in a
-# lockfile (OSV-Scanner) or an open high or critical CodeQL alert on the
-# tagged commit's branch.
+# lockfile (OSV-Scanner), an open high or critical CodeQL alert on the
+# tagged commit's branch, or coverage below tool/coverage-floors.txt.
 #
 # One-time setup (repository secrets):
 #   ANDROID_KEYSTORE_BASE64 / ANDROID_KEYSTORE_PASSWORD — chaos-alert's own
@@ -119,6 +119,12 @@ jobs:
           flutter pub get
           flutter analyze --fatal-infos
           flutter test
+      # Coverage floors: the Dart core and the Flutter app below their
+      # floor in tool/coverage-floors.txt stop the release. A floor that
+      # rose is raised there on the runner only; raise it with a local run
+      # of tool/coverage.sh and commit it.
+      - name: Coverage floors — Dart core and Flutter app
+        run: tool/coverage.sh dart-core flutter-app
 
   build-android:
     name: Android APKs

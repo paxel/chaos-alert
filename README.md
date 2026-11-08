@@ -6,6 +6,11 @@
 
 <p align="center">
   <a href="https://github.com/paxel/chaos-alert/actions/workflows/ci.yml"><img src="https://github.com/paxel/chaos-alert/actions/workflows/ci.yml/badge.svg?branch=summer" alt="CI"/></a>
+  <a href="https://github.com/paxel/chaos-alert/actions/workflows/security.yml"><img src="https://github.com/paxel/chaos-alert/actions/workflows/security.yml/badge.svg?branch=summer" alt="Security"/></a>
+  <a href="https://github.com/paxel/chaos-alert/actions/workflows/codeql.yml"><img src="https://github.com/paxel/chaos-alert/actions/workflows/codeql.yml/badge.svg?branch=summer" alt="CodeQL"/></a>
+  <a href="https://sonarcloud.io/summary/new_code?id=paxel_chaos-alert"><img src="https://sonarcloud.io/api/project_badges/measure?project=paxel_chaos-alert&metric=alert_status" alt="Quality gate"/></a>
+  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/paxel/chaos-alert/summer/.github/badges/coverage-dart-core.json" alt="Coverage Dart core"/>
+  <img src="https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/paxel/chaos-alert/summer/.github/badges/coverage-flutter-app.json" alt="Coverage Flutter app"/>
   <a href="https://github.com/paxel/chaos-alert/releases/latest"><img src="https://img.shields.io/github/v/release/paxel/chaos-alert" alt="Release"/></a>
   <a href="#get-it"><img src="https://img.shields.io/badge/F--Droid-paxel.github.io-1976D2?logo=f-droid" alt="F-Droid repository"/></a>
   <a href="android/app/build.gradle.kts"><img src="https://img.shields.io/badge/Android-7.0%2B-3DDC84?logo=android" alt="Android 7.0+"/></a>

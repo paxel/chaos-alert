@@ -1,0 +1,63 @@
+# SonarQube Cloud analysis of summer after each merge; the free plan
+# analyses the main branch only. Report only: the quality gate shows on
+# https://sonarcloud.io/summary/new_code?id=paxel_chaos-alert and fails no
+# build. What is analysed is in sonar-project.properties.
+#
+# Third-party actions are pinned to full commit SHAs (githubactions:S7637);
+# the comment names the version.
+name: SonarQube Cloud
+
+on:
+  push:
+    branches: [summer]
+
+permissions:
+  contents: read
+
+jobs:
+  sonar:
+    name: SonarQube Cloud analysis
+    runs-on: ubuntu-latest
+    steps:
+      # The full history, for the blame and the new-code period.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+
+      # The Dart analysis needs the packages resolved (Sonar's Dart page).
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          cache: true
+      - name: Dart packages of the core and the app
+        run: |
+          (cd packages/chaos_core && dart pub get)
+          flutter pub get
+
+      # The LCOV files sonar-project.properties names, from the same script
+      # as the release's coverage floors. Report only, like the analysis: a
+      # group below its floor still writes its file, and a failing test
+      # leaves the scan without that coverage.
+      - name: Coverage (LCOV for the analyzer)
+        continue-on-error: true
+        run: tool/coverage.sh
+
+      # JaCoCo XML of the Kotlin unit tests (android/), for
+      # sonar.coverage.jacoco.xmlReportPaths. The Gradle project needs
+      # android/local.properties (written by `flutter pub get` above) and
+      # the Gradle wrapper (android/gradlew is ignored by git), which
+      # `flutter build apk --config-only` writes without building anything.
+      # Report only, like the LCOV step.
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Coverage (JaCoCo XML of the Kotlin unit tests)
+        continue-on-error: true
+        run: |
+          flutter build apk --debug --config-only
+          (cd android && ./gradlew --no-daemon :app:createDebugUnitTestCoverageReport)
+
+      - uses: SonarSource/sonarqube-scan-action@4d1dc0c91ee400dcf8a6dddf2f705ac36542e304 # v8.4.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SQ_TOKEN }}

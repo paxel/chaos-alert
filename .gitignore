@@ -32,6 +32,8 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+# tool/coverage.sh
+/packages/chaos_core/coverage/
 
 # Symbolication related
 app.*.symbols
