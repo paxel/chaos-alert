@@ -144,6 +144,32 @@ class SettingsScreen extends StatelessWidget {
                 value: s.chime,
                 onChanged: (on) => save(s.copyWith(chime: on)),
               ),
+              ListTile(title: Text(t.settingsWords)),
+              RadioGroup<WordList>(
+                groupValue: s.words,
+                onChanged: (words) => save(s.copyWith(words: words)),
+                child: Column(
+                  children: [
+                    for (final (words, title, hint) in [
+                      (
+                        WordList.simple,
+                        t.settingsWordsSimple,
+                        t.settingsWordsSimpleHint,
+                      ),
+                      (
+                        WordList.lessCommon,
+                        t.settingsWordsLessCommon,
+                        t.settingsWordsLessCommonHint,
+                      ),
+                    ])
+                      RadioListTile<WordList>(
+                        value: words,
+                        title: Text(title),
+                        subtitle: Text(hint),
+                      ),
+                  ],
+                ),
+              ),
               ListTile(title: Text(t.settingsQuiz)),
               RadioGroup<QuizForm>(
                 groupValue: s.quiz,
@@ -165,6 +191,11 @@ class SettingsScreen extends StatelessWidget {
                         QuizForm.brokenTeeth,
                         t.settingsQuizBrokenTeeth,
                         t.settingsQuizBrokenTeethHint,
+                      ),
+                      (
+                        QuizForm.typing,
+                        t.settingsQuizTyping,
+                        t.settingsQuizTypingHint,
                       ),
                     ])
                       RadioListTile<QuizForm>(

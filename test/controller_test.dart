@@ -345,6 +345,22 @@ void main() {
     );
   });
 
+  test("after a mistaken snooze, I'm awake ends the alarm early", () async {
+    final a = await addAlarm();
+    now = DateTime(2026, 10, 5, 22, 30);
+    final word = (await c.wordNow())!;
+    now = DateTime(2026, 10, 6, 6, 30);
+    c.engine.ring(a.id);
+    await c.snoozeAlarm(a.id);
+    expect(platform.rings.first.at, DateTime(2026, 10, 6, 6, 39));
+    expect(c.canSayAwake, isTrue);
+    now = DateTime(2026, 10, 6, 6, 33);
+    await c.awakeAnswer(word);
+    expect(c.nights.single.end, DateTime(2026, 10, 6, 6, 33));
+    expect(platform.rings.first.at, DateTime(2026, 10, 13, 6, 30));
+    expect(c.canSayAwake, isFalse);
+  });
+
   test("I'm in bed opens the word button", () async {
     await addAlarm();
     now = DateTime(2026, 10, 5, 18);

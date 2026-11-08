@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:chaos_alert/src/app.dart';
@@ -31,7 +32,11 @@ void main() {
     );
   });
 
-  void setupDone() => store.saveState(store.loadState()..setupDone = true);
+  void setupDone() => store.saveState(
+    store.loadState()
+      ..setupDone = true
+      ..overlayAsked = true,
+  );
 
   testWidgets('the app is dark and shows the next alarm and bedtime', (
     tester,
@@ -66,20 +71,47 @@ void main() {
     final c = controller();
     await tester.pumpWidget(ChaosAlertApp(controller: c));
     await tester.pumpAndSettle();
-    expect(find.text('Step 1 of 5'), findsOneWidget);
+    expect(find.text('Step 1 of 6'), findsOneWidget);
     expect(find.text('Exact alarms'), findsOneWidget);
     await tester.tap(find.text('Allow'));
     await tester.pumpAndSettle();
     expect(platform.requested, [Permission.exactAlarms]);
     expect(find.text('Allowed'), findsOneWidget);
-    for (var i = 0; i < 4; i++) {
+    for (var i = 0; i < 5; i++) {
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
     }
-    expect(find.text('Step 5 of 5'), findsOneWidget);
+    expect(find.text('Step 6 of 6'), findsOneWidget);
+    expect(find.text('Display over other apps'), findsOneWidget);
     await tester.tap(find.text('Done'));
     await tester.pumpAndSettle();
     expect(c.setupDone, isTrue);
+    expect(find.text('chaos-alert'), findsOneWidget);
+  });
+
+  testWidgets('a setup done before the overlay step asks for it once', (
+    tester,
+  ) async {
+    store.saveState(store.loadState()..setupDone = true);
+    platform.granted[Permission.overlay] = false;
+    final c = controller();
+    await tester.pumpWidget(ChaosAlertApp(controller: c));
+    await tester.pumpAndSettle();
+    expect(find.text('Step 1 of 1'), findsOneWidget);
+    expect(find.text('Display over other apps'), findsOneWidget);
+    await tester.tap(find.text('Allow'));
+    await tester.pumpAndSettle();
+    expect(platform.requested, [Permission.overlay]);
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(store.loadState().overlayAsked, isTrue);
+    expect(find.text('chaos-alert'), findsOneWidget);
+
+    // Next start: no setup.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pumpWidget(ChaosAlertApp(controller: controller()));
+    await tester.pumpAndSettle();
+    expect(find.text('Step 1 of 1'), findsNothing);
     expect(find.text('chaos-alert'), findsOneWidget);
   });
 
@@ -96,7 +128,20 @@ void main() {
     );
     await tester.tap(find.text('Fix'));
     await tester.pumpAndSettle();
-    expect(find.text('Step 1 of 5'), findsOneWidget);
+    expect(find.text('Step 1 of 6'), findsOneWidget);
+  });
+
+  testWidgets('a missing "Display over other apps" shows no red banner', (
+    tester,
+  ) async {
+    setupDone();
+    platform.granted[Permission.overlay] = false;
+    await tester.pumpWidget(ChaosAlertApp(controller: controller()));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Alarms may not ring: a permission is missing.'),
+      findsNothing,
+    );
   });
 
   testWidgets('"I\'m in bed" gives no word; the word comes from its own '
@@ -266,6 +311,48 @@ void main() {
     await tester.pumpWidget(ChaosAlertApp(controller: controller()));
     await tester.pumpAndSettle();
     expect(find.text('Back'), findsOneWidget);
+  });
+
+  testWidgets('a ring shows its screen at once, even while the phone is '
+      'slow to list its sounds', (tester) async {
+    setupDone();
+    platform.soundsHold = Completer<void>();
+    platform.initial = const RingLaunch(1);
+    now = DateTime(2026, 10, 6, 6, 30);
+    platform.events.add(RingStarted(1, now));
+    await tester.pumpWidget(ChaosAlertApp(controller: controller()));
+    await tester.pumpAndSettle();
+    expect(find.text('Turn off'), findsOneWidget);
+    platform.soundsHold!.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('Turn off'), findsOneWidget);
+  });
+
+  testWidgets('opened from its icon while an alarm rings, the app shows '
+      'the alarm first', (tester) async {
+    setupDone();
+    platform.ringing = 1;
+    now = DateTime(2026, 10, 6, 6, 30);
+    platform.events.add(RingStarted(1, now));
+    await tester.pumpWidget(ChaosAlertApp(controller: controller()));
+    await tester.pumpAndSettle();
+    expect(find.text('Turn off'), findsOneWidget);
+  });
+
+  testWidgets('coming back to the app while an alarm rings shows its '
+      'screen once', (tester) async {
+    setupDone();
+    await tester.pumpWidget(ChaosAlertApp(controller: controller()));
+    await tester.pumpAndSettle();
+    now = DateTime(2026, 10, 6, 6, 30);
+    platform.events.add(RingStarted(1, now));
+    platform.launch(const RingLaunch(1));
+    await tester.pumpAndSettle();
+    platform.ringing = 1;
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pumpAndSettle();
+    expect(find.text('Turn off', skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('a ring while the app runs shows the alarm', (tester) async {

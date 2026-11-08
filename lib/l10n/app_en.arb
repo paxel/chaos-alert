@@ -83,13 +83,33 @@
   "settingsMediumVolume": "Volume after 10 s",
   "settingsChime": "Chime at bedtime",
   "settingsChimeHint": "One soft sound with the bedtime popup",
+  "settingsWords": "Words",
+  "settingsWordsSimple": "Simple",
+  "settingsWordsSimpleHint": "Common words, easier to picture and remember.",
+  "settingsWordsLessCommon": "Less common",
+  "settingsWordsLessCommonHint": "Rarer words. The harder ones.",
   "settingsQuiz": "Quiz",
   "settingsQuizWord": "Whole word",
   "settingsQuizWordHint": "Pick the word from four. The easiest.",
   "settingsQuizLetters": "First letters",
   "settingsQuizLettersHint": "Pick how the word begins, one letter more each round.",
   "settingsQuizBrokenTeeth": "Broken teeth",
-  "settingsQuizBrokenTeethHint": "Four words with the same letters missing. The hardest.",
+  "settingsQuizBrokenTeethHint": "Four words with the same letters missing.",
+  "settingsQuizTyping": "Type it",
+  "settingsQuizTypingHint": "Type the word in. Up to two typos pass, no second try. The hardest.",
+  "ringTyping": "Type last night's word",
+  "typedRight": "Right",
+  "typedClose": "Close enough",
+  "typedMissed": "Not quite",
+  "typedYours": "You typed",
+  "resultTypedOff": "{count, plural, =1{One typo} other{{count} typos}}",
+  "@resultTypedOff": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "settingsMusic": "Songs are left out",
   "settingsMusicHint": "Allow access to music so alarms can play songs too.",
   "settingsMusicGrant": "Allow",
@@ -222,6 +242,8 @@
   "permBatteryWhy": "Keeps Android from delaying alarms to save battery.",
   "permMusic": "Music",
   "permMusicWhy": "Lets alarms play songs from your music library. Without it, only the phone's own sounds play.",
+  "permOverlay": "Display over other apps",
+  "permOverlayWhy": "Lets the alarm open its quiz by itself while you use the phone. Without it, the alarm still rings and shows as a notification.",
   "aboutAndFeedback": "About & feedback",
   "about": "About",
   "eventLog": "Event log",
@@ -252,14 +274,6 @@
   "dangerThanks": "Thank you for using chaos-alert!",
   "doneLabel": "Done",
   "ringConfirm": "OK",
-  "ringWrong": "Not this one.\nThe alarm rings again in {minutes} min.",
-  "@ringWrong": {
-    "placeholders": {
-      "minutes": {
-        "type": "int"
-      }
-    }
-  },
   "summaryTitle": "Found on try {tries}",
   "@summaryTitle": {
     "placeholders": {

@@ -24,7 +24,7 @@ Your alarm always sounds the same, so you sleep right through it. And
 
 chaos-alert nags you to bed when it's time, gives you one word to remember,
 and wakes you with a sound you have never heard coming. To turn the alarm
-off, you recall last night's word. A wrong pick only snoozes it, and the
+off, you recall last night's word. A wrong pick only drops out, and the
 app keeps count of how well you remembered.
 
 ## What it does
@@ -40,14 +40,15 @@ app keeps count of how well you remembered.
   six hours before bedtime. Lying awake for a while? The word waits: the
   nag still comes and asks *Want the word now?*, or tap *Show the word*
   when you're ready to sleep.
-- **A word for the night** — say *Yes* and you get one less common English
-  word. It's shown once. Remember it.
+- **A word for the night** — say *Yes* and you get one English word: a
+  less common one, or a simple one if you pick *Simple* in Settings. It's
+  shown once. Remember it.
 - **The chaos alarm** — every ring picks something random: an alarm sound,
   a notification sound, a song from your music starting somewhere in its
   first half, a sound from a folder you picked, or a mix of instruments the
   app makes itself. Switch each source on or off on the Sounds page. Quiet
   at first, louder after 10 seconds. A new surprise after every snooze.
-- **The quiz** — three kinds, chosen in Settings:
+- **The quiz** — four kinds, chosen in Settings:
   - *First letters* (the default): three rounds of four big tiles, each
     round one letter more of the word's beginning; a tap answers. The
     whole word shows at the end.
@@ -55,16 +56,20 @@ app keeps count of how well you remembered.
     OK.
   - *Broken teeth*: four words of the same length with the same letters
     missing; tap one to mark it, then OK.
+  - *Type it* (the hardest): type the word into a big field. Up to two
+    typos pass, and there is no second try; either way the word shows
+    next to what you typed.
 
-  The right answer stops the alarm; a wrong one snoozes it and drops out
-  of the next try. A night with wrong picks counts as failed, shaded by how
+  The right answer stops the alarm; a wrong one drops out and the alarm
+  keeps ringing while you try again. A night with wrong picks counts as failed, shaded by how
   many it took, and shows your streak and your last 30 nights. Five
   failures in a row bring a gentle hint.
 - **I'm awake** — awake before the alarm? In the six hours before it, a
   button on the main screen takes you to the quiz, and in the last hour a
   silent notification too. The alarm still rings, with a plain turn-off
   that marks when you got up; or tap *I'm up* to end the night and turn
-  off that morning's alarms.
+  off that morning's alarms. Snoozed by mistake? *I'm awake* stays, and
+  the right word ends the alarm there and then.
 - **Alarms** — repeating on weekdays or once on a date; switch them on and
   off, edit, delete. Reminder alarms that shouldn't move your bedtime get
   their wake-up switch turned off.
@@ -97,9 +102,11 @@ refresh F-Droid and search for *chaos-alert*.
 allow the installation when the phone asks.
 
 On first start the app asks for a few permissions, one by one — exact
-alarms, notifications, full-screen popups, no battery optimisation, music.
-Without them an alarm might not ring, so the app shows a red banner as long
-as one is missing.
+alarms, notifications, full-screen popups, no battery optimisation, music,
+and display over other apps. Without the first five an alarm might not
+ring, so the app shows a red banner as long as one is missing. The last one
+is optional: it lets the alarm open its quiz by itself while you use the
+phone; without it the alarm still rings and shows as a notification.
 
 ## Questions, problems, ideas
 

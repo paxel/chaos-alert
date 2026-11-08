@@ -99,6 +99,21 @@ enum QuizForm {
 
   /// Four words of the same length with the same letters missing.
   brokenTeeth,
+
+  /// The word typed in, one try; up to [typosAllowed] typos pass.
+  typing,
+}
+
+/// How many typos the typing quiz lets pass.
+const typosAllowed = 2;
+
+/// Which list the night's word comes from.
+enum WordList {
+  /// Rarer words, the list from before the choice existed.
+  lessCommon,
+
+  /// Common words, but not basic ones.
+  simple,
 }
 
 /// A folder picked as a sound source, with its subfolders.
@@ -128,6 +143,7 @@ class Settings {
     this.mediumVolume = 0.5,
     this.chime = true,
     this.quiz = QuizForm.letters,
+    this.words = WordList.lessCommon,
     this.alarmSounds = true,
     this.notificationSounds = true,
     this.songs = true,
@@ -149,6 +165,9 @@ class Settings {
 
   /// How the quiz asks for the night's word.
   final QuizForm quiz;
+
+  /// Which list the night's word comes from.
+  final WordList words;
 
   // Which sound sources a ring draws from.
   final bool alarmSounds;
@@ -175,6 +194,7 @@ class Settings {
     double? mediumVolume,
     bool? chime,
     QuizForm? quiz,
+    WordList? words,
     bool? alarmSounds,
     bool? notificationSounds,
     bool? songs,
@@ -189,6 +209,7 @@ class Settings {
     mediumVolume: mediumVolume ?? this.mediumVolume,
     chime: chime ?? this.chime,
     quiz: quiz ?? this.quiz,
+    words: words ?? this.words,
     alarmSounds: alarmSounds ?? this.alarmSounds,
     notificationSounds: notificationSounds ?? this.notificationSounds,
     songs: songs ?? this.songs,

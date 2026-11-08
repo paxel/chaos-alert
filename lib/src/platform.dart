@@ -4,7 +4,17 @@ import 'package:chaos_core/chaos_core.dart';
 import 'package:flutter/services.dart';
 
 /// What the app needs from Android to ring reliably.
-enum Permission { exactAlarms, notifications, fullScreen, battery, music }
+enum Permission {
+  exactAlarms,
+  notifications,
+  fullScreen,
+  battery,
+  music,
+
+  /// Lets a ring open its screen over an unlocked phone in use; without it
+  /// the ring still sounds and shows as a notification.
+  overlay,
+}
 
 /// One alarm ring as Android schedules it, with everything it needs to ring
 /// while the app is not running.
@@ -149,6 +159,10 @@ abstract interface class AlarmPlatform {
 
   /// Why the app was started, if by a nag or a ring.
   Future<Launch?> initialLaunch();
+
+  /// The alarm ringing now, if any, also when the app was opened from its
+  /// icon.
+  Future<int?> ringingAlarm();
 
   /// Nags and rings that arrive while the app runs.
   Stream<Launch> get launches;
@@ -313,6 +327,9 @@ class ChannelAlarmPlatform implements AlarmPlatform {
   @override
   Future<Launch?> initialLaunch() async =>
       _launch(await _channel.invokeMethod<Object?>('initialLaunch'));
+
+  @override
+  Future<int?> ringingAlarm() => _channel.invokeMethod<int>('ringing');
 
   @override
   Stream<Launch> get launches => _launches.stream;

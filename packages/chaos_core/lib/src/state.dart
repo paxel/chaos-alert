@@ -17,6 +17,8 @@ class OpenNight {
     this.rounds,
     this.shown,
     this.solved = 0,
+    this.typing = false,
+    this.typedOff,
     List<String>? wrongPicks,
     this.nagLine,
   }) : wrongPicks = wrongPicks ?? [];
@@ -40,6 +42,8 @@ class OpenNight {
         .toList(),
     shown: (json['shown'] as List?)?.cast<int>().toList(),
     solved: json['solved'] as int? ?? 0,
+    typing: json['typing'] as bool? ?? false,
+    typedOff: json['typedOff'] as int?,
     wrongPicks: (json['wrongPicks'] as List?)?.cast<String>().toList(),
     nagLine: json['nagLine'] as String?,
   );
@@ -87,6 +91,12 @@ class OpenNight {
   /// How many letter quiz rounds were answered right.
   int solved;
 
+  /// Whether the night's quiz is the typing quiz, fixed once first shown.
+  bool typing;
+
+  /// After the typing quiz: how many typos the typed word had.
+  int? typedOff;
+
   /// The options already picked wrongly; they are not shown again.
   final List<String> wrongPicks;
 
@@ -120,6 +130,8 @@ class OpenNight {
     'rounds': rounds,
     'shown': shown,
     'solved': solved,
+    'typing': typing,
+    'typedOff': typedOff,
     'wrongPicks': wrongPicks,
     'nagLine': nagLine,
   };
@@ -132,12 +144,15 @@ class EngineState {
     Map<int, DateTime>? alarmSnoozes,
     Map<int, DateTime>? lastRing,
     WordDeck? deck,
+    WordDeck? simpleDeck,
     WordDeck? lineDeck,
     this.setupDone = false,
+    this.overlayAsked = false,
     this.pendingHint = false,
   }) : alarmSnoozes = alarmSnoozes ?? {},
        lastRing = lastRing ?? {},
        deck = deck ?? WordDeck(),
+       simpleDeck = simpleDeck ?? WordDeck(),
        lineDeck = lineDeck ?? WordDeck();
 
   factory EngineState.fromJson(Map<String, Object?> json) {
@@ -147,8 +162,10 @@ class EngineState {
       alarmSnoozes: _times(json['alarmSnoozes']),
       lastRing: _times(json['lastRing']),
       deck: _deck(json['deck']),
+      simpleDeck: _deck(json['simpleDeck']),
       lineDeck: _deck(json['lineDeck']),
       setupDone: json['setupDone'] as bool? ?? false,
+      overlayAsked: json['overlayAsked'] as bool? ?? false,
       pendingHint: json['pendingHint'] as bool? ?? false,
     );
   }
@@ -162,11 +179,18 @@ class EngineState {
   final Map<int, DateTime> lastRing;
   final WordDeck deck;
 
+  /// The simple words, worked through like the less common ones.
+  final WordDeck simpleDeck;
+
   /// The nag lines, worked through like the words.
   final WordDeck lineDeck;
 
   /// Whether the first-start setup was walked through.
   bool setupDone;
+
+  /// Whether the setup asked for "Display over other apps". A setup done
+  /// before that step existed asks for it once more.
+  bool overlayAsked;
 
   /// The hint is due but no page showed it: the streak's fifth failure
   /// ended in a timeout. The main screen shows it once.
@@ -182,8 +206,10 @@ class EngineState {
       for (final e in lastRing.entries) '${e.key}': e.value.toIso8601String(),
     },
     'deck': {'order': deck.order, 'cursor': deck.cursor},
+    'simpleDeck': {'order': simpleDeck.order, 'cursor': simpleDeck.cursor},
     'lineDeck': {'order': lineDeck.order, 'cursor': lineDeck.cursor},
     'setupDone': setupDone,
+    'overlayAsked': overlayAsked,
     'pendingHint': pendingHint,
   };
 }

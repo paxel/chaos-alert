@@ -189,6 +189,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsChimeHint => 'One soft sound with the bedtime popup';
 
   @override
+  String get settingsWords => 'Words';
+
+  @override
+  String get settingsWordsSimple => 'Simple';
+
+  @override
+  String get settingsWordsSimpleHint =>
+      'Common words, easier to picture and remember.';
+
+  @override
+  String get settingsWordsLessCommon => 'Less common';
+
+  @override
+  String get settingsWordsLessCommonHint => 'Rarer words. The harder ones.';
+
+  @override
   String get settingsQuiz => 'Quiz';
 
   @override
@@ -209,7 +225,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsQuizBrokenTeethHint =>
-      'Four words with the same letters missing. The hardest.';
+      'Four words with the same letters missing.';
+
+  @override
+  String get settingsQuizTyping => 'Type it';
+
+  @override
+  String get settingsQuizTypingHint =>
+      'Type the word in. Up to two typos pass, no second try. The hardest.';
+
+  @override
+  String get ringTyping => 'Type last night\'s word';
+
+  @override
+  String get typedRight => 'Right';
+
+  @override
+  String get typedClose => 'Close enough';
+
+  @override
+  String get typedMissed => 'Not quite';
+
+  @override
+  String get typedYours => 'You typed';
+
+  @override
+  String resultTypedOff(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count typos',
+      one: 'One typo',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get settingsMusic => 'Songs are left out';
@@ -415,6 +464,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Lets alarms play songs from your music library. Without it, only the phone\'s own sounds play.';
 
   @override
+  String get permOverlay => 'Display over other apps';
+
+  @override
+  String get permOverlayWhy =>
+      'Lets the alarm open its quiz by itself while you use the phone. Without it, the alarm still rings and shows as a notification.';
+
+  @override
   String get aboutAndFeedback => 'About & feedback';
 
   @override
@@ -478,11 +534,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ringConfirm => 'OK';
-
-  @override
-  String ringWrong(int minutes) {
-    return 'Not this one.\nThe alarm rings again in $minutes min.';
-  }
 
   @override
   String summaryTitle(int tries) {

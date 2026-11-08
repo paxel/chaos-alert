@@ -56,15 +56,27 @@ class PlannedRing {
 /// What a ringing alarm shows.
 class RingScreen {
   const RingScreen.quiz(this.options, {this.letters = false, this.shown})
-    : quiz = true;
+    : quiz = true,
+      typing = false;
+  const RingScreen.typing()
+    : quiz = true,
+      typing = true,
+      letters = false,
+      shown = null,
+      options = const [];
   const RingScreen.dismiss()
     : quiz = false,
+      typing = false,
       letters = false,
       shown = null,
       options = const [];
 
   /// Whether turning it off takes the quiz; else a plain dismiss button.
   final bool quiz;
+
+  /// Whether the quiz is the typing quiz: a field to type the word into,
+  /// no options.
+  final bool typing;
 
   /// Whether the options are the word's first letters (the letter quiz)
   /// rather than whole words.
@@ -77,17 +89,21 @@ class RingScreen {
 
   /// Whether the quiz never shows the word whole, so it is revealed after
   /// the right answer.
-  bool get hidesWord => letters || shown != null;
+  bool get hidesWord => letters || shown != null || typing;
 }
 
 /// How a quiz answer went.
 class QuizOutcome {
-  const QuizOutcome.wrong({required this.snooze})
+  /// A wrong pick: the quiz goes on without it, and the alarm keeps
+  /// ringing.
+  const QuizOutcome.wrong()
     : correct = false,
       next = false,
       wrongPicks = 0,
       word = null,
-      stats = null;
+      stats = null,
+      typed = null,
+      typedOff = null;
 
   /// A right letter quiz round with more rounds to come; the alarm goes on
   /// ringing.
@@ -97,7 +113,8 @@ class QuizOutcome {
       wrongPicks = 0,
       word = null,
       stats = null,
-      snooze = null;
+      typed = null,
+      typedOff = null;
 
   const QuizOutcome.right({
     required this.wrongPicks,
@@ -105,16 +122,24 @@ class QuizOutcome {
     required QuizStats this.stats,
   }) : correct = true,
        next = false,
-       snooze = null;
+       typed = null,
+       typedOff = null;
+
+  /// The one try of the typing quiz: right with up to [typosAllowed]
+  /// typos, else failed; either way the quiz is over.
+  const QuizOutcome.typed({
+    required String this.word,
+    required String this.typed,
+    required int this.typedOff,
+    required QuizStats this.stats,
+  }) : correct = typedOff <= typosAllowed,
+       next = false,
+       wrongPicks = 0;
 
   final bool correct;
 
   /// Whether the quiz goes on with the next letter quiz round.
   final bool next;
-
-  /// After a wrong pick: how long until the alarm rings again; null when
-  /// nothing rings (the "I'm awake" quiz).
-  final Duration? snooze;
 
   /// After the right pick: how many wrong ones came first.
   final int wrongPicks;
@@ -123,8 +148,16 @@ class QuizOutcome {
   final String? word;
   final QuizStats? stats;
 
+  /// On the typing quiz: what was typed, and how many typos it had.
+  final String? typed;
+  final int? typedOff;
+
   /// Whether the night failed although the word was found in the end.
   bool get failed => correct && wrongPicks > 0;
+
+  /// Whether the quiz is over: the right answer, or the typing quiz's one
+  /// try; a wrong pick on the other quizzes lets it go on.
+  bool get over => (correct && !next) || typed != null;
 }
 
 /// Every rule of the night. Each event reads the store, applies the rule
@@ -137,13 +170,20 @@ class Engine {
   Engine({
     required this.store,
     required this.words,
+    this.simpleWords = const [],
     this.nagLines = const [],
     required this.clock,
     Random? random,
   }) : _random = random ?? Random();
 
   final Store store;
+
+  /// The less common words.
   final List<String> words;
+
+  /// The simple words, for the "Words" setting; empty falls back to
+  /// [words].
+  final List<String> simpleWords;
 
   /// What a nag says above its question; a nag without lines says nothing.
   final List<String> nagLines;
@@ -243,9 +283,10 @@ class Engine {
   }
 
   /// Whether the main screen offers "I'm awake" now: within [awakeWindow]
-  /// before the next wake-up ring, unless the quiz was taken already or the
-  /// word still waits to be fetched, where its plain turn-off would end
-  /// the night and the morning's alarms.
+  /// before the next wake-up ring or while a wake-up alarm is snoozed,
+  /// unless the quiz was taken already or the word still waits to be
+  /// fetched, where its plain turn-off would end the night and the
+  /// morning's alarms.
   bool get canSayAwake {
     final now = _now;
     final state = _load(now);
@@ -254,9 +295,20 @@ class Engine {
     if (current != null && current.bedtime != null && current.word == null) {
       return false;
     }
+    // After a snooze the morning's ring has rung, so the next one may be
+    // tomorrow's; the snoozed alarm still waits to be answered.
+    if (_snoozedWakeUp(state)) return true;
     final next = _firstWakeUpAfter(now, state);
     return next != null && !now.isBefore(next.subtract(awakeWindow));
   }
+
+  /// Whether a wake-up alarm is snoozed and rings again.
+  bool _snoozedWakeUp(EngineState state) =>
+      state.alarmSnoozes.keys.any(_isWakeUp);
+
+  /// Drops the snoozes of the wake-up alarms; reminder alarms still ring.
+  void _dropWakeUpSnoozes(EngineState state) =>
+      state.alarmSnoozes.removeWhere((id, _) => _isWakeUp(id));
 
   /// Whether the main screen offers "I'm up": after the "I'm awake" quiz,
   /// until the night ends.
@@ -267,8 +319,9 @@ class Engine {
 
   /// [picked] was chosen on the "I'm awake" quiz. The right word marks
   /// awake; the night waits for up, and the morning's wake-up alarm still
-  /// rings with a plain dismiss. A wrong one drops the word and makes the
-  /// night a failure, with nothing to snooze.
+  /// rings with a plain dismiss. While a wake-up alarm is snoozed, it ends
+  /// the night instead and cancels the snooze. A wrong one drops the word
+  /// and makes the night a failure; a snooze keeps its time.
   QuizOutcome? awakeAnswer(String picked) {
     final t = _now;
     final state = _load(t);
@@ -276,12 +329,28 @@ class Engine {
     final word = night?.word;
     if (night == null || word == null) return null;
     _fixForm(night, word);
+    if (night.typing) {
+      return _typedAnswer(
+        state,
+        night,
+        word,
+        picked,
+        t,
+        ends: _snoozedWakeUp(state),
+      );
+    }
     if (!_isRight(night, word, picked)) {
       if (!night.wrongPicks.contains(picked)) night.wrongPicks.add(picked);
       _save(state);
-      return const QuizOutcome.wrong(snooze: null);
+      return const QuizOutcome.wrong();
     }
     if (_nextRound(state, night)) return const QuizOutcome.next();
+    // After a snooze the alarm already woke the user: the snooze is
+    // cancelled and up is now.
+    if (_snoozedWakeUp(state)) {
+      _dropWakeUpSnoozes(state);
+      return _found(state, night, word, t);
+    }
     night.awake = t;
     _save(state);
     final wrong = night.wrongPicks.length;
@@ -325,16 +394,55 @@ class Engine {
     _end(state, night, _resultOf(night), t);
   }
 
-  /// The result of a night whose word was found.
-  NightResult _resultOf(OpenNight night) =>
-      night.wrongPicks.isEmpty ? NightResult.success : NightResult.failure;
+  /// The result of a night whose quiz is over: on the typing quiz by the
+  /// typos, else by the wrong picks before the word was found.
+  NightResult _resultOf(OpenNight night) => switch (night.typedOff) {
+    final off? when off > typosAllowed => NightResult.failure,
+    null when night.wrongPicks.isNotEmpty => NightResult.failure,
+    _ => NightResult.success,
+  };
+
+  /// The one try of the typing quiz. When [ends], the night ends with it
+  /// and a waiting snooze is dropped; else, before the alarm on "I'm
+  /// awake", it marks awake and the night waits for up.
+  QuizOutcome _typedAnswer(
+    EngineState state,
+    OpenNight night,
+    String word,
+    String typed,
+    DateTime t, {
+    required bool ends,
+  }) {
+    final off = night.typedOff = typos(typed, word);
+    final List<NightRecord> records;
+    if (ends) {
+      _dropWakeUpSnoozes(state);
+      _end(state, night, _resultOf(night), t);
+      records = store.loadRecords();
+    } else {
+      night.awake = t;
+      _save(state);
+      records = [...store.loadRecords(), _record(night, _resultOf(night), t)];
+    }
+    return QuizOutcome.typed(
+      word: word,
+      typed: typed.trim(),
+      typedOff: off,
+      stats: QuizStats.of(records),
+    );
+  }
 
   /// "I'm awake" without a word: the night ends as "no word", or nothing is
   /// recorded when there was no night; the morning's alarms are cancelled.
   void awakeDismiss() {
     final t = _now;
     final state = _load(t);
-    _cancelMorning(state, t);
+    // After a snooze the next wake-up ring after now may be tomorrow's.
+    if (_snoozedWakeUp(state)) {
+      _dropWakeUpSnoozes(state);
+    } else {
+      _cancelMorning(state, t);
+    }
     final night = state.night;
     if (night != null) {
       _end(state, night, NightResult.noWord, t);
@@ -428,7 +536,11 @@ class Engine {
     final state = _load(t);
     final night = _bedtimeNight(state, t);
     if (night == null || night.word != null) return null;
-    final word = state.deck.next(words, _random);
+    final simple =
+        store.loadSettings().words == WordList.simple && simpleWords.isNotEmpty;
+    final word = simple
+        ? state.simpleDeck.next(simpleWords, _random)
+        : state.deck.next(words, _random);
     night
       ..bedtime ??= t
       ..asleep = t
@@ -490,6 +602,7 @@ class Engine {
     if (night == null || word == null) return const RingScreen.dismiss();
     _fixForm(night, word);
     _save(state);
+    if (night.typing) return const RingScreen.typing();
     final rounds = night.rounds;
     final options = rounds == null ? night.options! : rounds[night.solved];
     return RingScreen.quiz(
@@ -505,7 +618,11 @@ class Engine {
   /// Settles the night's quiz form and options the first time they are
   /// needed.
   void _fixForm(OpenNight night, String word) {
-    if (night.options != null || night.rounds != null) return;
+    if (night.options != null || night.rounds != null || night.typing) {
+      return;
+    }
+    // The wrong options come from the word's own list.
+    final words = simpleWords.contains(word) ? simpleWords : this.words;
     switch (store.loadSettings().quiz) {
       case QuizForm.word:
         night.options = quizOptions(word, words, _random);
@@ -514,6 +631,8 @@ class Engine {
       case QuizForm.brokenTeeth:
         final shown = night.shown = brokenTeethShown(word.length, _random);
         night.options = brokenTeethOptions(word, shown, words, _random);
+      case QuizForm.typing:
+        night.typing = true;
     }
   }
 
@@ -545,8 +664,8 @@ class Engine {
   }
 
   /// [picked] was chosen on the quiz of alarm [alarmId]. The right word
-  /// ends the night; a wrong one snoozes the alarm, drops that word from
-  /// the next quiz and makes the night a failure.
+  /// ends the night; a wrong one drops that word from the quiz and makes
+  /// the night a failure, while the alarm keeps ringing.
   QuizOutcome? answer(int alarmId, String picked) {
     final t = _now;
     final state = _load(t);
@@ -558,12 +677,13 @@ class Engine {
       return null;
     }
     _fixForm(night, word);
+    if (night.typing) {
+      return _typedAnswer(state, night, word, picked, t, ends: true);
+    }
     if (!_isRight(night, word, picked)) {
-      final snooze = store.loadSettings().alarmSnooze;
       if (!night.wrongPicks.contains(picked)) night.wrongPicks.add(picked);
-      state.alarmSnoozes[alarmId] = t.add(snooze);
       _save(state);
-      return QuizOutcome.wrong(snooze: snooze);
+      return const QuizOutcome.wrong();
     }
     if (_nextRound(state, night)) return const QuizOutcome.next();
     return _found(state, night, word, t);
@@ -709,6 +829,7 @@ class Engine {
         result: result,
         word: night.word,
         wrongPicks: night.wrongPicks.length,
+        typedOff: night.typedOff,
       );
 
   Morning? _nextMorning(EngineState state, DateTime t) => nextMorning(

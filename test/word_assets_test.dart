@@ -19,6 +19,18 @@ void main() {
     }
   });
 
+  test('the bundled simple list holds distinct words of 5 to 10 letters, '
+      'none of them in the less common list', () async {
+    final simple = await loadWords(rootBundle, simple: true);
+    final words = (await loadWords(rootBundle)).toSet();
+    expect(simple.length, greaterThan(7000));
+    expect(simple.toSet(), hasLength(simple.length));
+    for (final w in simple) {
+      expect(w, matches(RegExp(r'^[a-z]{5,10}$')));
+      expect(words.contains(w), isFalse);
+    }
+  });
+
   test('every word gets four quiz options', () async {
     final words = await loadWords(rootBundle);
     final random = Random(1);

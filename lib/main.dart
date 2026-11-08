@@ -16,12 +16,14 @@ Future<void> main() async {
   final dir = await getApplicationSupportDirectory();
   registerWordLicence(rootBundle);
   final words = await loadWords(rootBundle);
+  final simpleWords = await loadWords(rootBundle, simple: true);
   final nagLines = await loadNagLines(rootBundle);
   final controller = Controller(
     store: SqliteStore.open('${dir.path}/chaos-alert.db'),
     platform: ChannelAlarmPlatform(),
     clips: FileClipMaker(Directory('${dir.path}/generated')),
     words: words,
+    simpleWords: simpleWords,
     nagLines: nagLines,
   );
   runApp(ChaosAlertApp(controller: controller));

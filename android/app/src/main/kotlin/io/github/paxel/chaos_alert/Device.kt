@@ -149,6 +149,7 @@ object Device {
             "fullScreen" to (Build.VERSION.SDK_INT < 34 || notifications.canUseFullScreenIntent()),
             "battery" to power.isIgnoringBatteryOptimizations(context.packageName),
             "music" to granted(context, musicPermission),
+            "overlay" to Settings.canDrawOverlays(context),
         )
     }
 
@@ -174,6 +175,7 @@ object Device {
                 Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, app),
             )
             "music" -> activity.requestPermissions(arrayOf(musicPermission), 2)
+            "overlay" -> activity.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, app))
         }
     }
 

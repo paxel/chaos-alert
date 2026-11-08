@@ -130,3 +130,20 @@ List<String> brokenTeethOptions(
   final distractors = [...alike, ...rest].take(3);
   return [word, ...distractors]..shuffle(random);
 }
+
+/// How many typos [typed] has against [word]: wrong, missing and extra
+/// letters count one each; letter case and spaces around it do not count.
+int typos(String typed, String word) {
+  final a = typed.trim().toLowerCase();
+  final b = word.toLowerCase();
+  var previous = List<int>.generate(b.length + 1, (j) => j);
+  for (var i = 1; i <= a.length; i++) {
+    final current = List<int>.filled(b.length + 1, 0)..[0] = i;
+    for (var j = 1; j <= b.length; j++) {
+      final swap = previous[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1);
+      current[j] = [previous[j] + 1, current[j - 1] + 1, swap].reduce(min);
+    }
+    previous = current;
+  }
+  return previous[b.length];
+}

@@ -15,6 +15,7 @@ class Controller extends ChangeNotifier {
     required this.platform,
     this.clips,
     required List<String> words,
+    List<String> simpleWords = const [],
     List<String> nagLines = const [],
     DateTime Function()? clock,
     Random? random,
@@ -23,6 +24,7 @@ class Controller extends ChangeNotifier {
     engine = Engine(
       store: store,
       words: words,
+      simpleWords: simpleWords,
       nagLines: nagLines,
       clock: this.clock,
       random: _random,
@@ -49,6 +51,13 @@ class Controller extends ChangeNotifier {
       if (_permissions[p] != true) p,
   ];
 
+  /// Missing permissions that can keep an alarm from ringing, for the red
+  /// banner; the overlay only changes how a ring shows.
+  List<Permission> get missingForAlarms => [
+    for (final p in missingPermissions)
+      if (p != Permission.overlay) p,
+  ];
+
   bool get hasPermissionInfo => _permissions.isNotEmpty;
 
   /// How many sounds each picked folder holds: 0 for none, null once the
@@ -69,6 +78,7 @@ class Controller extends ChangeNotifier {
   late bool _canSayAwake;
   late bool _canSayUp;
   late bool _setupDone;
+  late bool _overlayAsked;
   late bool _pendingHint;
   late Map<int, DateTime> _alarmSnoozes;
   String? _nagLine;
@@ -90,6 +100,14 @@ class Controller extends ChangeNotifier {
   /// Whether "I'm up" can end the night: after the "I'm awake" quiz.
   bool get canSayUp => _canSayUp;
   bool get setupDone => _setupDone;
+
+  /// The setup steps still to show at start: every one at first start, and
+  /// only "Display over other apps" for a setup done before that step.
+  List<Permission> get setupSteps => !_setupDone
+      ? Permission.values
+      : _overlayAsked
+      ? const []
+      : const [Permission.overlay];
 
   /// The line on the nag last shown tonight.
   String? get nagLine => _nagLine;
@@ -114,6 +132,7 @@ class Controller extends ChangeNotifier {
     _canSayAwake = engine.canSayAwake;
     _canSayUp = engine.canSayUp;
     _setupDone = store.loadState().setupDone;
+    _overlayAsked = store.loadState().overlayAsked;
     _pendingHint = engine.pendingHint;
     _nagLine = engine.nagLine;
     _alarmSnoozes = store.loadState().alarmSnoozes;
@@ -152,11 +171,14 @@ class Controller extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// The first-start setup was walked through.
+  /// The setup was walked through, the overlay step included.
   void finishSetup() {
-    final state = store.loadState()..setupDone = true;
+    final state = store.loadState()
+      ..setupDone = true
+      ..overlayAsked = true;
     store.saveState(state);
     _setupDone = true;
+    _overlayAsked = true;
     notifyListeners();
   }
 
@@ -165,6 +187,21 @@ class Controller extends ChangeNotifier {
   Future<void> refresh() async {
     _permissions = await platform.permissions();
     _sounds = await platform.sounds();
+    await _replayEvents();
+    await reschedule();
+    // A big folder takes long to read, and a ring screen waits for this.
+    _foldersRead = _readFolders();
+  }
+
+  /// Reads only what happened while the app was not running, so a ringing
+  /// alarm's screen can show at once; [refresh] does the rest after it.
+  Future<void> catchUp() async {
+    await _replayEvents();
+    _reload();
+    notifyListeners();
+  }
+
+  Future<void> _replayEvents() async {
     final events = await platform.drainEvents()
       ..sort((a, b) => a.at.compareTo(b.at));
     for (final e in events) {
@@ -179,9 +216,6 @@ class Controller extends ChangeNotifier {
           engine.timeout(alarmId, at: at);
       }
     }
-    await reschedule();
-    // A big folder takes long to read, and a ring screen waits for this.
-    _foldersRead = _readFolders();
   }
 
   Future<void>? _foldersRead;
@@ -363,7 +397,7 @@ class Controller extends ChangeNotifier {
   Future<QuizOutcome?> awakeAnswer(String picked) async {
     final outcome = engine.awakeAnswer(picked);
     if (outcome != null && outcome.next) return outcome;
-    if (outcome != null && outcome.correct) await platform.clearAwakeNotice();
+    if (outcome != null && outcome.over) await platform.clearAwakeNotice();
     await reschedule();
     return outcome;
   }
@@ -393,12 +427,17 @@ class Controller extends ChangeNotifier {
     await reschedule();
   }
 
-  /// A right letter quiz round leaves the alarm ringing for the next one.
+  /// A right letter quiz round and a wrong pick leave the alarm ringing;
+  /// the quiz goes on. The typing quiz's one try ends it either way.
   Future<QuizOutcome?> answer(int alarmId, String picked) async {
     final outcome = engine.answer(alarmId, picked);
     if (outcome != null && outcome.next) return outcome;
+    if (outcome != null && !outcome.over) {
+      log('alarm $alarmId answered wrong');
+      return outcome;
+    }
     log(
-      'alarm $alarmId answered ${outcome?.correct == true ? 'right' : 'wrong'}',
+      'alarm $alarmId answered ${outcome?.correct == false ? 'wrong' : 'right'}',
     );
     await platform.stopRinging();
     await reschedule();

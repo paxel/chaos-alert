@@ -40,6 +40,10 @@ class SqliteStore implements Store {
       ''');
       _db.userVersion = 3;
     }
+    if (_db.userVersion < 4) {
+      _db.execute('alter table nights add column typed_off integer');
+      _db.userVersion = 4;
+    }
   }
 
   void _createTables() {
@@ -102,6 +106,10 @@ class SqliteStore implements Store {
       mediumVolume: (m['mediumVolume'] as num?)?.toDouble() ?? d.mediumVolume,
       chime: m['chime'] as bool? ?? d.chime,
       quiz: _quiz(m) ?? d.quiz,
+      words: switch (m['words']) {
+        final String name => WordList.values.asNameMap()[name] ?? d.words,
+        _ => d.words,
+      },
       alarmSounds: m['alarmSounds'] as bool? ?? d.alarmSounds,
       notificationSounds:
           m['notificationSounds'] as bool? ?? d.notificationSounds,
@@ -138,6 +146,7 @@ class SqliteStore implements Store {
       'mediumVolume': settings.mediumVolume,
       'chime': settings.chime,
       'quiz': settings.quiz.name,
+      'words': settings.words.name,
       'alarmSounds': settings.alarmSounds,
       'notificationSounds': settings.notificationSounds,
       'songs': settings.songs,
@@ -248,14 +257,15 @@ class SqliteStore implements Store {
         asleep: _parse(r['asleep']),
         asleepAssumed: r['asleep_assumed'] == 1,
         awake: _parse(r['awake']),
+        typedOff: r['typed_off'] as int?,
       ),
   ];
 
   @override
   void addRecord(NightRecord record) => _db.execute(
     'insert into nights (planned_bedtime, bedtime, bedtime_assumed, '
-    'end_time, result, word, wrong_picks, asleep, asleep_assumed, awake) '
-    'values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'end_time, result, word, wrong_picks, asleep, asleep_assumed, awake, '
+    'typed_off) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
     [
       record.plannedBedtime.toIso8601String(),
       record.bedtime.toIso8601String(),
@@ -267,6 +277,7 @@ class SqliteStore implements Store {
       record.asleep?.toIso8601String(),
       record.asleepAssumed ? 1 : 0,
       record.awake?.toIso8601String(),
+      record.typedOff,
     ],
   );
 

@@ -1,5 +1,6 @@
 package io.github.paxel.chaos_alert
 
+import android.app.KeyguardManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -17,6 +18,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import org.json.JSONArray
@@ -56,11 +58,13 @@ class RingService : Service() {
         stopPlayback()
         this.ring = ring
         alarmId = ring.optInt("alarmId", -1)
+        ringing = alarmId
         EventLog.add(this, "android: ring of alarm $alarmId started")
         ServiceCompat.startForeground(
             this, NOTIFICATION, notification(),
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK else 0,
         )
+        openOverUnlockedPhone()
         wakeLock = getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "chaos-alert:ring")
             .apply { acquire(ring.optLong("timeoutMs", 600_000) + 60_000) }
@@ -103,6 +107,28 @@ class RingService : Service() {
         Scheduler.addRing(this, again)
         MainActivity.eventsArrived()
     }
+
+    /**
+     * On an unlocked phone in use Android shows the full-screen intent only as
+     * a heads-up notification, so the ring opens its screen itself; that needs
+     * "Display over other apps". A locked phone gets the full-screen intent.
+     */
+    private fun openOverUnlockedPhone() {
+        if (!Settings.canDrawOverlays(this)) return
+        if (getSystemService(KeyguardManager::class.java).isKeyguardLocked) return
+        try {
+            startActivity(ringIntent())
+            EventLog.add(this, "android: ring of alarm $alarmId opened over the unlocked phone")
+        } catch (e: Exception) {
+            EventLog.add(this, "android: ring screen did not open (${e.javaClass.simpleName})")
+        }
+    }
+
+    /** Opens the app on the alarm screen of the ringing alarm. */
+    private fun ringIntent() = Intent(this, MainActivity::class.java)
+        .putExtra(Scheduler.EXTRA_KIND, "ring")
+        .putExtra(Scheduler.EXTRA_ALARM_ID, alarmId)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
     /** Plays [sound], or the phone's default alarm sound for null. */
     private fun play(sound: SoundCandidate?) {
@@ -155,6 +181,7 @@ class RingService : Service() {
     private fun stopRinging() {
         stopPlayback()
         ring = null
+        ringing = null
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -175,11 +202,7 @@ class RingService : Service() {
             )
         }
         val open = PendingIntent.getActivity(
-            this, NOTIFICATION,
-            Intent(this, MainActivity::class.java)
-                .putExtra(Scheduler.EXTRA_KIND, "ring")
-                .putExtra(Scheduler.EXTRA_ALARM_ID, alarmId)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            this, NOTIFICATION, ringIntent(),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         return NotificationCompat.Builder(this, CHANNEL)
@@ -208,6 +231,11 @@ class RingService : Service() {
         const val ACTION_SNOOZE = "io.github.paxel.chaos_alert.SNOOZE"
         private const val NOTIFICATION = 2
         private const val CHANNEL = "ring"
+
+        /** The alarm ringing now, for an app opened from its icon meanwhile. */
+        @Volatile
+        var ringing: Int? = null
+            private set
 
         fun stop(context: Context) {
             context.startService(Intent(context, RingService::class.java).setAction(ACTION_STOP))
